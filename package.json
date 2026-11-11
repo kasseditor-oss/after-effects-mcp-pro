@@ -1,0 +1,41 @@
+{
+  "name": "after-effects-mcp-pro",
+  "version": "2.0.0",
+  "description": "MCP server for Adobe After Effects: 60+ tools, synchronous results, live frame previews, background rendering, zero-click bridge.",
+  "main": "build/index.js",
+  "directories": {
+    "test": "test"
+  },
+  "scripts": {
+    "build": "tsc -p tsconfig.json && node scripts/copy-assets.mjs",
+    "start": "node build/index.js",
+    "install-ae": "node scripts/install-ae.mjs",
+    "icon": "powershell -ExecutionPolicy Bypass -File scripts/make-icon.ps1",
+    "test": "node --test test/unit.test.mjs",
+    "test:live": "node test/live.test.mjs"
+  },
+  "author": "",
+  "license": "MIT",
+  "type": "module",
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "^1.32.2",
+    "zod": "^3.25.76"
+  },
+  "devDependencies": {
+    "@types/node": "^26.6.6",
+    "typescript": "^7.0.2"
+  },
+  "bin": {
+    "after-effects-mcp-pro": "build/index.js"
+  },
+  "engines": {
+    "node": ">=18"
+  },
+  "files": [
+    "build",
+    "bridge",
+    "assets",
+    "scripts",
+    "README.md"
+  ]
+}

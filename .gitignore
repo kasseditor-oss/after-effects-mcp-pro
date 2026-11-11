@@ -1,0 +1,5 @@
+node_modules/
+build/
+*.log
+.mcp.json
+assets/icon-*.png

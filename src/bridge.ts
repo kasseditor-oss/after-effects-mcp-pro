@@ -1,0 +1,286 @@
+import * as crypto from "node:crypto";
+import * as fs from "node:fs";
+import * as path from "node:path";
+import { execFile, execSync, spawn } from "node:child_process";
+import { fileURLToPath } from "node:url";
+import { aeReady, bridgeDir, findInstalls, isAERunning, isMac, isWin } from "./env.js";
+
+const here = path.dirname(fileURLToPath(import.meta.url));
+
+export const SERVER_VERSION = "2.0.0";
+
+export class AEError extends Error {
+  constructor(message: string, public hint?: string, public code: string = "AE_ERROR") {
+    super(message);
+  }
+}
+
+export type Mode = "listener" | "direct";
+
+export interface CallOptions {
+  timeoutMs?: number;
+  /** Wrap the call in one After Effects undo group (default true). */
+  undo?: boolean;
+}
+
+interface Heartbeat {
+  time: number;
+  version: string;
+  ae: string;
+  paused: boolean;
+  executed: number;
+  project: string;
+}
+
+function loadRuntimeSource(): string {
+  const candidates = [path.join(here, "jsx", "runtime.jsx"), path.join(here, "..", "src", "jsx", "runtime.jsx")];
+  for (const c of candidates) if (fs.existsSync(c)) return fs.readFileSync(c, "utf8");
+  throw new Error("runtime.jsx not found next to the server build");
+}
+
+/** Escape a string so it is a valid ExtendScript (ES3) string literal. */
+export function jsString(s: string): string {
+  // split/join instead of a regex literal: some compilers emit the raw U+2028 char inside the regex
+  return JSON.stringify(s).split(String.fromCharCode(0x2028)).join("\\u2028").split(String.fromCharCode(0x2029)).join("\\u2029");
+}
+
+const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
+
+/**
+ * Transport between the MCP server and After Effects.
+ *
+ * - listener mode: the Startup listener inside AE polls `<bridge>/queue` every
+ *   120 ms. Fast, no window focus changes. Used when its heartbeat is fresh.
+ * - direct mode: `AfterFX.exe -r script.jsx` (Windows) or AppleScript
+ *   `DoScriptFile` (macOS) asks the running AE to execute the script. Works
+ *   with zero setup when the listener is missing.
+ *
+ * Each call gets a unique id and its own result file, so concurrent calls can
+ * never read each other's results (a bug in file-based bridges that share a
+ * single result file).
+ */
+export class Bridge {
+  readonly dir = bridgeDir();
+  readonly runtimeHash: string;
+  private runtimePath: string;
+  private runningCache: { at: number; value: boolean } = { at: 0, value: false };
+  private chain: Promise<unknown> = Promise.resolve();
+  lastMode: Mode | null = null;
+  private readyAt = 0;
+
+  constructor() {
+    for (const sub of ["queue", "results", "direct", "frames", "runtime"]) fs.mkdirSync(path.join(this.dir, sub), { recursive: true });
+    const src = loadRuntimeSource();
+    this.runtimeHash = crypto.createHash("sha1").update(src).update(SERVER_VERSION).digest("hex").slice(0, 12);
+    this.runtimePath = path.join(this.dir, "runtime", `runtime-${this.runtimeHash}.jsx`);
+    if (!fs.existsSync(this.runtimePath)) {
+      const body = src.replace(/__AEMCP_VERSION__/g, SERVER_VERSION).replace(/__AEMCP_HASH__/g, this.runtimeHash);
+      fs.writeFileSync(this.runtimePath, body, "utf8");
+    }
+    this.cleanup();
+  }
+
+  /** Remove stale result/command files older than 1 hour. */
+  private cleanup() {
+    const cutoff = Date.now() - 3600_000;
+    for (const sub of ["results", "direct", "frames"]) {
+      const d = path.join(this.dir, sub);
+      for (const f of fs.readdirSync(d)) {
+        try {
+          const p = path.join(d, f);
+          if (fs.statSync(p).mtimeMs < cutoff) fs.unlinkSync(p);
+        } catch {
+          /* ignore */
+        }
+      }
+    }
+    // stale queue entries would run unexpectedly on next AE start: drop them
+    const q = path.join(this.dir, "queue");
+    for (const f of fs.readdirSync(q)) {
+      try {
+        const p = path.join(q, f);
+        if (fs.statSync(p).mtimeMs < Date.now() - 300_000) fs.unlinkSync(p);
+      } catch {
+        /* ignore */
+      }
+    }
+    for (const f of fs.readdirSync(path.join(this.dir, "runtime"))) {
+      if (f !== path.basename(this.runtimePath)) {
+        try {
+          fs.unlinkSync(path.join(this.dir, "runtime", f));
+        } catch {
+          /* ignore */
+        }
+      }
+    }
+  }
+
+  heartbeat(): (Heartbeat & { ageMs: number }) | null {
+    try {
+      const hb = JSON.parse(fs.readFileSync(path.join(this.dir, "heartbeat.json"), "utf8")) as Heartbeat;
+      return { ...hb, ageMs: Date.now() - hb.time };
+    } catch {
+      return null;
+    }
+  }
+
+  aeRunning(): boolean {
+    if (Date.now() - this.runningCache.at < 2000) return this.runningCache.value;
+    const value = isAERunning();
+    this.runningCache = { at: Date.now(), value };
+    return value;
+  }
+
+  chooseMode(): Mode {
+    const forced = process.env.AE_MCP_MODE as Mode | undefined;
+    if (forced === "listener" || forced === "direct") return forced;
+    const hb = this.heartbeat();
+    if (hb && hb.ageMs < 4000 && !hb.paused) return "listener";
+    if (hb && hb.ageMs < 4000 && hb.paused) {
+      throw new AEError("The AE MCP Pro bridge is paused inside After Effects", "Click 'Resume' in Window > AE MCP Pro.jsx.", "PAUSED");
+    }
+    if (!this.aeRunning()) {
+      throw new AEError("After Effects is not running", "Open After Effects, or call the launch_after_effects tool.", "AE_NOT_RUNNING");
+    }
+    // once AE has been seen ready, skip the (slow) window-title check for 60 s
+    if (Date.now() - this.readyAt > 60_000) {
+      if (!aeReady()) throw new AEError("After Effects is still starting up", "Wait until the main window shows a project, then retry (launch_after_effects waits for you).", "AE_STARTING");
+      this.readyAt = Date.now();
+    }
+    return "direct";
+  }
+
+  private commandScript(payload: object, resultPath: string): string {
+    const rp = resultPath.replace(/\\/g, "/");
+    const rtp = this.runtimePath.replace(/\\/g, "/");
+    // If loading the runtime itself fails, still write a result so the server never waits for nothing.
+    return [
+      "(function(){",
+      "  try {",
+      `    if (!$.global.AEMCP || $.global.AEMCP.hash !== ${jsString(this.runtimeHash)}) $.evalFile(new File(${jsString(rtp)}));`,
+      `    $.global.AEMCP.run(${jsString(JSON.stringify(payload))}, ${jsString(rp)});`,
+      "  } catch (e) {",
+      `    var f = new File(${jsString(rp)}); f.encoding = "UTF-8";`,
+      `    if (f.open("w")) { f.write('{"ok":false,"error":"Bridge failure: ' + String(e).replace(/[\\\\"\\r\\n]/g, " ") + ' (line ' + e.line + ')"}'); f.close(); }`,
+      "  }",
+      "})();",
+    ].join("\n");
+  }
+
+  /** Runs one runtime handler in After Effects and returns its data. Calls are serialized. */
+  call<T = any>(tool: string, args: Record<string, unknown> = {}, opts: CallOptions = {}): Promise<T> {
+    const run = this.chain.then(() => this.callNow<T>(tool, args, opts));
+    this.chain = run.catch(() => undefined);
+    return run;
+  }
+
+  private async callNow<T>(tool: string, args: Record<string, unknown>, opts: CallOptions): Promise<T> {
+    const mode = this.chooseMode();
+    this.lastMode = mode;
+    const id = crypto.randomBytes(6).toString("hex");
+    const resultPath = path.join(this.dir, "results", `${id}.json`);
+    const script = this.commandScript({ id, tool, args, undo: opts.undo !== false }, resultPath);
+    const timeoutMs = opts.timeoutMs ?? 60_000;
+
+    if (mode === "listener") {
+      const name = `${Date.now()}-${id}.jsx`;
+      const tmp = path.join(this.dir, "queue", name + ".tmp");
+      fs.writeFileSync(tmp, script, "utf8");
+      fs.renameSync(tmp, path.join(this.dir, "queue", name));
+    } else {
+      const file = path.join(this.dir, "direct", `${id}.jsx`);
+      fs.writeFileSync(file, script, "utf8");
+      await this.runDirect(file);
+    }
+
+    const raw = await this.waitForResult(resultPath, timeoutMs, mode, id);
+    let res: any;
+    try {
+      res = JSON.parse(raw);
+    } catch {
+      throw new AEError(`After Effects returned an unreadable result: ${raw.slice(0, 200)}`);
+    } finally {
+      fs.rmSync(resultPath, { force: true });
+      fs.rmSync(path.join(this.dir, "direct", `${id}.jsx`), { force: true });
+    }
+    if (!res.ok) throw new AEError(res.error || "Unknown After Effects error", res.hint, "SCRIPT_ERROR");
+    return res.data as T;
+  }
+
+  private runDirect(file: string): Promise<void> {
+    const installs = findInstalls();
+    return new Promise((resolve, reject) => {
+      if (isWin) {
+        if (!installs.length) return reject(new AEError("AfterFX.exe not found", "Set AE_MCP_AE_PATH to your After Effects folder."));
+        // AfterFX.exe -r silently ignores paths with spaces (e.g. user names like "John Smith"): use the 8.3 short path
+        let target = file;
+        if (/\s/.test(file)) {
+          try {
+            target = execSync(`for %A in ("${path.win32.normalize(file)}") do @echo %~sA`, { encoding: "utf8", windowsHide: true }).trim();
+          } catch {
+            /* keep long path */
+          }
+          if (/\s/.test(target)) return reject(new AEError("The bridge folder path contains spaces and has no 8.3 short name", "Set AE_MCP_BRIDGE_DIR to a folder without spaces, e.g. C:\\ae-mcp."));
+        }
+        execFile(installs[0].executable, ["-r", target], { windowsHide: true, timeout: 30_000 }, (err) => {
+          if (err && (err as any).killed) return reject(new AEError("AfterFX.exe -r did not return", "After Effects may be showing a modal dialog."));
+          resolve();
+        });
+      } else if (isMac) {
+        const appName = installs.length ? path.basename(installs[0].executable, ".app") : "Adobe After Effects 2026";
+        const as = `tell application "${appName}" to DoScriptFile "${file.replace(/"/g, '\\"')}"`;
+        execFile("osascript", ["-e", as], { timeout: 30_000 }, (err) => (err ? reject(new AEError(`osascript failed: ${err.message}`)) : resolve()));
+      } else reject(new AEError("Unsupported platform: After Effects runs on Windows and macOS only"));
+    });
+  }
+
+  private async waitForResult(resultPath: string, timeoutMs: number, mode: Mode, id: string): Promise<string> {
+    const start = Date.now();
+    let delay = 15;
+    while (Date.now() - start < timeoutMs) {
+      if (fs.existsSync(resultPath)) {
+        try {
+          const txt = fs.readFileSync(resultPath, "utf8");
+          if (txt.length) return txt;
+        } catch {
+          /* being written */
+        }
+      }
+      await sleep(delay);
+      delay = Math.min(100, delay + 10);
+      // listener died mid-wait: fall back to a clear error instead of a long hang
+      if (mode === "listener" && Date.now() - start > 5000) {
+        const hb = this.heartbeat();
+        const queued = fs.readdirSync(path.join(this.dir, "queue")).some((f) => f.includes(id) && !f.endsWith(".run"));
+        if ((!hb || hb.ageMs > 8000) && queued) {
+          for (const f of fs.readdirSync(path.join(this.dir, "queue"))) if (f.includes(id)) fs.rmSync(path.join(this.dir, "queue", f), { force: true });
+          throw new AEError("After Effects stopped responding to the bridge", "AE may be busy (rendering, modal dialog) or closed. Try again.", "TIMEOUT");
+        }
+      }
+    }
+    for (const f of fs.readdirSync(path.join(this.dir, "queue"))) if (f.includes(id) && !f.endsWith(".run")) fs.rmSync(path.join(this.dir, "queue", f), { force: true });
+    throw new AEError(`Timed out after ${Math.round(timeoutMs / 1000)}s waiting for After Effects`, "AE may be busy rendering or showing a dialog. Increase timeoutSeconds for long operations.", "TIMEOUT");
+  }
+
+  /** Launch After Effects (if needed) and wait until it accepts scripts. */
+  async launch(waitSeconds = 180): Promise<{ alreadyRunning: boolean; seconds: number }> {
+    const t0 = Date.now();
+    if (this.aeRunning()) return { alreadyRunning: true, seconds: 0 };
+    const installs = findInstalls();
+    if (!installs.length) throw new AEError("No After Effects installation found", "Set AE_MCP_AE_PATH.");
+    if (isWin) spawn(installs[0].executable, [], { detached: true, stdio: "ignore" }).unref();
+    else spawn("open", ["-a", installs[0].executable], { detached: true, stdio: "ignore" }).unref();
+    while (Date.now() - t0 < waitSeconds * 1000) {
+      await sleep(3000);
+      this.runningCache.at = 0;
+      if (!this.aeRunning() || !aeReady()) continue;
+      try {
+        await this.call("ping", {}, { timeoutMs: 8000, undo: false });
+        return { alreadyRunning: false, seconds: Math.round((Date.now() - t0) / 1000) };
+      } catch {
+        /* still starting */
+      }
+    }
+    throw new AEError(`After Effects did not become ready within ${waitSeconds}s`);
+  }
+}
