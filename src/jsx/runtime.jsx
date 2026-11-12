@@ -1826,6 +1826,34 @@
         return { file: f.fsName, comp: c.name, time: t, width: c.width, height: c.height };
     };
 
+    // Several frames in one round trip (contact sheets). Files are written asynchronously.
+    H.render_frames = function (a) {
+        var c = getComp(a.comp);
+        var times = a.times && a.times.length ? a.times : [c.time];
+        if (typeof c.saveFrameToPng !== "function") fail("Frame capture is not available in this After Effects version");
+        // Render at a lower comp resolution when only a small preview is needed (2-3x faster).
+        // saveFrameToPng is asynchronous, so the server restores the resolution afterwards.
+        var factor = 1;
+        if (a.maxSize && !a.fullRes) factor = Math.max(1, Math.min(4, Math.floor(Math.max(c.width, c.height) / a.maxSize)));
+        var oldRes = c.resolutionFactor;
+        if (factor > 1) c.resolutionFactor = [factor, factor];
+        var out = [];
+        for (var i = 0; i < times.length; i++) {
+            var t = Math.max(0, Math.min(times[i], c.duration - c.frameDuration));
+            var f = new File(a.outputDir + "/" + a.prefix + "-" + i + ".png");
+            if (f.exists) f.remove();
+            c.saveFrameToPng(t, f);
+            out.push({ time: round(t, 3), file: f.fsName });
+        }
+        return { comp: c.name, compId: c.id, width: c.width, height: c.height, factor: factor, restoreResolution: factor > 1 ? [oldRes[0], oldRes[1]] : null, frames: out };
+    };
+
+    H.restore_resolution = function (a) {
+        var c = getComp(a.comp);
+        c.resolutionFactor = a.resolution;
+        return { comp: c.name, resolutionFactor: c.resolutionFactor };
+    };
+
     // ---- Misc
     H.list_fonts = function (a) {
         var out = [];

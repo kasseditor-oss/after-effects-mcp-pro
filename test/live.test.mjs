@@ -163,11 +163,20 @@ const frame = await call("preview_frame", { comp: C, time: 2.5, maxSize: 960, sa
 await call("preview_contact_sheet", { comp: C, frames: 4, maxSize: 400 }, {
   check: (_d, r) => {
     const imgs = r.content.filter((c) => c.type === "image");
-    imgs.forEach((im, i) => fs.writeFileSync(path.join(out, `sheet-${i}.png`), Buffer.from(im.data, "base64")));
-    return imgs.length === 4 ? true : "images " + imgs.length;
+    imgs.forEach((im, i) => fs.writeFileSync(path.join(out, `sheet-${i}.jpg`), Buffer.from(im.data, "base64")));
+    return imgs.length === 1 && imgs[0].mimeType === "image/jpeg" ? true : "images " + imgs.length;
   },
 });
-
+{
+  const t0 = Date.now();
+  await call("preview_contact_sheet", { comp: C, frames: 12 }, {
+    check: (_d, r) => {
+      const bytes = r.content.filter((c) => c.type === "image").reduce((n, c) => n + c.data.length * 0.75, 0);
+      fs.writeFileSync(path.join(out, "sheet-12.jpg"), Buffer.from(r.content.find((c) => c.type === "image").data, "base64"));
+      return Date.now() - t0 < 4000 && bytes < 200_000 ? true : `12 frames took ${Date.now() - t0} ms, ${Math.round(bytes / 1024)} KB`;
+    },
+  });
+}
 await call("create_folder", { name: "MCP Test Assets" });
 await call("import_files", { paths: [path.join(out, "frame.png")], folder: "MCP Test Assets", addToComp: C }, { check: (d) => (d.imported.length === 1 && d.imported[0].layer ? true : JSON.stringify(d)) });
 const items = await call("list_project_items", { type: "still" });

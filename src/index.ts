@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 import * as fs from "node:fs";
 import * as path from "node:path";
-import { execFileSync, spawn, type ChildProcess } from "node:child_process";
+import { spawn, type ChildProcess } from "node:child_process";
 import { fileURLToPath } from "node:url";
 import { Server } from "@modelcontextprotocol/sdk/server/index.js";
 import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js";
@@ -19,6 +19,7 @@ import { zodToJsonSchema } from "zod-to-json-schema";
 import { AEError, Bridge, SERVER_VERSION } from "./bridge.js";
 import { findInstalls } from "./env.js";
 import { TOOLS, NODE_ONLY, type ToolDef } from "./tools.js";
+import { compose, type ImageFormat } from "./imaging.js";
 import { WIDGET_MIME, WIDGET_URI, widgetHtml } from "./widget.js";
 
 const here = path.dirname(fileURLToPath(import.meta.url));
@@ -114,50 +115,68 @@ interface RenderJob {
 }
 const jobs = new Map<string, RenderJob>();
 
-/** Downscale a PNG in place so its longest side is <= maxSize (OS tools, no npm deps). */
-function resizePng(file: string, maxSize: number, w: number, h: number): { width: number; height: number } {
-  if (Math.max(w, h) <= maxSize) return { width: w, height: h };
-  const k = maxSize / Math.max(w, h);
-  const nw = Math.max(1, Math.round(w * k)), nh = Math.max(1, Math.round(h * k));
-  try {
-    if (process.platform === "win32") {
-      const ps =
-        "Add-Type -AssemblyName System.Drawing;" +
-        `$s=[System.Drawing.Image]::FromFile('${file.replace(/'/g, "''")}');` +
-        `$b=New-Object System.Drawing.Bitmap ${nw},${nh};$g=[System.Drawing.Graphics]::FromImage($b);` +
-        "$g.InterpolationMode='HighQualityBicubic';" +
-        `$g.DrawImage($s,0,0,${nw},${nh});$s.Dispose();$g.Dispose();` +
-        `$b.Save('${file.replace(/'/g, "''")}',[System.Drawing.Imaging.ImageFormat]::Png);$b.Dispose()`;
-      execFileSync("powershell", ["-NoProfile", "-NonInteractive", "-Command", ps], { windowsHide: true, timeout: 30_000 });
-    } else if (process.platform === "darwin") {
-      execFileSync("sips", ["-Z", String(maxSize), file], { timeout: 30_000 });
-    } else return { width: w, height: h };
-    return { width: nw, height: nh };
-  } catch {
-    return { width: w, height: h }; // keep full size if resizing fails
+/** Wait until AE has finished writing each file (saveFrameToPng is asynchronous). */
+async function waitForFiles(files: string[], timeoutMs = 90_000) {
+  const t0 = Date.now();
+  const last = new Map<string, number>();
+  const done = new Set<string>();
+  while (done.size < files.length && Date.now() - t0 < timeoutMs) {
+    for (const f of files) {
+      if (done.has(f) || !fs.existsSync(f)) continue;
+      const size = fs.statSync(f).size;
+      if (size > 0 && last.get(f) === size) done.add(f);
+      last.set(f, size);
+    }
+    if (done.size < files.length) await new Promise((r) => setTimeout(r, 100));
   }
+  const missing = files.filter((f) => !done.has(f));
+  if (missing.length) throw new AEError(`After Effects did not write ${missing.length} frame(s) in time`, "AE may be busy. Try again with fewer frames.");
 }
 
-async function captureFrame(args: { comp?: string | number; time?: number; maxSize?: number }, keepPath?: string) {
-  const file = path.join(bridge.dir, "frames", `frame-${Date.now()}-${Math.random().toString(36).slice(2, 7)}.png`);
-  const info = await bridge.call<any>("render_frame", { comp: args.comp, time: args.time, outputPath: file.split(path.sep).join("/") }, { undo: false, timeoutMs: 120_000 });
-  // saveFrameToPng returns before the PNG is written: wait until the file exists and its size is stable
-  let last = -1;
-  const t0 = Date.now();
-  while (Date.now() - t0 < 90_000) {
-    if (fs.existsSync(file)) {
-      const size = fs.statSync(file).size;
-      if (size > 0 && size === last) break;
-      last = size;
+/**
+ * Render frames in one AE round trip, then resize / tile / encode them in one
+ * image process. columns: 0 = return each frame separately.
+ */
+async function renderFrames(a: { comp?: string | number; times?: number[]; maxSize: number; format: ImageFormat; quality: number; columns?: number; labels?: boolean; keepPath?: string }) {
+  const tag = `${Date.now()}-${Math.random().toString(36).slice(2, 7)}`;
+  const frames = path.join(bridge.dir, "frames");
+  const info = await bridge.call<any>("render_frames", { comp: a.comp, times: a.times, outputDir: frames.split(path.sep).join("/"), prefix: tag, maxSize: a.maxSize, fullRes: !!a.keepPath }, { undo: false, timeoutMs: 180_000 });
+  const files: string[] = info.frames.map((f: any) => f.file);
+  try {
+    try {
+      await waitForFiles(files);
+    } finally {
+      if (info.restoreResolution) await bridge.call("restore_resolution", { comp: info.compId, resolution: info.restoreResolution }, { undo: false }).catch(() => undefined);
     }
-    await new Promise((r) => setTimeout(r, 120));
+    if (a.keepPath) {
+      fs.mkdirSync(path.dirname(a.keepPath), { recursive: true });
+      fs.copyFileSync(files[0], a.keepPath);
+    }
+    const ext = a.format === "jpeg" ? "jpg" : "png";
+    const mime = a.format === "jpeg" ? "image/jpeg" : "image/png";
+    const columns = files.length === 1 ? 1 : a.columns ?? 4;
+    if (columns > 0) {
+      const out = path.join(frames, `${tag}-out.${ext}`);
+      const labels = a.labels ? info.frames.map((f: any) => `${f.time}s`) : undefined;
+      const size = compose({ files, labels, maxSize: a.maxSize, columns, format: a.format, quality: a.quality, output: out }, frames);
+      if (size) {
+        const data = fs.readFileSync(out).toString("base64");
+        fs.rmSync(out, { force: true });
+        return { info, images: [{ data, mimeType: mime }], size };
+      }
+    }
+    // separate layout, or no image tool on this OS: send each frame as rendered (PNG)
+    return { info, images: files.map((f) => ({ data: fs.readFileSync(f).toString("base64"), mimeType: "image/png" })), size: null };
+  } finally {
+    // AE can still hold a file for a moment after writing it: cleanup is best-effort
+    for (const f of files) {
+      try {
+        fs.rmSync(f, { force: true });
+      } catch {
+        /* removed by the hourly cleanup */
+      }
+    }
   }
-  if (!fs.existsSync(file)) throw new AEError("After Effects did not write the frame in time", "AE may be busy. Try again or a lower resolution comp.");
-  if (keepPath) fs.copyFileSync(file, keepPath);
-  const size = resizePng(file, args.maxSize ?? 960, info.width, info.height);
-  const data = fs.readFileSync(file).toString("base64");
-  fs.rmSync(file, { force: true });
-  return { info: { ...info, file: undefined, previewWidth: size.width, previewHeight: size.height }, data };
 }
 
 async function nodeTool(name: string, a: any): Promise<CallToolResult> {
@@ -190,23 +209,27 @@ async function nodeTool(name: string, a: any): Promise<CallToolResult> {
       return ok({ ...r, ae: ping });
     }
     case "preview_frame": {
-      const { info, data } = await captureFrame(a, a.savePath);
-      return { ...ok({ ...info, savedTo: a.savePath ?? null }, [{ type: "image", data, mimeType: "image/png" }]), _meta: { "after-effects/summary": `Frame ${info.time}s de ${info.comp}` } };
+      const r = await renderFrames({ comp: a.comp, times: a.time === undefined ? undefined : [a.time], maxSize: a.maxSize ?? 960, format: a.format ?? "jpeg", quality: a.quality ?? 85, keepPath: a.savePath });
+      const f = r.info.frames[0];
+      const data = { comp: r.info.comp, time: f.time, width: r.info.width, height: r.info.height, previewWidth: r.size?.width ?? r.info.width, previewHeight: r.size?.height ?? r.info.height, savedTo: a.savePath ?? null };
+      return { ...ok(data, r.images.map((im) => ({ type: "image" as const, ...im }))), _meta: { "after-effects/summary": `Frame ${f.time}s de ${r.info.comp}` } };
     }
     case "preview_contact_sheet": {
-      const comp = await bridge.call<any>("get_composition", { comp: a.comp }, { undo: false });
+      const comp = await bridge.call<any>("get_composition", { comp: a.comp, layerLimit: 0 }, { undo: false });
       let times: number[] = a.times;
       if (!times?.length) {
         const n = a.frames ?? 6;
         const start = comp.workAreaStart, dur = comp.workAreaDuration;
         times = Array.from({ length: n }, (_, i) => +(start + (dur * i) / (n - 1) - (i === n - 1 ? 1 / comp.frameRate : 0)).toFixed(3));
       }
-      const images: CallToolResult["content"] = [];
-      for (const time of times) {
-        const { data } = await captureFrame({ comp: comp.id, time, maxSize: a.maxSize ?? 480 });
-        images.push({ type: "text", text: `t = ${time}s` }, { type: "image", data, mimeType: "image/png" });
-      }
-      return ok({ comp: comp.name, times }, images);
+      const columns = (a.layout ?? "grid") === "grid" ? Math.min(4, times.length) : 0;
+      // smaller cells for big sheets keep the image under ~200 KB
+      const cell = a.maxSize ?? (times.length > 6 ? 360 : 480);
+      const r = await renderFrames({ comp: comp.id, times, maxSize: cell, format: a.format ?? "jpeg", quality: a.quality ?? (times.length > 6 ? 70 : 80), columns, labels: true });
+      const content: CallToolResult["content"] = [];
+      if (r.images.length === 1) content.push({ type: "image", ...r.images[0] });
+      else r.images.forEach((im, i) => content.push({ type: "text", text: `t = ${times[i]}s` }, { type: "image", ...im }));
+      return { ...ok({ comp: comp.name, times, layout: r.images.length === 1 ? "grid" : "separate", columns: r.images.length === 1 ? columns : null }, content), _meta: { "after-effects/summary": `${times.length} frames de ${comp.name}` } };
     }
     case "render_in_background": {
       const install = findInstalls().find((i) => i.aerender);
