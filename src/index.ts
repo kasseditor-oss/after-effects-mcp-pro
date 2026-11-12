@@ -115,10 +115,11 @@ const LISTED = TOOLS.filter((d) => listed(d)).map((d) => ({
   description: d.docs ? `${d.description} Details: ae://docs/${d.name}` : d.description,
   inputSchema: COMPACT ? compactSchema(jsonSchema(d), d.name) : jsonSchema(d),
   ...(OUTPUTS[d.name] && !COMPACT ? { outputSchema: outSchema(OUTPUTS[d.name]) } : {}),
+  // destructive/idempotent hints left out when they equal the MCP defaults (true / false)
   annotations: {
     readOnlyHint: !!d.readOnly,
-    destructiveHint: !!d.destructive,
-    idempotentHint: !!d.readOnly,
+    ...(d.readOnly ? { idempotentHint: true } : {}),
+    ...(!d.readOnly && !d.destructive ? { destructiveHint: false } : {}),
     openWorldHint: false,
   },
   // No per-tool icons: 79 copies of a 14 KB data URI made tools/list 1.2 MB. The icon
