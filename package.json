@@ -57,7 +57,8 @@
     "test:stress": "node test/stress.test.mjs",
     "typecheck": "tsc -p tsconfig.json --noEmit",
     "check:es3": "node scripts/check-es3.mjs",
-    "manifest": "node scripts/gen-manifest.mjs"
+    "manifest": "node scripts/gen-manifest.mjs",
+    "docs": "node scripts/gen-docs.mjs"
   },
   "dependencies": {
     "@modelcontextprotocol/sdk": "^1.32.2",
