@@ -1113,6 +1113,32 @@
         return out;
     };
 
+    // Ready-to-use property paths of one shape group (re-resolved by match name: AE
+    // invalidates property objects when siblings are added).
+    function shapePaths(grp) {
+        var o = { group: propPath(grp) };
+        var vecs = grp.property("ADBE Vectors Group");
+        function first(mn) { for (var i = 1; i <= vecs.numProperties; i++) if (vecs.property(i).matchName === mn) return vecs.property(i); return null; }
+        var rect = first("ADBE Vector Shape - Rect"), ell = first("ADBE Vector Shape - Ellipse"), star = first("ADBE Vector Shape - Star"), path = first("ADBE Vector Shape - Group");
+        if (rect) { o.size = propPath(rect.property("ADBE Vector Rect Size")); o.roundness = propPath(rect.property("ADBE Vector Rect Roundness")); }
+        if (ell) o.size = propPath(ell.property("ADBE Vector Ellipse Size"));
+        if (star) { o.points = propPath(star.property("ADBE Vector Star Points")); o.outerRadius = propPath(star.property("ADBE Vector Star Outer Radius")); }
+        if (path) o.path = propPath(path.property("ADBE Vector Shape"));
+        var fill = first("ADBE Vector Graphic - Fill");
+        if (fill) { o.fillColor = propPath(fill.property("ADBE Vector Fill Color")); o.fillOpacity = propPath(fill.property("ADBE Vector Fill Opacity")); }
+        var stroke = first("ADBE Vector Graphic - Stroke");
+        if (stroke) { o.strokeColor = propPath(stroke.property("ADBE Vector Stroke Color")); o.strokeWidth = propPath(stroke.property("ADBE Vector Stroke Width")); }
+        var trim = first("ADBE Vector Filter - Trim");
+        if (trim) { o.trimStart = propPath(trim.property("ADBE Vector Trim Start")); o.trimEnd = propPath(trim.property("ADBE Vector Trim End")); o.trimOffset = propPath(trim.property("ADBE Vector Trim Offset")); }
+        var rep = first("ADBE Vector Filter - Repeater");
+        if (rep) o.repeaterCopies = propPath(rep.property("ADBE Vector Repeater Copies"));
+        var tr = grp.property("ADBE Vector Transform Group");
+        o.position = propPath(tr.property("ADBE Vector Position"));
+        o.scale = propPath(tr.property("ADBE Vector Scale"));
+        o.rotation = propPath(tr.property("ADBE Vector Rotation"));
+        return o;
+    }
+
     function addShapeGroup(contents, s, comp, ctx) {
         var grp = contents.addProperty("ADBE Vector Group");
         if (s.name) grp.name = s.name;
@@ -1186,6 +1212,7 @@
         }
         if (s.offset) grp.property("ADBE Vector Transform Group").property("ADBE Vector Position").setValue(s.offset);
         if (has(s, "rotation")) grp.property("ADBE Vector Transform Group").property("ADBE Vector Rotation").setValue(s.rotation);
+        if (ctx) ctx.paths.push(shapePaths(grp));
         return grp;
     }
 
@@ -1200,7 +1227,7 @@
             for (var key in a) if (a.hasOwnProperty(key) && key !== "name" && key !== "rotation" && key !== "position" && key !== "comp") one[key] = a[key];
             shapes = [one];
         }
-        var ctx = { ramps: [] };
+        var ctx = { ramps: [], paths: [] };
         for (var i = 0; i < shapes.length; i++) addShapeGroup(contents, shapes[i], c, ctx);
         var warnings = [];
         if (ctx.ramps.length) {
@@ -1224,6 +1251,8 @@
         if (!has(a, "position")) a.position = [c.width / 2, c.height / 2];
         placeLayer(c, l, a);
         var res = summary(l);
+        // paths of every shape, ready for set_property / set_keyframes (e.g. paths.trimEnd)
+        if (!A._lean) res.shapes = ctx.paths;
         if (warnings.length) res.warning = warnings.join(" ");
         return res;
     };

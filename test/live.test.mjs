@@ -91,11 +91,13 @@ await call("create_solid_layer", { comp: C, name: "BG", color: "#1b2a41" });
 await call("create_solid_layer", { comp: C, name: "Grade", adjustment: true });
 await call("create_text_layer", { comp: C, text: "AFTER EFFECTS MCP", font: "Arial-BoldMT", fontSize: 120, color: "#ffffff", tracking: 40, name: "Title" }, { check: (d) => (d.type === "text" ? true : "type") });
 await call("create_text_layer", { comp: C, text: "fonte inexistente", font: "NoSuchFont-XYZ", fontSize: 50, position: [960, 700], name: "Sub" }, { check: (d) => (d.warning ? true : "expected font warning") });
-await call("create_shape_layer", { comp: C, name: "Shapes", position: [960, 860], shapes: [
+const shapesRes = await call("create_shape_layer", { comp: C, name: "Shapes", position: [960, 860], shapes: [
   { type: "rectangle", size: [700, 8], roundness: 4, fill: "#ff3366", trimPaths: { start: 0, end: 100 } },
   { type: "ellipse", size: 60, fill: "#33ccff", offset: [-400, 0] },
   { type: "star", points: 5, outerRadius: 40, fill: "#ffcc00", stroke: "#ffffff", strokeWidth: 3, offset: [400, 0] },
 ] });
+await call("set_keyframes", { comp: C, layer: "Shapes", property: shapesRes.data?.shapes?.[0]?.trimEnd, keyframes: [{ time: 0, value: 0 }, { time: 1, value: 100 }] }, { check: (d) => (d.numKeys === 2 && /Trim/.test(d.path) ? true : JSON.stringify(d).slice(0, 200)) });
+await call("set_property", { comp: C, layer: "Shapes", property: shapesRes.data?.shapes?.[2]?.strokeWidth, value: 6 }, { check: (d) => (d.value === 6 ? true : JSON.stringify(d)) });
 await call("create_shape_layer", { comp: C, type: "polygon", points: 6, size: 160, fill: "#7a5cff", position: [250, 250], rotation: 15, name: "Hex" }, { check: (d) => (Math.round(d.transform.rotation) === 15 ? true : "rotation applied twice? " + d.transform.rotation) });
 await call("create_null_layer", { comp: C, name: "Controller", childLayers: ["Shapes"] });
 await call("create_camera", { comp: C, name: "Cam", zoom: 1800 }, { check: (d) => (JSON.stringify(d.camera.position) === "[960,540,-1800]" && d.camera.zoom === 1800 ? true : JSON.stringify(d.camera)) });
