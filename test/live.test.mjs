@@ -63,6 +63,9 @@ await call("create_null_layer", { comp: C, name: "Controller", childLayers: ["Sh
 await call("create_camera", { comp: C, name: "Cam", focalLength: 50 });
 await call("create_light", { comp: C, name: "Key", lightType: "spot", color: "#fff4e0", intensity: 120 });
 await call("list_layers", { comp: C }, { check: (d) => (d.count === 9 ? true : "count " + d.count) });
+await call("create_text_layer", { comp: C, text: "x".repeat(100000), fontSize: 10, name: "Huge" }, { check: (d) => (JSON.stringify(d).length < 2048 && d.textTruncated && d.textLength === 100000 ? true : "response " + JSON.stringify(d).length + " bytes") });
+await call("list_layers", { comp: C, limit: 3, offset: 1 }, { check: (d) => (d.count === 3 && d.total === 10 && d.truncated && d.layers[0].index === 2 ? true : JSON.stringify({ c: d.count, t: d.total, tr: d.truncated })) });
+await call("delete_layers", { comp: C, layers: ["Huge"] });
 
 await call("set_keyframes", { comp: C, layer: "Title", property: "Scale", easing: "easy-ease", keyframes: [{ time: 0, value: [80, 80] }, { time: 1, value: [100, 100] }] }, { check: (d) => (d.numKeys === 2 ? true : "keys") });
 await call("set_keyframes", { comp: C, layer: "Title", property: "Transform/Position", keyframes: [{ time: 0, value: [960, 600] }, { time: 1.2, value: [960, 520], easeIn: { influence: 90 }, easeOut: { influence: 10 } }] });

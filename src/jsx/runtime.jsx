@@ -556,10 +556,21 @@
             o.transform = { position: serValue(tg.property("ADBE Position").value), scale: serValue(tg.property("ADBE Scale").value), rotation: serValue(tg.property("ADBE Rotate Z").value), opacity: serValue(tg.property("ADBE Opacity").value), anchorPoint: serValue(tg.property("ADBE Anchor Point").value) };
         } catch (e2) { }
         try { var fx = l.property("ADBE Effect Parade"); if (fx && fx.numProperties) { o.effects = []; for (var i = 1; i <= fx.numProperties; i++) o.effects.push(fx.property(i).name); } } catch (e3) { }
-        if (l instanceof TextLayer) { try { o.text = l.property("ADBE Text Properties").property("ADBE Text Document").value.text; } catch (e4) { } }
+        if (l instanceof TextLayer) {
+            // summaries stay small: full text is in get_layer_details / get_property "Source Text"
+            try {
+                var txt = l.property("ADBE Text Properties").property("ADBE Text Document").value.text;
+                if (txt.length > 200) { o.text = txt.substr(0, 200); o.textLength = txt.length; o.textTruncated = true; } else o.text = txt;
+            } catch (e4) { }
+        }
         return o;
     }
     A.layerSummary = layerSummary;
+
+    function page(list, a) {
+        var off = Math.max(0, def(a.offset, 0)), lim = Math.max(1, Math.min(1000, def(a.limit, 200)));
+        return { list: list.slice(off, off + lim), offset: off, truncated: off + lim < list.length };
+    }
 
     function compSummary(c) {
         return { id: c.id, name: c.name, width: c.width, height: c.height, pixelAspect: c.pixelAspect, duration: round(c.duration), frameRate: round(c.frameRate, 3),
@@ -694,7 +705,8 @@
             try { o.usedIn = it.usedIn ? it.usedIn.length : 0; } catch (e2) { }
             out.push(o);
         }
-        return { count: out.length, items: out };
+        var pg = page(out, a);
+        return { count: pg.list.length, total: out.length, offset: pg.offset, truncated: pg.truncated, items: pg.list };
     };
 
     H.save_project = function (a) {
@@ -820,7 +832,9 @@
         var c = getComp(a.comp);
         var out = compSummary(c);
         out.layers = [];
-        for (var i = 1; i <= c.numLayers; i++) out.layers.push(layerSummary(c.layer(i)));
+        var maxL = Math.min(c.numLayers, def(a.layerLimit, 200));
+        for (var i = 1; i <= maxL; i++) out.layers.push(layerSummary(c.layer(i)));
+        if (maxL < c.numLayers) { out.layersTruncated = true; out.layersHint = "Showing " + maxL + " of " + c.numLayers + " layers; use list_layers with offset for the rest."; }
         out.motionBlur = c.motionBlur; out.shutterAngle = c.shutterAngle; out.renderer = c.renderer;
         try { out.markers = listMarkers(c.markerProperty); } catch (e) { }
         try { out.selectedLayers = []; for (var s = 0; s < c.selectedLayers.length; s++) out.selectedLayers.push(c.selectedLayers[s].index); } catch (e2) { }
@@ -1116,14 +1130,17 @@
 
     H.list_layers = function (a) {
         var c = getComp(a.comp);
-        var out = [];
+        var out = [], matched = [];
         for (var i = 1; i <= c.numLayers; i++) {
             var l = c.layer(i);
             if (a.type && layerType(l) !== a.type) continue;
             if (a.query && lower(l.name).indexOf(lower(a.query)) < 0) continue;
-            out.push(layerSummary(l));
+            matched.push(l);
         }
-        return { comp: c.name, count: out.length, layers: out };
+        // summarise only the requested page: layerSummary is the expensive part on big comps
+        var pg = page(matched, a);
+        for (var j = 0; j < pg.list.length; j++) out.push(layerSummary(pg.list[j]));
+        return { comp: c.name, count: out.length, total: matched.length, offset: pg.offset, truncated: pg.truncated, layers: out };
     };
 
     H.get_layer_details = function (a) {
