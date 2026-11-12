@@ -5288,7 +5288,16 @@
       "film-grain",
       "chromatic-aberration",
       "sharpen",
-      "posterize-time"
+      "posterize-time",
+      "color-balance",
+      "curves",
+      "levels",
+      "hue-saturation",
+      "tint",
+      "glitch-rgb-split",
+      "light-leak-simple",
+      "vignette-soft",
+      "bloom"
      ]
     },
     "params": {

@@ -31,6 +31,13 @@ function pixelAt(file, x, y) {
   return execFileSync("powershell", ["-NoProfile", "-Command", ps], { encoding: "utf8" }).trim().split(",").map(Number);
 }
 
+// Mean absolute RGB difference (0-255) of two same-size images on a 40x40 grid (Windows only; elsewhere 255).
+function meanDiff(a, b) {
+  if (process.platform !== "win32") return 255;
+  const ps = `Add-Type -AssemblyName System.Drawing; $a=[System.Drawing.Bitmap]::FromFile('${a.replace(/'/g, "''")}'); $b=[System.Drawing.Bitmap]::FromFile('${b.replace(/'/g, "''")}'); $s=0; $n=0; for($i=0;$i -lt 40;$i++){ for($j=0;$j -lt 40;$j++){ $x=[int](($a.Width-1)*$i/39); $y=[int](($a.Height-1)*$j/39); $p=$a.GetPixel($x,$y); $q=$b.GetPixel($x,$y); $s+=[math]::Abs($p.R-$q.R)+[math]::Abs($p.G-$q.G)+[math]::Abs($p.B-$q.B); $n+=3 } }; $a.Dispose(); $b.Dispose(); [string]::Format([cultureinfo]::InvariantCulture,'{0:0.00}',$s/$n)`;
+  return Number(execFileSync("powershell", ["-NoProfile", "-Command", ps], { encoding: "utf8" }).trim());
+}
+
 // Mean luminance (0-255) of an image, sampled on a 40x40 grid (Windows only; elsewhere 128).
 function meanLuma(file) {
   if (process.platform !== "win32") return 128;
@@ -546,6 +553,21 @@ await call("preview_contact_sheet", { comp: C, frames: 4, maxSize: 400 }, {
   const right1 = pixelAt(path.join(out, "mask-t1.png"), 560, 180)[0];
   results.push({ tool: "modify_mask animates the path", pass: left0 > 200 && left1 < 30 && right1 > 200, ms: 0, note: `left t0 ${left0}, left t1 ${left1}, right t1 ${right1}` });
   await call("modify_mask", { comp: mc.data?.id, layer: "M", mask: "Nope" }, { expectError: true });
+}
+// new effect templates: each one changes the frame (mean pixel difference)
+{
+  const ec = await call("create_composition", { name: COMP + " looks", width: 320, height: 180, duration: 1, backgroundColor: "#406080", open: false });
+  created.push(ec.data?.id);
+  await call("create_shape_layer", { comp: ec.data?.id, shapes: [{ type: "rectangle", size: [6, 200], fill: "#e04020", offset: [-156, 0], repeater: { copies: 27, offsetPosition: [12, 0] } }, { type: "ellipse", size: [90, 90], fill: "#f0f0a0", offset: [70, 0] }], name: "Art" });
+  await lumaAt(ec.data?.id, 0, "looks-base");
+  for (const template of ["color-balance", "curves", "levels", "hue-saturation", "tint", "glitch-rgb-split", "light-leak-simple", "vignette-soft", "bloom"]) {
+    await call("create_solid_layer", { comp: ec.data?.id, name: "FX", adjustment: true });
+    await call("apply_effect_template", { comp: ec.data?.id, layer: "FX", template }, { check: (d) => (d.results?.[0]?.added?.length ? true : JSON.stringify(d)) });
+    await lumaAt(ec.data?.id, 0, `looks-${template}`);
+    const diff = meanDiff(path.join(out, "looks-base.png"), path.join(out, `looks-${template}.png`));
+    results.push({ tool: `effect template ${template} changes the frame`, pass: diff > 2, ms: 0, note: `mean diff ${diff}` });
+    await call("delete_layers", { comp: ec.data?.id, layers: ["FX"] });
+  }
 }
 // text-fade-up must REVEAL the text: invisible before, fully visible after (pixel check)
 {

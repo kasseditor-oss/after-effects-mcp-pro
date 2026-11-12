@@ -2177,7 +2177,19 @@
         "neon": [["ADBE Glo2", { "ADBE Glo2-0002": 40, "ADBE Glo2-0003": 25, "ADBE Glo2-0004": 2 }], ["ADBE Glo2", { "ADBE Glo2-0002": 40, "ADBE Glo2-0003": 120, "ADBE Glo2-0004": 1 }]],
         "stroke-outline": [["ADBE Layer Styles Stroke", {}]],
         "sharpen": [["ADBE Sharpen", { "ADBE Sharpen-0001": 25 }]],
-        "posterize-time": [["ADBE Posterize Time", { "ADBE Posterize Time-0001": 12 }]]
+        "posterize-time": [["ADBE Posterize Time", { "ADBE Posterize Time-0001": 12 }]],
+        "color-balance": [["ADBE Color Balance 2", { "ADBE Color Balance 2-0004": 30, "ADBE Color Balance 2-0006": -25, "ADBE Color Balance 2-0007": 15, "ADBE Color Balance 2-0003": 15, "ADBE Color Balance 2-0010": 1 }]],
+        // the Curves effect's curve is not scriptable: a gentle contrast S is approximated with Levels
+        "curves": [["ADBE Easy Levels2", { "ADBE Easy Levels2-0003": 0.1, "ADBE Easy Levels2-0004": 0.88, "ADBE Easy Levels2-0005": 1 }]],
+        "levels": [["ADBE Easy Levels2", { "ADBE Easy Levels2-0003": 0.08, "ADBE Easy Levels2-0004": 0.9, "ADBE Easy Levels2-0005": 1.25 }]],
+        "hue-saturation": [["ADBE HUE SATURATION", { "ADBE HUE SATURATION-0004": 15, "ADBE HUE SATURATION-0005": 25 }]],
+        "tint": [["ADBE Tint", { "ADBE Tint-0001": [0.05, 0.05, 0.2], "ADBE Tint-0002": [1, 0.9, 0.7], "ADBE Tint-0003": 60 }]],
+        // no built-in per-channel offset works on flat comps (VR Chromatic Aberrations renders nothing):
+        // red and blue are smeared horizontally, which reads as an RGB split
+        "glitch-rgb-split": [["ADBE Channel Blur", { "ADBE Channel Blur-0001": 30, "ADBE Channel Blur-0003": 30, "ADBE Channel Blur-0006": 2 }]],
+        "light-leak-simple": [["ADBE 4ColorGradient", { "ADBE 4ColorGradient-0002": [1, 0.45, 0.1], "ADBE 4ColorGradient-0004": [0, 0, 0], "ADBE 4ColorGradient-0006": [0, 0, 0], "ADBE 4ColorGradient-0008": [1, 0.2, 0.35], "ADBE 4ColorGradient-0013": 45, "ADBE 4ColorGradient-0014": 5 }]],
+        "vignette-soft": [["CC Vignette", { "CS Vignette-0001": 70, "CS Vignette-0002": 100 }]],
+        "bloom": [["ADBE Glo2", { "ADBE Glo2-0002": 170, "ADBE Glo2-0003": 120, "ADBE Glo2-0004": 0.8 }]]
     };
     H.apply_effect_template = function (a) {
         var c = getComp(a.comp);
@@ -2190,9 +2202,12 @@
             var added = [];
             for (var j = 0; j < tpl.length; j++) {
                 if (tpl[j][0] === "ADBE Layer Styles Stroke") continue;
-                if (!parade.canAddProperty(tpl[j][0])) continue;
-                var fx = parade.addProperty(tpl[j][0]);
-                setEffectParams(fx, tpl[j][1]);
+                // [matchName, params, fallbackMatchName, fallbackParams]
+                var mn = tpl[j][0], mp = tpl[j][1];
+                if (!parade.canAddProperty(mn) && tpl[j][2]) { mn = tpl[j][2]; mp = tpl[j][3]; }
+                if (!parade.canAddProperty(mn)) continue;
+                var fx = parade.addProperty(mn);
+                setEffectParams(fx, mp);
                 if (j === tpl.length - 1 && a.params) setEffectParams(fx, a.params);
                 if (lower(a.template) === "vignette") { fx.remove(); fx = addVignette(layers[i]); }
                 added.push(fx ? fx.name : "vignette");
