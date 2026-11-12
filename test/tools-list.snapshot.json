@@ -1332,6 +1332,16 @@
       "justify"
      ]
     },
+    "caps": {
+     "type": "string",
+     "enum": [
+      "normal",
+      "all",
+      "small",
+      "all-small"
+     ],
+     "description": "Letter case style (fontCapsOption). allCaps:true is a shortcut for caps:'all'."
+    },
     "allCaps": {
      "type": "boolean"
     },
@@ -3737,6 +3747,16 @@
       "right",
       "justify"
      ]
+    },
+    "caps": {
+     "type": "string",
+     "enum": [
+      "normal",
+      "all",
+      "small",
+      "all-small"
+     ],
+     "description": "Letter case style (fontCapsOption). allCaps:true is a shortcut for caps:'all'."
     },
     "allCaps": {
      "type": "boolean"

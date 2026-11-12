@@ -262,6 +262,21 @@ await call("preview_contact_sheet", { comp: C, frames: 4, maxSize: 400 }, {
     check: (d) => (d.value.fauxBold === false && d.value.tracking === 0 && d.value.caps === "normal" ? true : JSON.stringify(d.value)),
   });
 }
+// caps through fontCapsOption (allCaps is read-only in AE 24+)
+{
+  const cc = await call("create_composition", { name: COMP + " caps", width: 640, height: 360, duration: 1, backgroundColor: "#000000", open: false });
+  created.push(cc.data?.id);
+  await call("create_text_layer", { comp: cc.data?.id, text: "abc", fontSize: 120, name: "C" });
+  const lower = await lumaAt(cc.data?.id, 0, "caps-normal");
+  await call("set_text", { comp: cc.data?.id, layer: "C", caps: "all" }, { check: (d) => (d.text.caps === "all" ? true : JSON.stringify(d.text)) });
+  const upper = await lumaAt(cc.data?.id, 0, "caps-all");
+  await call("set_text", { comp: cc.data?.id, layer: "C", allCaps: false }, { check: (d) => (d.text.caps === "normal" ? true : JSON.stringify(d.text)) });
+  const back = await lumaAt(cc.data?.id, 0, "caps-back");
+  // "ABC" covers more pixels than "abc"
+  const pass = upper > lower * 1.1 && Math.abs(back - lower) < 0.5;
+  results.push({ tool: "caps preview", pass, ms: 0, note: `abc ${lower}, ABC ${upper}, back ${back}` });
+  console.log(`${pass ? "PASS" : "FAIL"} caps preview: abc ${lower}, ABC ${upper}, back ${back}`);
+}
 // text-fade-up must REVEAL the text: invisible before, fully visible after (pixel check)
 {
   const fc = await call("create_composition", { name: COMP + " fade", width: 640, height: 360, duration: 3, backgroundColor: "#000000", open: false });
