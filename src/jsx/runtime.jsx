@@ -1206,21 +1206,24 @@
         var poi = def(a.pointOfInterest, [c.width / 2, c.height / 2, 0]);
         var l = c.layers.addCamera(def(a.name, "Camera"), [poi[0], poi[1]]);
         var tg = l.property("ADBE Transform Group");
-        if (has(a, "position")) tg.property("ADBE Position").setValue(a.position);
-        if (has(a, "pointOfInterest")) tg.property("ADBE Anchor Point").setValue(a.pointOfInterest);
         var co = l.property("ADBE Camera Options Group");
         if (has(a, "zoom")) co.property("ADBE Camera Zoom").setValue(a.zoom);
-        if (has(a, "focalLength")) {
-            // zoom = filmSize-based conversion; 36mm film width (full-frame)
-            var zoom = c.width * a.focalLength / 36;
-            co.property("ADBE Camera Zoom").setValue(zoom);
-        }
+        if (has(a, "focalLength")) co.property("ADBE Camera Zoom").setValue(c.width * a.focalLength / 36); // 36 mm film width
+        var zoom = co.property("ADBE Camera Zoom").value;
+        // Default: straight in front of the point of interest at the zoom distance, so the
+        // comp looks exactly as without a camera ([w/2, h/2, -zoom]); AE's own default put it
+        // at [0,0,...], which made any Position keyframe written from it inconsistent.
+        tg.property("ADBE Anchor Point").setValue(poi.length === 3 ? poi : [poi[0], poi[1], 0]);
+        tg.property("ADBE Position").setValue(has(a, "position") ? a.position : [poi[0], poi[1], -zoom]);
         if (has(a, "depthOfField")) co.property("ADBE Camera Depth of Field").setValue(a.depthOfField ? 1 : 0);
         if (has(a, "focusDistance")) co.property("ADBE Camera Focus Distance").setValue(a.focusDistance);
+        else co.property("ADBE Camera Focus Distance").setValue(zoom);
         if (has(a, "aperture")) co.property("ADBE Camera Aperture").setValue(a.aperture);
         if (has(a, "blurLevel")) co.property("ADBE Camera Blur Level").setValue(a.blurLevel);
-        if (a.oneNode) { try { l.autoOrient = AutoOrientType.NO_AUTO_ORIENT; tg.property("ADBE Anchor Point").expression = ""; } catch (e) { } }
-        return layerSummary(l);
+        if (a.oneNode) { try { l.autoOrient = AutoOrientType.NO_AUTO_ORIENT; } catch (e) { } }
+        var res = layerSummary(l);
+        res.camera = { position: serValue(tg.property("ADBE Position").value), pointOfInterest: serValue(tg.property("ADBE Anchor Point").value), zoom: round(zoom), focusDistance: round(co.property("ADBE Camera Focus Distance").value) };
+        return res;
     };
 
     H.create_light = function (a) {

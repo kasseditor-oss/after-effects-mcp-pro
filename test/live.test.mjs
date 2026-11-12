@@ -98,7 +98,10 @@ await call("create_shape_layer", { comp: C, name: "Shapes", position: [960, 860]
 ] });
 await call("create_shape_layer", { comp: C, type: "polygon", points: 6, size: 160, fill: "#7a5cff", position: [250, 250], rotation: 15, name: "Hex" }, { check: (d) => (Math.round(d.transform.rotation) === 15 ? true : "rotation applied twice? " + d.transform.rotation) });
 await call("create_null_layer", { comp: C, name: "Controller", childLayers: ["Shapes"] });
-await call("create_camera", { comp: C, name: "Cam", focalLength: 50 });
+await call("create_camera", { comp: C, name: "Cam", zoom: 1800 }, { check: (d) => (JSON.stringify(d.camera.position) === "[960,540,-1800]" && d.camera.zoom === 1800 ? true : JSON.stringify(d.camera)) });
+await call("get_properties_at_time", { comp: C, time: 0, requests: [{ layer: "Cam", properties: ["Position", "Point of Interest", "Zoom"] }] }, {
+  check: (d) => (JSON.stringify(d.results[0].values.Position) === "[960,540,-1800]" && JSON.stringify(d.results[0].values["Point of Interest"]) === "[960,540,0]" && d.results[0].values.Zoom === 1800 ? true : JSON.stringify(d.results[0].values)),
+});
 await call("create_light", { comp: C, name: "Key", lightType: "spot", color: "#fff4e0", intensity: 120 });
 await call("list_layers", { comp: C }, { check: (d) => (d.count === 9 ? true : "count " + d.count) });
 await call("create_text_layer", { comp: C, text: "x".repeat(100000), allowLargeText: true, fontSize: 10, name: "Huge" }, { check: (d) => (JSON.stringify(d).length < 2048 && d.textTruncated && d.textLength === 100000 ? true : "response " + JSON.stringify(d).length + " bytes") });
