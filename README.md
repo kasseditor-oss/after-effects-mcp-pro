@@ -23,17 +23,18 @@ It started from the most-starred After Effects MCP on GitHub ([Dakkshin/after-ef
 | Big projects | Full layer lists and texts in every answer | Long texts cut to 200 characters in summaries, paginated `list_layers` / `list_project_items`, compact JSON |
 | Long operations | Fixed wait, then a misleading error | `timeoutSeconds` on every tool, honest timeout messages, queued calls can be cancelled |
 
-## Tools (70)
+## Tools (79)
 
 - **Session:** `bridge_status`, `launch_after_effects`
-- **Project:** `get_project_info`, `list_project_items`, `save_project`, `open_project`, `new_project`, `import_files`, `create_folder`, `organize_items`, `modify_item`
+- **Project:** `get_project_info` (fast summary, `detail` for everything), `list_project_items`, `save_project`, `open_project`, `new_project`, `import_files`, `replace_footage`, `create_folder`, `organize_items`, `modify_item`, `remove_unused_footage`
 - **Compositions:** `list_compositions`, `get_composition`, `create_composition` (presets: 1080p, 4k, reels/tiktok, square…), `set_composition_settings`, `duplicate_composition`, `open_composition`, `precompose_layers`
 - **Layers:** `create_text_layer`, `create_shape_layer` (several shapes per layer, Trim Paths, Repeater), `create_solid_layer` (and adjustment layers), `create_null_layer`, `create_camera`, `create_light`, `add_item_to_comp`, `list_layers`, `get_layer_details`, `set_layer_properties` (one or many layers), `duplicate_layer`, `delete_layers`, `reorder_layer`, `set_parent`, `set_track_matte` (AE 2023+ API), `split_layer`, `sequence_layers`, `align_layers`, `set_text`
-- **Animation:** `get_property` and `set_property` (any property by path), `set_keyframes` (easing presets or custom ease), `remove_keyframes`, `set_expression` (reports expression errors), `check_expressions`, `animate_layer` (21 presets: fade, slide, pop, typewriter, text-fade-up, wiggle, bounce, loop…)
-- **Effects:** `list_available_effects`, `apply_effect` (by name or match name; parameters can take keyframes or expressions), `get_layer_effects`, `modify_effect`, `apply_effect_template` (18 looks), `apply_preset_file` (.ffx)
+- **Animation:** `get_property`, `get_properties_at_time` (many layers/properties in one call) and `set_property` (any property by path), `set_keyframes` (easing presets or custom ease), `remove_keyframes`, `set_expression` (reports expression errors), `check_expressions`, `animate_layer` (21 presets: fade, slide, pop, typewriter, text-fade-up, wiggle, bounce, loop…)
+- **Effects:** `list_available_effects`, `apply_effect` (by name or match name; parameters can take keyframes or expressions), `get_layer_effects`, `modify_effect`, `apply_effect_template` (18 looks), `list_presets` and `apply_preset_file` (.ffx)
+- **Essential Graphics:** `add_to_essential_graphics`, `list_essential_properties`, `set_essential_property`
 - **Masks and markers:** `add_mask`, `remove_masks`, `add_marker`, `list_markers`, `remove_markers`
 - **Render and preview:** `preview_frame`, `preview_contact_sheet`, `add_to_render_queue`, `get_render_queue`, `clear_render_queue`, `render_queue`, `render_in_background`, `get_background_render`
-- **Utility:** `list_fonts`, `get_selection`, `select_layers`, `undo`, `execute_menu_command`, `run_extendscript`, `batch`
+- **Utility:** `list_fonts`, `get_selection`, `select_layers`, `undo`, `begin_undo_group` / `end_undo_group`, `execute_menu_command`, `run_extendscript`, `batch`
 
 Every tool that runs inside After Effects accepts `timeoutSeconds`. `batch` runs up to 200 operations in one round trip and one undo step: a failure returns an error with the partial results, and `atomic: true` undoes the whole batch. Batches over 20 operations move the viewer off the comp while they run, which makes them several times faster.
 
@@ -93,7 +94,9 @@ Each tool links to the MCP App resource `ui://after-effects/activity.html`. Clie
 ## Tests
 
 ```bash
-npm test               # 13 unit tests, no After Effects needed (also run in CI)
+npm test               # 21 unit tests incl. the tools/list snapshot, no After Effects needed (also run in CI)
+npm run typecheck      # tsc --noEmit
+npm run check:es3      # every .jsx parses as ECMAScript 3
 npm run test:live      # ~100 end-to-end checks against a running After Effects; removes what it created
 npm run test:live:keep # same, but keeps the "MCP Test" comp for inspection
 npm run test:stress    # latency, parallel calls, unicode, huge text, big batches, timeouts

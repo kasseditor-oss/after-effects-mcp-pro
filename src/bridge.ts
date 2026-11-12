@@ -7,7 +7,9 @@ import { platform } from "./platform/index.js";
 
 const here = path.dirname(fileURLToPath(import.meta.url));
 
-export const SERVER_VERSION = "2.0.1";
+export const SERVER_VERSION = "2.1.0";
+/** Version of bridge/ae-mcp-pro-listener.jsx this server expects (bump both together). */
+export const LISTENER_VERSION = "2.0.1";
 
 export class AEError extends Error {
   constructor(message: string, public hint?: string, public code: string = "AE_ERROR") {
@@ -144,8 +146,8 @@ export class Bridge {
   /** Warning text when the installed listener is older/newer than this server. */
   listenerVersionWarning(): string | null {
     const hb = this.heartbeat();
-    if (!hb || hb.ageMs > 10_000 || hb.version === SERVER_VERSION) return null;
-    return `The After Effects listener is version ${hb.version} but the server is ${SERVER_VERSION}. Run "npm run install-ae" in the server folder to update it.`;
+    if (!hb || hb.ageMs > 10_000 || hb.version === LISTENER_VERSION) return null;
+    return `The After Effects listener is version ${hb.version} but this server (${SERVER_VERSION}) expects ${LISTENER_VERSION}. Run "npm run install-ae" in the server folder to update it.`;
   }
 
   heartbeat(): (Heartbeat & { ageMs: number }) | null {
