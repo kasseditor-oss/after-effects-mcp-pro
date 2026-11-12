@@ -150,6 +150,20 @@ await scenario("contact sheet, 12 frames (1080p comp)", async () => {
   return { ...st, kb: Math.max(...kb) };
 });
 
+await scenario("create_composition (open) then batch of 150 shapes", async () => {
+  const comp = JSON.parse((await call("create_composition", { name: "MCP Stress Open", preset: "1080p", open: true })).text);
+  const ops = Array.from({ length: 150 }, (_, i) => ({ tool: "create_shape_layer", args: { comp: comp.id, type: "ellipse", size: 30, position: [40 + (i % 40) * 45, 40 + Math.floor(i / 40) * 45], name: `O${i}` } }));
+  const r = await call("batch", { operations: ops });
+  const lc = await call("list_layers", { comp: comp.id, compact: true });
+  const full = await call("list_layers", { comp: comp.id });
+  await call("delete_layers", { comp: comp.id, layers: Array.from({ length: 150 }, (_, i) => i + 1), removeSources: true });
+  await call("modify_item", { item: comp.id, delete: true });
+  if (r.ms > 3000) { failures++; console.log(`  batch took ${r.ms} ms`); }
+  if (r.text.length > 10_000) { failures++; console.log(`  batch answer ${r.text.length} chars`); }
+  if (lc.text.length > 8_000) { failures++; console.log(`  compact list ${lc.text.length} chars`); }
+  return { batchMs: r.ms, batchChars: r.text.length, compactListChars: lc.text.length, fullListChars: full.text.length };
+});
+
 await scenario("get_project_info with ~50 comps", async () => {
   const made = JSON.parse((await call("run_extendscript", { code: "var ids=[]; for (var i=0;i<50;i++) ids.push(app.project.items.addComp('MCP Stress PI '+i,640,360,1,5,30).id); return ids;" })).text).result;
   const ms = [];

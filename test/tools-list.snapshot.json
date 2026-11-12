@@ -762,6 +762,17 @@
      ],
      "description": "Composition name or numeric item id. Omit to use the active composition."
     },
+    "compact": {
+     "type": "boolean",
+     "description": "Only index, id, name, type, inPoint/outPoint (omitted when the layer spans the whole comp) and parent per layer."
+    },
+    "fields": {
+     "type": "array",
+     "items": {
+      "type": "string"
+     },
+     "description": "Pick layer fields, e.g. ['name','transform','effects']."
+    },
     "layerLimit": {
      "type": "integer",
      "minimum": 0,
@@ -2815,6 +2826,17 @@
       }
      ],
      "description": "Composition name or numeric item id. Omit to use the active composition."
+    },
+    "compact": {
+     "type": "boolean",
+     "description": "Only index, id, name, type, inPoint/outPoint (omitted when the layer spans the whole comp) and parent per layer."
+    },
+    "fields": {
+     "type": "array",
+     "items": {
+      "type": "string"
+     },
+     "description": "Pick layer fields, e.g. ['name','transform','effects']."
     },
     "limit": {
      "type": "integer",
@@ -6739,6 +6761,10 @@
     "atomic": {
      "type": "boolean",
      "description": "Revert every operation if any fails."
+    },
+    "verbose": {
+     "type": "boolean",
+     "description": "Full result of every operation. Default false: each entry is {index, tool, ok, id, name} (plus error/warning)."
     },
     "parkViewer": {
      "type": "boolean",

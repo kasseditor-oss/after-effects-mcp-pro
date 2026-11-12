@@ -616,9 +616,36 @@
     }
     A.layerSummary = layerSummary;
 
+    // compact: index, id, name, type, in/out, parent. fields: any subset of the full summary.
+    var COMPACT = ["index", "id", "name", "type", "inPoint", "outPoint", "parent"];
+    function shapeLayer(l, a) {
+        if (!a.compact && !a.fields) return layerSummary(l);
+        var keys = a.fields || COMPACT;
+        var full = { index: l.index, id: l.id, name: l.name, type: layerType(l), inPoint: round(l.inPoint), outPoint: round(l.outPoint) };
+        if (l.parent) full.parent = l.parent.index;
+        var needFull = false;
+        for (var i = 0; i < keys.length; i++) if (!full.hasOwnProperty(keys[i]) && keys[i] !== "parent") needFull = true;
+        if (needFull) { var ls = layerSummary(l); for (var k in ls) if (ls.hasOwnProperty(k) && !full.hasOwnProperty(k)) full[k] = ls[k]; }
+        var o = {};
+        for (var j = 0; j < keys.length; j++) if (full[keys[j]] !== undefined) o[keys[j]] = full[keys[j]];
+        // compact: in/out omitted when the layer spans the whole comp (the common case)
+        if (a.compact && !a.fields) {
+            var cd = l.containingComp.duration;
+            if (Math.abs(l.inPoint) < 1e-6 && Math.abs(l.outPoint - cd) < 1e-6) { delete o.inPoint; delete o.outPoint; }
+        }
+        return o;
+    }
+
     function page(list, a) {
         var off = Math.max(0, def(a.offset, 0)), lim = Math.max(1, Math.min(1000, def(a.limit, 200)));
         return { list: list.slice(off, off + lim), offset: off, truncated: off + lim < list.length };
+    }
+
+    // Inside a non-verbose batch, create/edit tools skip the full layer summary: it costs
+    // property reads on every operation and made batch answers tens of KB.
+    function summary(l) {
+        if (A._lean) return { index: l.index, id: l.id, name: l.name, type: layerType(l) };
+        return layerSummary(l);
     }
 
     function compSummary(c) {
@@ -890,7 +917,7 @@
         var out = compSummary(c);
         out.layers = [];
         var maxL = Math.min(c.numLayers, def(a.layerLimit, 200));
-        for (var i = 1; i <= maxL; i++) out.layers.push(layerSummary(c.layer(i)));
+        for (var i = 1; i <= maxL; i++) out.layers.push(shapeLayer(c.layer(i), a));
         if (maxL < c.numLayers) { out.layersTruncated = true; out.layersHint = "Showing " + maxL + " of " + c.numLayers + " layers; use list_layers with offset for the rest."; }
         out.motionBlur = c.motionBlur; out.shutterAngle = c.shutterAngle; out.renderer = c.renderer;
         try { out.markers = listMarkers(c.markerProperty); } catch (e) { }
@@ -1037,7 +1064,7 @@
         }
         if (!has(a, "position")) a.position = [c.width / 2, c.height / 2];
         placeLayer(c, l, a);
-        var res = layerSummary(l);
+        var res = summary(l);
         res.anchor = a.anchor;
         res.appliedFont = p.value.font;
         res.caps = capsName(p.value);
@@ -1182,7 +1209,7 @@
         l.name = def(a.name, "Shape " + (shapes[0].type || "rectangle"));
         if (!has(a, "position")) a.position = [c.width / 2, c.height / 2];
         placeLayer(c, l, a);
-        var res = layerSummary(l);
+        var res = summary(l);
         if (warnings.length) res.warning = warnings.join(" ");
         return res;
     };
@@ -1193,7 +1220,7 @@
         var l = c.layers.addSolid(col, def(a.name, a.adjustment ? "Adjustment Layer" : "Solid"), def(a.width, c.width), def(a.height, c.height), c.pixelAspect, c.duration);
         if (a.adjustment) l.adjustmentLayer = true;
         placeLayer(c, l, a);
-        return layerSummary(l);
+        return summary(l);
     };
 
     H.create_null_layer = function (a) {
@@ -1202,7 +1229,7 @@
         if (!has(a, "name")) a.name = "Null";
         placeLayer(c, l, a);
         if (a.childLayers) { var ch = getLayers(c, a.childLayers); for (var i = 0; i < ch.length; i++) ch[i].parent = l; }
-        return layerSummary(l);
+        return summary(l);
     };
 
     H.create_camera = function (a) {
@@ -1225,7 +1252,7 @@
         if (has(a, "aperture")) co.property("ADBE Camera Aperture").setValue(a.aperture);
         if (has(a, "blurLevel")) co.property("ADBE Camera Blur Level").setValue(a.blurLevel);
         if (a.oneNode) { try { l.autoOrient = AutoOrientType.NO_AUTO_ORIENT; } catch (e) { } }
-        var res = layerSummary(l);
+        var res = summary(l);
         res.camera = { position: serValue(tg.property("ADBE Position").value), pointOfInterest: serValue(tg.property("ADBE Anchor Point").value), zoom: round(zoom), focusDistance: round(co.property("ADBE Camera Focus Distance").value) };
         return res;
     };
@@ -1243,7 +1270,7 @@
         if (has(a, "castsShadows")) try { lo.property("ADBE Light Casts Shadows").setValue(a.castsShadows ? 1 : 0); } catch (e3) { }
         if (has(a, "position")) l.property("ADBE Transform Group").property("ADBE Position").setValue(a.position);
         if (has(a, "pointOfInterest")) try { l.property("ADBE Transform Group").property("ADBE Anchor Point").setValue(a.pointOfInterest); } catch (e4) { }
-        return layerSummary(l);
+        return summary(l);
     };
 
     H.add_item_to_comp = function (a) {
@@ -1259,7 +1286,7 @@
             l.property("ADBE Transform Group").property("ADBE Scale").setValue([s, s]);
             l.property("ADBE Transform Group").property("ADBE Position").setValue([c.width / 2, c.height / 2]);
         }
-        return layerSummary(l);
+        return summary(l);
     };
 
     H.list_layers = function (a) {
@@ -1273,7 +1300,7 @@
         }
         // summarise only the requested page: layerSummary is the expensive part on big comps
         var pg = page(matched, a);
-        for (var j = 0; j < pg.list.length; j++) out.push(layerSummary(pg.list[j]));
+        for (var j = 0; j < pg.list.length; j++) out.push(shapeLayer(pg.list[j], a));
         return { comp: c.name, count: out.length, total: matched.length, offset: pg.offset, truncated: pg.truncated, layers: out };
     };
 
@@ -1393,7 +1420,7 @@
         else if (pos === "after") l.moveAfter(getLayer(t.comp, a.relativeTo));
         else if (pos === "index") { var dst = getLayer(t.comp, a.index); if (dst !== l) { if (dst.index < l.index) l.moveBefore(dst); else l.moveAfter(dst); } }
         else fail("Unknown position '" + a.position + "'");
-        return layerSummary(l);
+        return summary(l);
     };
 
     H.set_parent = function (a) {
@@ -1423,7 +1450,7 @@
             if (a.matteLayer !== undefined) { var m = getLayer(t.comp, a.matteLayer); m.moveBefore(l); }
             l.trackMatteType = type;
         }
-        return layerSummary(l);
+        return summary(l);
     };
 
     H.split_layer = function (a) {
@@ -2311,13 +2338,27 @@
     H.batch = function (a) {
         var out = [], failed = 0, stoppedAt = null, firstHint = null;
         var parked = a.operations.length > 20 && a.parkViewer !== false ? parkViewer() : null;
+        A._lean = !a.verbose;
         try {
         for (var i = 0; i < a.operations.length; i++) {
             var op = a.operations[i];
             var h = H[op.tool];
             if (!h || op.tool === "batch") fail("Unknown tool in batch: " + op.tool);
             if (a.operations.length >= 10) A.progress(i, a.operations.length, op.tool);
-            try { out.push({ index: i, tool: op.tool, ok: true, result: h(def(op.args, {})) }); }
+            try {
+                var r = h(def(op.args, {}));
+                if (a.verbose) out.push({ index: i, tool: op.tool, ok: true, result: r });
+                else {
+                    // compact: enough to address what was made (id/name), nothing else
+                    var e = { index: i, tool: op.tool, ok: true };
+                    if (r && typeof r === "object") {
+                        if (r.id !== undefined) e.id = r.id;
+                        if (r.name !== undefined) e.name = r.name;
+                        if (r.warning) e.warning = r.warning;
+                    }
+                    out.push(e);
+                }
+            }
             catch (e) {
                 failed++;
                 out.push({ index: i, tool: op.tool, ok: false, error: e.toString().replace(/^Error: /, "") });
@@ -2325,8 +2366,13 @@
                 if (!a.continueOnError) { stoppedAt = i; break; }
             }
         }
-        } finally { unparkViewer(parked); }
+        } finally { A._lean = false; unparkViewer(parked); }
         var res = { ok: failed === 0, failed: failed, stoppedAt: stoppedAt, executed: out.length, total: a.operations.length, results: out };
+        if (!a.verbose && out.length > 1) {
+            var same = true;
+            for (var q = 1; q < out.length && same; q++) if (out[q].tool !== out[0].tool) same = false;
+            if (same) { res.tool = out[0].tool; for (q = 0; q < out.length; q++) delete out[q].tool; }
+        }
         if (firstHint) res.hint = firstHint;
         // atomic: ask the runner to undo the whole batch after its undo group closes
         if (failed && a.atomic) { res.rolledBack = true; A._rollback = true; }
