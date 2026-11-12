@@ -195,3 +195,21 @@ test("an outdated listener is reported on the first call and in bridge_status", 
   assert.ok(st.diagnostics.calls >= 2 && st.diagnostics.latencyMs.p95 !== null);
   await client.close();
 });
+
+test("cancelling a queued call removes it before After Effects runs it", async () => {
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), "aemcp-cancel-"));
+  // heartbeat only: the fake AE never consumes the queue
+  const beat = setInterval(() => fs.writeFileSync(path.join(dir, "heartbeat.json"), JSON.stringify({ time: Date.now(), version: "2.0.1", ae: "fake", paused: false, executed: 0, project: "" })), 50);
+  await new Promise((r) => setTimeout(r, 80));
+  const client = await connect({ AE_MCP_BRIDGE_DIR: dir });
+  const ac = new AbortController();
+  const pending = client.callTool({ name: "list_compositions", arguments: {} }, undefined, { signal: ac.signal }).catch((e) => e);
+  await new Promise((r) => setTimeout(r, 400));
+  assert.equal(fs.readdirSync(path.join(dir, "queue")).filter((f) => f.endsWith(".jsx")).length, 1, "command queued");
+  ac.abort();
+  await pending;
+  await new Promise((r) => setTimeout(r, 400));
+  clearInterval(beat);
+  assert.equal(fs.readdirSync(path.join(dir, "queue")).length, 0, "queue emptied after cancel");
+  await client.close();
+});

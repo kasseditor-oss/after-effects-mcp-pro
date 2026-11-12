@@ -23,6 +23,8 @@ export interface CallOptions {
   undo?: boolean;
   /** The tool accepts timeoutSeconds, so timeout errors can suggest it. */
   timeoutParam?: boolean;
+  /** Client cancellation (MCP request signal). Only calls that have not started in AE can be cancelled. */
+  signal?: AbortSignal;
   /** Internal: this call is the automatic resend after an I/O error. */
   isRetry?: boolean;
 }
@@ -205,6 +207,7 @@ export class Bridge {
   }
 
   private async callNow<T>(tool: string, args: Record<string, unknown>, opts: CallOptions): Promise<T> {
+    if (opts.signal?.aborted) throw new AEError("Cancelled before it was sent to After Effects", "Nothing was changed.", "CANCELLED");
     const mode = this.chooseMode();
     this.lastMode = mode;
     const id = crypto.randomBytes(6).toString("hex");
@@ -225,7 +228,7 @@ export class Bridge {
 
     const t0 = Date.now();
     this.stats.calls++;
-    const raw = await this.waitForResult(resultPath, timeoutMs, mode, id, !!opts.timeoutParam);
+    const raw = await this.waitForResult(resultPath, timeoutMs, mode, id, !!opts.timeoutParam, opts.signal);
     this.stats.latencies.push(Date.now() - t0);
     if (this.stats.latencies.length > 50) this.stats.latencies.shift();
     let res: any;
@@ -273,7 +276,7 @@ export class Bridge {
     });
   }
 
-  private async waitForResult(resultPath: string, timeoutMs: number, mode: Mode, id: string, timeoutParam = false): Promise<string> {
+  private async waitForResult(resultPath: string, timeoutMs: number, mode: Mode, id: string, timeoutParam = false, signal?: AbortSignal): Promise<string> {
     const start = Date.now();
     let delay = 15;
     while (Date.now() - start < timeoutMs) {
@@ -287,6 +290,16 @@ export class Bridge {
       }
       await sleep(delay);
       delay = Math.min(100, delay + 10);
+      if (signal?.aborted) {
+        const qdir = path.join(this.dir, "queue");
+        const queued = fs.readdirSync(qdir).filter((f) => f.includes(id) && f.endsWith(".jsx"));
+        if (mode === "listener" && queued.length) {
+          for (const f of queued) fs.rmSync(path.join(qdir, f), { force: true });
+          throw new AEError("Cancelled: the command was removed from the queue before After Effects started it", "Nothing was changed.", "CANCELLED");
+        }
+        // ExtendScript cannot be interrupted once it runs: stop waiting, AE finishes on its own
+        throw new AEError("Cancelled while After Effects was already running the command", "AE will finish it and apply the change; check the project state.", "CANCELLED");
+      }
       // AE closed mid-wait: fail fast. A stale heartbeat alone is NOT death: the listener
       // cannot beat while AE executes a long command (ExtendScript is single-threaded).
       if (Date.now() - start > 3000 && Date.now() - this.lastAliveCheck > 2000) {

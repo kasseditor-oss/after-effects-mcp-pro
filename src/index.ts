@@ -289,8 +289,8 @@ async function nodeTool(name: string, a: any): Promise<CallToolResult> {
 
 // ------------------------------------------------------------------ dispatcher
 let versionChecked = false;
-server.setRequestHandler(CallToolRequestSchema, async (req): Promise<CallToolResult> => {
-  const result = await dispatch(req);
+server.setRequestHandler(CallToolRequestSchema, async (req, extra): Promise<CallToolResult> => {
+  const result = await dispatch(req, extra.signal);
   if (!versionChecked && req.params.name !== "bridge_status") {
     versionChecked = true;
     const warn = bridge.listenerVersionWarning();
@@ -299,7 +299,7 @@ server.setRequestHandler(CallToolRequestSchema, async (req): Promise<CallToolRes
   return result;
 });
 
-async function dispatch(req: { params: { name: string; arguments?: Record<string, unknown> } }): Promise<CallToolResult> {
+async function dispatch(req: { params: { name: string; arguments?: Record<string, unknown> } }, signal?: AbortSignal): Promise<CallToolResult> {
   const name = req.params.name;
   const def = TOOLS.find((d) => d.name === name);
   if (!def) return err(`Unknown tool '${name}'`);
@@ -326,7 +326,7 @@ async function dispatch(req: { params: { name: string; arguments?: Record<string
     delete args.timeoutSeconds;
     // read-only tools change nothing: no undo group (it costs time and adds empty undo steps)
     const undo = name === "run_extendscript" ? args.undoable !== false : def.undo !== false && !def.readOnly;
-    const data: any = await bridge.call(def.handler ?? name, args, { timeoutMs, undo, timeoutParam: true });
+    const data: any = await bridge.call(def.handler ?? name, args, { timeoutMs, undo, timeoutParam: true, signal });
     if (name === "batch" && data?.failed > 0) {
       const first = data.results.find((r: any) => !r.ok);
       return {
