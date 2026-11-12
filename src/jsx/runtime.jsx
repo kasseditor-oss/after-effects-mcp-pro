@@ -179,9 +179,13 @@
 
     function findItem(ref, typeFilter) {
         if (ref === undefined || ref === null || ref === "") return null;
+        if (typeof ref === "number") {
+            try { var quick = app.project.itemByID(ref); if (quick) return quick; } catch (eq) { }
+        }
         var items = allItems();
         var i, it;
         if (typeof ref === "number") {
+            try { var byId = app.project.itemByID(ref); if (byId) return byId; } catch (e0) { }
             for (i = 0; i < items.length; i++) if (items[i].id === ref) return items[i];
             fail("Project item with id " + ref + " not found");
         }
@@ -2272,21 +2276,34 @@
 
     // A composition open in the viewer redraws after every change, which makes big
     // batches 2-4x slower. Park the viewer on a tiny empty comp, then restore it.
+    // A comp shown in a viewer (and its timeline) redraws after every change. Closing
+    // that viewer tab (File > Close, command 4, only while the comp viewer is the active
+    // panel) makes 150 layer creations ~9x faster; it is reopened afterwards. When the
+    // tab cannot be closed safely, a tiny empty comp is shown instead (~3x faster).
+    var CLOSE_PANEL = 4;
     function parkViewer() {
-        var shown = null;
+        var shown = null, v = null;
         try {
-            var v = app.activeViewer;
+            v = app.activeViewer;
+            // setActive() returns undefined in AE 2026: do not use its result
             if (v && v.type === ViewerType.VIEWER_COMPOSITION) { v.setActive(); if (app.project.activeItem instanceof CompItem) shown = app.project.activeItem; }
         } catch (e) { }
         if (!shown) return null;
+        try {
+            if (app.findMenuCommandId("Close") === CLOSE_PANEL) {
+                app.executeCommand(CLOSE_PANEL);
+                var now = app.activeViewer;
+                if (!now || now.type !== ViewerType.VIEWER_COMPOSITION || app.project.activeItem !== shown) return { shown: shown, tmp: null, closed: true };
+            }
+        } catch (e2) { }
         var tmp = app.project.items.addComp("__aemcp_parked__", 4, 4, 1, 1, 30);
         tmp.openInViewer();
-        return { shown: shown, tmp: tmp };
+        return { shown: shown, tmp: tmp, closed: false };
     }
     function unparkViewer(p) {
         if (!p) return;
         try { p.shown.openInViewer(); } catch (e) { }
-        try { p.tmp.remove(); } catch (e2) { }
+        if (p.tmp) { try { p.tmp.remove(); } catch (e2) { } }
     }
 
     var PARKABLE = { precompose_layers: 1, duplicate_composition: 1, sequence_layers: 1, run_extendscript: 1 };
