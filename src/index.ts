@@ -93,8 +93,12 @@ const CARD_ICON = (ICONS.find((i) => i.sizes?.includes("64x64")) ?? ICONS.find((
 
 server.setRequestHandler(ListToolsRequestSchema, async () => ({ tools: LISTED as any }));
 
+// Compact JSON saves ~15-25% of tokens on every response; AE_MCP_PRETTY=1 for humans.
+const PRETTY = process.env.AE_MCP_PRETTY === "1";
+const toJson = (data: unknown) => (PRETTY ? JSON.stringify(data, null, 1) : JSON.stringify(data));
+
 const ok = (data: unknown, extra: CallToolResult["content"] = []): CallToolResult => ({
-  content: [{ type: "text", text: typeof data === "string" ? data : JSON.stringify(data, null, 1) }, ...extra],
+  content: [{ type: "text", text: typeof data === "string" ? data : toJson(data) }, ...extra],
 });
 const err = (message: string, hint?: string): CallToolResult => ({
   isError: true,
@@ -348,7 +352,7 @@ server.setRequestHandler(ReadResourceRequestSchema, async (req) => {
   const tool = map[req.params.uri];
   if (!tool) throw new Error(`Unknown resource ${req.params.uri}`);
   const data = await bridge.call(tool, {}, { undo: false });
-  return { contents: [{ uri: req.params.uri, mimeType: "application/json", text: JSON.stringify(data, null, 1) }] };
+  return { contents: [{ uri: req.params.uri, mimeType: "application/json", text: toJson(data) }] };
 });
 
 // ------------------------------------------------------------------ prompts
