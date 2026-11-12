@@ -66,7 +66,7 @@ await scenario("unicode text round trip", async () => {
 });
 
 await scenario("100k-char text layer", async () => {
-  const r = await call("create_text_layer", { comp: C, text: "x".repeat(100_000), fontSize: 8, name: "Huge" });
+  const r = await call("create_text_layer", { comp: C, text: "x".repeat(100_000), allowLargeText: true, fontSize: 8, name: "Huge" });
   if (r.bytes > 2048) { failures++; console.log(`  response too big: ${r.bytes} bytes`); }
   await call("delete_layers", { comp: C, layers: ["Huge"] });
   return { ms: r.ms, bytes: r.bytes };

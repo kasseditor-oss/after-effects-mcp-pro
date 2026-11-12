@@ -226,3 +226,23 @@ test("a failed batch shows the hint once", async () => {
   assert.equal(r.content[0].text.split("990 more").length - 1, 1, "hint appears exactly once");
   await client.close();
 });
+
+test("texts over 20,000 characters are refused before reaching After Effects", async () => {
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), "aemcp-big-"));
+  let reached = 0;
+  const stop = fakeListener(dir, (p) => { reached++; return { ok: true, id: p.id, data: { name: "t" } }; });
+  await new Promise((r) => setTimeout(r, 60));
+  const client = await connect({ AE_MCP_BRIDGE_DIR: dir });
+  const huge = "x".repeat(20_001);
+  const r1 = await client.callTool({ name: "create_text_layer", arguments: { text: huge } });
+  const r2 = await client.callTool({ name: "set_text", arguments: { layer: 1, text: huge } });
+  const r3 = await client.callTool({ name: "batch", arguments: { operations: [{ tool: "create_text_layer", args: { text: huge } }] } });
+  assert.ok(r1.isError && r2.isError && r3.isError);
+  assert.match(r1.content[0].text, /allowLargeText/);
+  assert.equal(reached, 0, "nothing was sent to AE");
+  const ok = await client.callTool({ name: "create_text_layer", arguments: { text: huge, allowLargeText: true } });
+  stop();
+  assert.ok(!ok.isError);
+  assert.equal(reached, 1);
+  await client.close();
+});

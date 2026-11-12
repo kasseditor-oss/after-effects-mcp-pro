@@ -292,6 +292,14 @@ async function nodeTool(name: string, a: any): Promise<CallToolResult> {
 }
 
 // ------------------------------------------------------------------ dispatcher
+const MAX_TEXT = 20_000;
+function largeTextIssue(tool: string, a: any): string | null {
+  if ((tool === "create_text_layer" || tool === "set_text") && typeof a.text === "string" && a.text.length > MAX_TEXT && !a.allowLargeText) {
+    return `Text has ${a.text.length} characters; the limit is ${MAX_TEXT} without allowLargeText`;
+  }
+  return null;
+}
+
 let versionChecked = false;
 server.setRequestHandler(CallToolRequestSchema, async (req, extra): Promise<CallToolResult> => {
   const result = await dispatch(req, extra.signal);
@@ -312,6 +320,10 @@ async function dispatch(req: { params: { name: string; arguments?: Record<string
     return err(`Invalid arguments for ${name}: ${parsed.error.issues.map((i) => `${i.path.join(".") || "(root)"}: ${i.message}`).join("; ")}`);
   }
   const args: any = parsed.data;
+  // Huge texts freeze AE's UI for seconds: refuse them before they reach AE unless asked for.
+  const big = largeTextIssue(name, args) ?? (name === "batch" ? args.operations.map((op: any) => largeTextIssue(op.tool, op.args ?? {})).find(Boolean) : null);
+  if (big) return err(big, "Pass allowLargeText: true if you really need it (the default timeout then rises to 120 s), or split the text into several layers.");
+  if ((name === "create_text_layer" || name === "set_text") && args.allowLargeText && !args.timeoutSeconds) args.timeoutSeconds = 120;
   try {
     if (NODE_ONLY.has(name)) return await nodeTool(name, args);
     if (name === "run_extendscript" && process.env.AE_MCP_DISABLE_EVAL === "1") return err("run_extendscript is disabled (AE_MCP_DISABLE_EVAL=1)");
