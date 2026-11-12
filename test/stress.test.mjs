@@ -133,6 +133,23 @@ await scenario("run_extendscript 200 shapes, comp open: parkViewer off vs on", a
   return out;
 });
 
+await scenario("contact sheet, 12 frames (1080p comp)", async () => {
+  const comp = JSON.parse((await call("create_composition", { name: "MCP Stress Sheet", preset: "1080p", duration: 6, open: false })).text);
+  await call("create_solid_layer", { comp: comp.id, color: "#224466" });
+  await call("create_text_layer", { comp: comp.id, text: "SHEET" });
+  const ms = [], kb = [];
+  for (let i = 0; i < 3; i++) {
+    const r = await call("preview_contact_sheet", { comp: comp.id, frames: 12 });
+    ms.push(r.ms);
+    kb.push(Math.round(r.res.content.find((c) => c.type === "image").data.length * 0.75 / 1024));
+  }
+  await call("delete_layers", { comp: comp.id, layers: [1, 2], removeSources: true });
+  await call("modify_item", { item: comp.id, delete: true });
+  const st = stats(ms);
+  if (st.median > 4000 || Math.max(...kb) > 200) { failures++; console.log(`  contact sheet ${st.median} ms, ${Math.max(...kb)} KB`); }
+  return { ...st, kb: Math.max(...kb) };
+});
+
 await scenario("get_project_info with ~50 comps", async () => {
   const made = JSON.parse((await call("run_extendscript", { code: "var ids=[]; for (var i=0;i<50;i++) ids.push(app.project.items.addComp('MCP Stress PI '+i,640,360,1,5,30).id); return ids;" })).text).result;
   const ms = [];
