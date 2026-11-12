@@ -373,6 +373,27 @@ await call("preview_contact_sheet", { comp: C, frames: 4, maxSize: 400 }, {
   const l2 = await lumaAt(ta.data?.id, 2.5, "anim-b");
   results.push({ tool: "text animator changes the frame", pass: Math.abs(l1 - l2) > 0.5, ms: 0, note: `luma ${l1} -> ${l2}` });
 }
+// bezier easing: the value in the middle follows the cubic-bezier curve (within 5%)
+{
+  const bz = [0.2, 0.8, 0.2, 1];
+  const bc = await call("create_composition", { name: COMP + " bezier", width: 320, height: 180, duration: 2, open: false });
+  created.push(bc.data?.id);
+  await call("create_null_layer", { comp: bc.data?.id, name: "B" });
+  const kres = await call("set_keyframes", { comp: bc.data?.id, layer: "B", property: "Opacity", bezier: bz, keyframes: [{ time: 0, value: 0 }, { time: 1, value: 100 }] });
+  // expected value at x = 0.5 of the time: solve bx(s) = 0.5, then by(s)
+  const bez = (s, p1, p2) => 3 * (1 - s) ** 2 * s * p1 + 3 * (1 - s) * s * s * p2 + s ** 3;
+  let lo = 0, hi = 1;
+  for (let i = 0; i < 60; i++) { const m = (lo + hi) / 2; if (bez(m, bz[0], bz[2]) < 0.5) lo = m; else hi = m; }
+  const expected = bez(lo, bz[1], bz[3]) * 100;
+  const mid = (await call("get_properties_at_time", { comp: bc.data?.id, time: 0.5, requests: [{ layer: "B", properties: ["Opacity"] }] })).data?.results?.[0]?.values?.Opacity;
+  const pass = Math.abs(mid - expected) <= 5;
+  results.push({ tool: "bezier easing curve", pass, ms: 0, note: `value at 0.5s ${mid}, cubic-bezier expects ${expected.toFixed(2)}, eases ${JSON.stringify(kres.data?.eases)}` });
+  console.log(`${pass ? "PASS" : "FAIL"} bezier easing: got ${mid}, expected ${expected.toFixed(2)}; eases ${JSON.stringify(kres.data?.eases)}`);
+  // spatial tangents on a position path
+  await call("set_keyframes", { comp: bc.data?.id, layer: "B", property: "Position", keyframes: [{ time: 0, value: [40, 90], spatialOut: [80, -80] }, { time: 1, value: [280, 90], spatialIn: [-80, -80] }] }, { check: (d) => (d.numKeys === 2 ? true : JSON.stringify(d)) });
+  const arc = (await call("get_properties_at_time", { comp: bc.data?.id, time: 0.5, requests: [{ layer: "B", properties: ["Position"] }] })).data?.results?.[0]?.values?.Position;
+  results.push({ tool: "spatial tangents bend the path", pass: arc && arc[1] < 80, ms: 0, note: `mid position ${JSON.stringify(arc)}` });
+}
 // text-fade-up must REVEAL the text: invisible before, fully visible after (pixel check)
 {
   const fc = await call("create_composition", { name: COMP + " fade", width: 640, height: 360, duration: 3, backgroundColor: "#000000", open: false });

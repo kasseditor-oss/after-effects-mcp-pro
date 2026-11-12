@@ -4252,6 +4252,29 @@
        },
        "roving": {
         "type": "boolean"
+       },
+       "bezier": {
+        "type": "array",
+        "items": {
+         "type": "number"
+        },
+        "minItems": 4,
+        "maxItems": 4,
+        "description": "cubic-bezier(x1,y1,x2,y2) for the segment that STARTS at this key, like CSS."
+       },
+       "spatialIn": {
+        "type": "array",
+        "items": {
+         "type": "number"
+        },
+        "description": "Incoming spatial tangent (Position-like properties)."
+       },
+       "spatialOut": {
+        "type": "array",
+        "items": {
+         "type": "number"
+        },
+        "description": "Outgoing spatial tangent."
        }
       },
       "required": [
@@ -4277,6 +4300,19 @@
       "anticipate"
      ],
      "description": "Default easing for all keys."
+    },
+    "bezier": {
+     "type": "array",
+     "items": {
+      "type": "number"
+     },
+     "minItems": 4,
+     "maxItems": 4,
+     "description": "Default cubic-bezier(x1,y1,x2,y2) for every segment, e.g. [0.2,0.8,0.2,1]."
+    },
+    "roving": {
+     "type": "boolean",
+     "description": "Make the middle keys roving (spatial properties)."
     },
     "replace": {
      "type": "boolean"

@@ -739,7 +739,37 @@
         prop.setTemporalEaseAtKey(k, easeArr(prop, 0, isFirst ? 33.33 : inInf), easeArr(prop, 0, isLast ? 33.33 : outInf));
     }
 
-    function setKeys(prop, keys, easing) {
+    // CSS-style cubic-bezier(x1,y1,x2,y2) for the segment key k -> k+1. AE's temporal ease is
+    // the same curve in the value graph: outgoing handle at x1 of the duration with speed
+    // y1/x1 * average speed, incoming handle at (1 - x2) with speed (1-y2)/(1-x2) * average.
+    function bezierSegment(prop, k, b) {
+        var t0 = prop.keyTime(k), t1 = prop.keyTime(k + 1), dt = t1 - t0;
+        if (dt <= 0) return;
+        var v0 = prop.keyValue(k), v1 = prop.keyValue(k + 1);
+        var spatial = prop.propertyValueType === PropertyValueType.TwoD_SPATIAL || prop.propertyValueType === PropertyValueType.ThreeD_SPATIAL;
+        var deltas = [];
+        if (v0 instanceof Array) {
+            if (spatial) {
+                var d2 = 0;
+                for (var i = 0; i < v0.length; i++) d2 += (v1[i] - v0[i]) * (v1[i] - v0[i]);
+                deltas.push(Math.sqrt(d2)); // spatial speed is along the path
+            } else for (var j = 0; j < v0.length; j++) deltas.push(v1[j] - v0[j]);
+        } else deltas.push(v1 - v0);
+        var outInf = Math.max(0.1, Math.min(100, b[0] * 100)), inInf = Math.max(0.1, Math.min(100, (1 - b[2]) * 100));
+        var outK = b[0] > 0 ? b[1] / b[0] : 0, inK = b[2] < 1 ? (1 - b[3]) / (1 - b[2]) : 0;
+        var outs = [], ins = [];
+        for (var d = 0; d < deltas.length; d++) {
+            outs.push(new KeyframeEase(outK * deltas[d] / dt, outInf));
+            ins.push(new KeyframeEase(inK * deltas[d] / dt, inInf));
+        }
+        prop.setInterpolationTypeAtKey(k, prop.keyInInterpolationType(k), KeyframeInterpolationType.BEZIER);
+        prop.setInterpolationTypeAtKey(k + 1, KeyframeInterpolationType.BEZIER, prop.keyOutInterpolationType(k + 1));
+        prop.setTemporalEaseAtKey(k, prop.keyInTemporalEase(k), outs);
+        prop.setTemporalEaseAtKey(k + 1, ins, prop.keyOutTemporalEase(k + 1));
+    }
+
+    function setKeys(prop, keys, easing, opts) {
+        opts = opts || {};
         if (!prop.canVaryOverTime) fail("Property '" + prop.name + "' cannot be animated");
         var idx = [];
         for (var i = 0; i < keys.length; i++) {
@@ -754,6 +784,19 @@
             applyEase(prop, ki, easing, keys[i]);
             if (has(keys[i], "roving") && prop.isSpatial) { try { prop.setRovingAtKey(ki, !!keys[i].roving); } catch (e) { } }
         }
+        // bezier per segment (keyframe-level wins over the call default), then spatial tangents
+        for (i = 0; i < keys.length; i++) {
+            var kb = keys[i].bezier || opts.bezier;
+            var ka = prop.nearestKeyIndex(keys[i].time);
+            if (kb && ka < prop.numKeys) bezierSegment(prop, ka, kb);
+            if ((keys[i].spatialIn || keys[i].spatialOut) && prop.isSpatial) {
+                var dim = prop.keyValue(ka).length;
+                // tangents must have the property's dimension (2D layers still have [x,y,z])
+                var fit = function (v, fallback) { var o = []; for (var q = 0; q < dim; q++) o.push(v && q < v.length ? v[q] : (fallback ? fallback[q] : 0)); return o; };
+                prop.setSpatialTangentsAtKey(ka, fit(keys[i].spatialIn, prop.keyInSpatialTangent(ka)), fit(keys[i].spatialOut, prop.keyOutSpatialTangent(ka)));
+            }
+        }
+        if (opts.roving && prop.isSpatial) for (var r = 2; r < prop.numKeys; r++) { try { prop.setRovingAtKey(r, true); } catch (eR) { } }
         return prop.numKeys;
     }
     A.setKeys = setKeys;
@@ -1623,8 +1666,14 @@
         if (!isProperty(p)) fail("'" + a.property + "' is a property group");
         if (a.replace) while (p.numKeys > 0) p.removeKey(1);
         if (a.separateDimensions && p.dimensionsSeparated === false && p.matchName === "ADBE Position") p.dimensionsSeparated = true;
-        setKeys(p, a.keyframes, a.easing);
-        return propInfo(p, true);
+        setKeys(p, a.keyframes, a.easing, { bezier: a.bezier, roving: a.roving });
+        var info = propInfo(p, true);
+        if (a.bezier || a.keyframes[0].bezier) {
+            // report the resulting influences so callers can see the conversion
+            info.eases = [];
+            for (var k = 1; k <= p.numKeys; k++) info.eases.push({ key: k, inInfluence: round(p.keyInTemporalEase(k)[0].influence, 2), outInfluence: round(p.keyOutTemporalEase(k)[0].influence, 2) });
+        }
+        return info;
     };
 
     H.remove_keyframes = function (a) {

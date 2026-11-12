@@ -1791,6 +1791,26 @@
        },
        "roving": {
         "type": "boolean"
+       },
+       "bezier": {
+        "type": "array",
+        "items": {
+         "type": "number"
+        },
+        "minItems": 4,
+        "maxItems": 4
+       },
+       "spatialIn": {
+        "type": "array",
+        "items": {
+         "type": "number"
+        }
+       },
+       "spatialOut": {
+        "type": "array",
+        "items": {
+         "type": "number"
+        }
        }
       },
       "required": [
@@ -1815,6 +1835,17 @@
       "snap",
       "anticipate"
      ]
+    },
+    "bezier": {
+     "type": "array",
+     "items": {
+      "type": "number"
+     },
+     "minItems": 4,
+     "maxItems": 4
+    },
+    "roving": {
+     "type": "boolean"
     },
     "replace": {
      "type": "boolean"
