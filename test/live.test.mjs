@@ -24,6 +24,13 @@ const client = new Client({ name: "live-test", version: "1.0.0" });
 await client.connect(transport);
 
 const results = [];
+// [r,g,b] at x,y of an image file (Windows only).
+function pixelAt(file, x, y) {
+  if (process.platform !== "win32") return [0, 0, 0];
+  const ps = `Add-Type -AssemblyName System.Drawing; $b=[System.Drawing.Bitmap]::FromFile('${file.replace(/'/g, "''")}'); $p=$b.GetPixel(${x},${y}); "$($p.R),$($p.G),$($p.B)"; $b.Dispose()`;
+  return execFileSync("powershell", ["-NoProfile", "-Command", ps], { encoding: "utf8" }).trim().split(",").map(Number);
+}
+
 // Mean luminance (0-255) of an image, sampled on a 40x40 grid (Windows only; elsewhere 128).
 function meanLuma(file) {
   if (process.platform !== "win32") return 128;
@@ -295,6 +302,20 @@ await call("preview_contact_sheet", { comp: C, frames: 4, maxSize: 400 }, {
   // whole text inside the frame (left edge visible)
   const px = await lumaAt(ac.data?.id, 0, "anchor-left");
   results.push({ tool: "anchor preview", pass: px > 1, ms: 0, note: `luma ${px}` });
+}
+// gradient colors: red on the left of the shape, blue on the right
+{
+  const gc = await call("create_composition", { name: COMP + " grad", width: 640, height: 360, duration: 1, backgroundColor: "#000000", open: false });
+  created.push(gc.data?.id);
+  await call("create_shape_layer", { comp: gc.data?.id, type: "rectangle", size: [400, 100], gradient: { type: "linear", colors: [{ offset: 0, color: "#ff0000" }, { offset: 1, color: "#0000ff" }] }, name: "G" });
+  const r = await client.callTool({ name: "preview_frame", arguments: { comp: gc.data?.id, time: 0, format: "png", maxSize: 640 } });
+  const file = path.join(out, "gradient.png");
+  fs.writeFileSync(file, Buffer.from(r.content.find((c) => c.type === "image").data, "base64"));
+  const L = pixelAt(file, 130, 180), R = pixelAt(file, 510, 180), O = pixelAt(file, 60, 180);
+  const near = (p, q) => p.every((v, i) => Math.abs(v - q[i]) <= 30);
+  const pass = near(L, [255, 0, 0]) && near(R, [0, 0, 255]) && near(O, [0, 0, 0]);
+  results.push({ tool: "gradient colors", pass, ms: 0, note: `left ${L}, right ${R}, outside ${O}` });
+  console.log(`${pass ? "PASS" : "FAIL"} gradient colors: left ${L}, right ${R}, outside ${O}`);
 }
 // text-fade-up must REVEAL the text: invisible before, fully visible after (pixel check)
 {

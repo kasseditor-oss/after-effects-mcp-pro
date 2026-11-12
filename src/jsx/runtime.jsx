@@ -1068,7 +1068,7 @@
         return out;
     };
 
-    function addShapeGroup(contents, s, comp) {
+    function addShapeGroup(contents, s, comp, ctx) {
         var grp = contents.addProperty("ADBE Vector Group");
         if (s.name) grp.name = s.name;
         var vecs = grp.property("ADBE Vectors Group");
@@ -1096,7 +1096,20 @@
             shp = vecs.addProperty("ADBE Vector Shape - Group");
             shp.property("ADBE Vector Shape").setValue(toShape({ vertices: s.vertices, inTangents: s.inTangents, outTangents: s.outTangents, closed: def(s.closed, true) }));
         } else fail("Unknown shape type '" + type + "'", "Use rectangle, ellipse, polygon, star or path.");
-        if (s.gradient) {
+        if (s.gradient && s.gradient.colors && s.gradient.colors.length >= 2) {
+            // AE exposes no scripting API for gradient stops ("ADBE Vector Grad Colors" is
+            // NO_VALUE and takes no expression). A solid fill keeps the shape's alpha and a
+            // layer-level Gradient Ramp paints it; see create_shape_layer.
+            var stops = s.gradient.colors;
+            var solid = vecs.addProperty("ADBE Vector Graphic - Fill");
+            solid.property("ADBE Vector Fill Color").setValue(color(stops[0].color, true));
+            var off = s.offset || [0, 0];
+            var half = (size[0] || 200) / 2;
+            var isRadial = lower(def(s.gradient.type, "linear")) === "radial";
+            var st = s.gradient.start ? [s.gradient.start[0] + off[0], s.gradient.start[1] + off[1]] : (isRadial ? [off[0], off[1]] : [off[0] - half, off[1]]);
+            var en = s.gradient.end ? [s.gradient.end[0] + off[0], s.gradient.end[1] + off[1]] : [off[0] + half, off[1]];
+            if (ctx) ctx.ramps.push({ start: st, end: en, from: stops[0].color, to: stops[stops.length - 1].color, radial: isRadial, stops: stops.length });
+        } else if (s.gradient) {
             var gf = vecs.addProperty("ADBE Vector Graphic - G-Fill");
             gf.property("ADBE Vector Grad Type").setValue(lower(def(s.gradient.type, "linear")) === "radial" ? 2 : 1);
             if (s.gradient.start) gf.property("ADBE Vector Grad Start Pt").setValue(s.gradient.start);
@@ -1142,11 +1155,32 @@
             for (var key in a) if (a.hasOwnProperty(key) && key !== "name" && key !== "rotation" && key !== "position" && key !== "comp") one[key] = a[key];
             shapes = [one];
         }
-        for (var i = 0; i < shapes.length; i++) addShapeGroup(contents, shapes[i], c);
+        var ctx = { ramps: [] };
+        for (var i = 0; i < shapes.length; i++) addShapeGroup(contents, shapes[i], c, ctx);
+        var warnings = [];
+        if (ctx.ramps.length) {
+            var rp = ctx.ramps[0];
+            var ramp = l.property("ADBE Effect Parade").addProperty("ADBE Ramp");
+            ramp.name = "Gradient";
+            // effect points live in the layer's box (comp-sized for shape layers, origin at its
+            // top-left), while shape contents are centered on that box: shift by half its size
+            var hw = (l.width || c.width) / 2, hh = (l.height || c.height) / 2;
+            rp.start = [rp.start[0] + hw, rp.start[1] + hh];
+            rp.end = [rp.end[0] + hw, rp.end[1] + hh];
+            ramp.property("ADBE Ramp-0001").setValue(rp.start);
+            ramp.property("ADBE Ramp-0002").setValue(color(rp.from));
+            ramp.property("ADBE Ramp-0003").setValue(rp.end);
+            ramp.property("ADBE Ramp-0004").setValue(color(rp.to));
+            ramp.property("ADBE Ramp-0005").setValue(rp.radial ? 2 : 1);
+            if (rp.stops > 2) warnings.push("Only the first and last gradient colors are used: After Effects has no scripting API for gradient stops, so a Gradient Ramp effect paints the shape.");
+            if (ctx.ramps.length > 1) warnings.push("Gradient Ramp is a layer effect: with several gradient shapes in one layer only the first gradient is used. Put each gradient shape in its own layer.");
+        }
         l.name = def(a.name, "Shape " + (shapes[0].type || "rectangle"));
         if (!has(a, "position")) a.position = [c.width / 2, c.height / 2];
         placeLayer(c, l, a);
-        return layerSummary(l);
+        var res = layerSummary(l);
+        if (warnings.length) res.warning = warnings.join(" ");
+        return res;
     };
 
     H.create_solid_layer = function (a) {

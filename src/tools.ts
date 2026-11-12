@@ -66,7 +66,14 @@ const ShapeSpec = z.object({
   strokeWidth: z.number().optional(),
   strokeOpacity: z.number().optional(),
   lineCap: z.enum(["butt", "round", "projecting"]).optional(),
-  gradient: z.object({ type: z.enum(["linear", "radial"]).optional(), start: z.array(z.number()).optional(), end: z.array(z.number()).optional() }).optional(),
+  gradient: z
+    .object({
+      type: z.enum(["linear", "radial"]).optional(),
+      start: z.array(z.number()).optional().describe("Relative to the shape's center. Default: left edge (linear) or center (radial)."),
+      end: z.array(z.number()).optional().describe("Relative to the shape's center. Default: right edge."),
+      colors: z.array(z.object({ offset: z.number().min(0).max(1), color: Color, opacity: z.number().optional() })).min(2).optional().describe("Gradient stops. AE has no scripting API for stops, so the first and last colors are painted with a Gradient Ramp effect (a warning says so when more stops are given)."),
+    })
+    .optional(),
   trimPaths: z.object({ start: z.number().optional(), end: z.number().optional(), offset: z.number().optional() }).optional().describe("Adds Trim Paths (great for line/stroke reveal animations)."),
   repeater: z.object({ copies: z.number().optional(), offsetPosition: z.array(z.number()).optional(), offsetRotation: z.number().optional() }).optional(),
   offset: z.array(z.number()).optional().describe("Position of this shape group inside the layer."),

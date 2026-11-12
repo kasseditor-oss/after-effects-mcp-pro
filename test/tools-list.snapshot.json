@@ -1666,13 +1666,54 @@
           "type": "array",
           "items": {
            "type": "number"
-          }
+          },
+          "description": "Relative to the shape's center. Default: left edge (linear) or center (radial)."
          },
          "end": {
           "type": "array",
           "items": {
            "type": "number"
-          }
+          },
+          "description": "Relative to the shape's center. Default: right edge."
+         },
+         "colors": {
+          "type": "array",
+          "items": {
+           "type": "object",
+           "properties": {
+            "offset": {
+             "type": "number",
+             "minimum": 0,
+             "maximum": 1
+            },
+            "color": {
+             "anyOf": [
+              {
+               "type": "string"
+              },
+              {
+               "type": "array",
+               "items": {
+                "type": "number"
+               },
+               "minItems": 3,
+               "maxItems": 4
+              }
+             ],
+             "description": "Color as '#RRGGBB' or [r,g,b] (0-1 or 0-255)."
+            },
+            "opacity": {
+             "type": "number"
+            }
+           },
+           "required": [
+            "offset",
+            "color"
+           ],
+           "additionalProperties": false
+          },
+          "minItems": 2,
+          "description": "Gradient stops. AE has no scripting API for stops, so the first and last colors are painted with a Gradient Ramp effect (a warning says so when more stops are given)."
          }
         },
         "additionalProperties": false
@@ -1879,13 +1920,54 @@
        "type": "array",
        "items": {
         "type": "number"
-       }
+       },
+       "description": "Relative to the shape's center. Default: left edge (linear) or center (radial)."
       },
       "end": {
        "type": "array",
        "items": {
         "type": "number"
-       }
+       },
+       "description": "Relative to the shape's center. Default: right edge."
+      },
+      "colors": {
+       "type": "array",
+       "items": {
+        "type": "object",
+        "properties": {
+         "offset": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 1
+         },
+         "color": {
+          "anyOf": [
+           {
+            "type": "string"
+           },
+           {
+            "type": "array",
+            "items": {
+             "type": "number"
+            },
+            "minItems": 3,
+            "maxItems": 4
+           }
+          ],
+          "description": "Color as '#RRGGBB' or [r,g,b] (0-1 or 0-255)."
+         },
+         "opacity": {
+          "type": "number"
+         }
+        },
+        "required": [
+         "offset",
+         "color"
+        ],
+        "additionalProperties": false
+       },
+       "minItems": 2,
+       "description": "Gradient stops. AE has no scripting API for stops, so the first and last colors are painted with a Gradient Ramp effect (a warning says so when more stops are given)."
       }
      },
      "additionalProperties": false
