@@ -162,6 +162,7 @@ await call("get_property", { comp: C, layer: "Nope", property: "Position" }, { e
 await call("add_mask", { comp: C, layer: "BG", shape: "ellipse", rect: [160, 90, 1600, 900], feather: 300, mode: "add" });
 await call("add_marker", { comp: C, time: 1, comment: "Title in", duration: 0.5 });
 await call("add_marker", { comp: C, layer: "Title", time: 2, comment: "beat" });
+await call("get_property", { comp: C, layer: "Title", property: "Marker" }, { check: (d) => (d.keyframes?.[0]?.value?.comment === "beat" ? true : JSON.stringify(d).slice(0, 200)) });
 await call("list_markers", { comp: C, includeLayers: true }, { check: (d) => (d.comp.length === 1 && d.layers.length === 1 ? true : JSON.stringify(d)) });
 await call("set_text", { comp: C, layer: "Title", text: "AE MCP PRO", fillColor: "#ffe9a8" }, { check: (d) => (d.text.text === "AE MCP PRO" ? true : "text") });
 await call("set_layer_properties", { comp: C, layers: ["Title", "Sub", "Hex"], motionBlur: true });

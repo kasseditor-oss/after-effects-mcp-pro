@@ -394,6 +394,16 @@
     function isProperty(p) { return p && p.propertyType === PropertyType.PROPERTY; }
 
     // -------------------------------------------------------- value (de)ser
+    // In AE 2026 marker values fail instanceof MarkerValue: recognise them by shape.
+    function isMarkerLike(v) {
+        try { return typeof v === "object" && typeof v.comment === "string" && typeof v.duration === "number" && v.chapter !== undefined; } catch (e) { return false; }
+    }
+    function serMarker(v) {
+        var o = { comment: v.comment, duration: round(v.duration), chapter: v.chapter, url: v.url, label: v.label };
+        try { o.protectedRegion = v.protectedRegion; } catch (e) { }
+        return o;
+    }
+
     function serValue(v) {
         if (v === null || v === undefined) return null;
         if (typeof v === "number") return round(v, 4);
@@ -401,7 +411,7 @@
         if (v instanceof Array) { var a = []; for (var i = 0; i < v.length; i++) a.push(serValue(v[i])); return a; }
         if (v instanceof TextDocument) return serText(v);
         if (v instanceof Shape) return { vertices: serValue(v.vertices), inTangents: serValue(v.inTangents), outTangents: serValue(v.outTangents), closed: v.closed };
-        if (v instanceof MarkerValue) return { comment: v.comment, duration: v.duration, chapter: v.chapter, url: v.url, label: v.label };
+        if (v instanceof MarkerValue || isMarkerLike(v)) return serMarker(v);
         return String(v);
     }
     A.serValue = serValue;
