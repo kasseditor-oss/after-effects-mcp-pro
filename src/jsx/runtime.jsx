@@ -364,6 +364,20 @@
                 try { nKids = cur.numProperties; for (var k = 1; k <= Math.min(nKids, 10); k++) avail.push(cur.property(k).name + " [" + cur.property(k).matchName + "]"); } catch (e3) { }
                 fail("Property '" + seg + "' not found under '" + (cur === layer ? layer.name : cur.name) + "'", avail.length ? "Children: " + shortList(avail, nKids) : undefined);
             }
+            // flat effect topics (Lumetri): "Vignette" is a NO_VALUE parameter and its
+            // parameters are the following siblings, up to a blank-named NO_VALUE one
+            if (isProperty(next) && next.propertyValueType === PropertyValueType.NO_VALUE && i < segs.length - 1 && !isProperty(cur)) {
+                var found = null, depthT = 0;
+                for (var q = next.propertyIndex + 1; q <= cur.numProperties && !found; q++) {
+                    var sib = cur.property(q);
+                    if (isProperty(sib) && sib.propertyValueType === PropertyValueType.NO_VALUE) {
+                        if (blank(sib.name)) { if (depthT === 0) break; depthT--; } else depthT++;
+                        continue;
+                    }
+                    if (depthT === 0 && (lower(sib.name) === lower(segs[i + 1]) || lower(sib.matchName) === lower(segs[i + 1]))) found = sib;
+                }
+                if (found) { cur = found; i++; continue; }
+            }
             cur = next;
         }
         return cur;
@@ -1753,20 +1767,79 @@
         return prev[b.length];
     }
 
+    function blank(str) { return String(str).replace(/^\s+|\s+$/g, "") === ""; }
+    // Every leaf parameter of an effect with its path ("Vignette/Amount"). Real groups
+    // nest; effects like Lumetri are flat lists where a NO_VALUE "topic" parameter opens a
+    // section and a NO_VALUE parameter with a blank name closes it.
+    function effectLeaves(group, prefix, out) {
+        var topics = [];
+        for (var i = 1; i <= group.numProperties; i++) {
+            var p = group.property(i);
+            if (!p) continue;
+            var base = prefix;
+            for (var t = 0; t < topics.length; t++) base = base ? base + "/" + topics[t] : topics[t];
+            if (isProperty(p)) {
+                if (p.propertyValueType === PropertyValueType.NO_VALUE) {
+                    if (blank(p.name)) topics.pop(); else topics.push(p.name);
+                    continue;
+                }
+                out.push({ prop: p, path: base ? base + "/" + p.name : p.name });
+            } else effectLeaves(p, base ? base + "/" + p.name : p.name, out);
+        }
+        return out;
+    }
+    // Finds a parameter by "Topic/Param" path, name, match name, or "Topic Param"
+    // (Lumetri "Vignette Amount"), searching nested groups and flat topics.
+    function findEffectParam(fx, key) {
+        var k = lower(key), i;
+        var direct = child(fx, key);
+        if (direct && isProperty(direct) && direct.propertyValueType !== PropertyValueType.NO_VALUE) return direct;
+        var leaves = effectLeaves(fx, "", []);
+        for (i = 0; i < leaves.length; i++) if (lower(leaves[i].path) === k) return leaves[i].prop;
+        for (i = 0; i < leaves.length; i++) if (lower(leaves[i].path.replace(/\//g, " ")) === k) return leaves[i].prop;
+        for (i = 0; i < leaves.length; i++) if (lower(leaves[i].prop.name) === k || lower(leaves[i].prop.matchName) === k) return leaves[i].prop;
+        for (i = 0; i < leaves.length; i++) {
+            var path = lower(leaves[i].path);
+            if (path.length > k.length && path.substr(path.length - k.length - 1) === "/" + k) return leaves[i].prop;
+        }
+        // "Vignette Amount" / "Vignette/Amount": the key ends with the parameter name and the
+        // rest names one of its sections (section nesting in flat effects is not reliable)
+        for (i = 0; i < leaves.length; i++) {
+            var nm = lower(leaves[i].prop.name);
+            if (k.length <= nm.length || k.substr(k.length - nm.length) !== nm) continue;
+            var rest = k.substr(0, k.length - nm.length).replace(/[\/\s]+$/, "");
+            if (!rest) continue;
+            var segsP = lower(leaves[i].path).split("/");
+            for (var sg = 0; sg < segsP.length - 1; sg++) if (segsP[sg] === rest) return leaves[i].prop;
+        }
+        for (i = 0; i < leaves.length; i++) if (lower(leaves[i].prop.name).indexOf(k) === 0) return leaves[i].prop;
+        return null;
+    }
+    function nearestParams(fx, key, n) {
+        var k = lower(key).replace(/[^a-z0-9]/g, "");
+        var leaves = effectLeaves(fx, "", []), scored = [];
+        for (var i = 0; i < leaves.length; i++) {
+            var name = lower(leaves[i].path).replace(/[^a-z0-9]/g, "");
+            var score = name.indexOf(k) >= 0 || k.indexOf(lower(leaves[i].prop.name).replace(/[^a-z0-9]/g, "")) >= 0 ? 0 : dist(name.substr(0, k.length + 2), k);
+            scored.push({ s: score, p: leaves[i].path });
+        }
+        scored.sort(function (a, b) { return a.s - b.s; });
+        var out = [];
+        for (var j = 0; j < scored.length && out.length < n; j++) out.push(scored[j].p);
+        return out;
+    }
+
     function setEffectParams(fx, params) {
         var applied = [], errors = [];
         for (var k in params) {
             if (!params.hasOwnProperty(k)) continue;
             try {
-                var p = child(fx, k);
+                var p = findEffectParam(fx, k);
                 if (!p) {
-                    // allow matchName suffix like "0001" or partial name
-                    for (var i = 1; i <= fx.numProperties; i++) {
-                        var c = fx.property(i);
-                        if (lower(c.name).indexOf(lower(k)) === 0) { p = c; break; }
-                    }
+                    var near = nearestParams(fx, k, 10);
+                    errors.push(k + ": parameter not found" + (near.length ? " (closest: " + near.join(", ") + ")" : ""));
+                    continue;
                 }
-                if (!p) { errors.push(k + ": parameter not found"); continue; }
                 var v = params[k];
                 if (v !== null && typeof v === "object" && !(v instanceof Array) && v.keyframes) setKeys(p, v.keyframes, v.easing);
                 else if (v !== null && typeof v === "object" && !(v instanceof Array) && v.expression) p.expression = v.expression;

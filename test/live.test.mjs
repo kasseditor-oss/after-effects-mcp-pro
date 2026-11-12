@@ -135,6 +135,18 @@ const NL = String.fromCharCode(10);
 const partialFx = JSON.parse(partial.r.content[0].text.split(NL).slice(1).join(NL)).results[0].effect;
 await call("modify_effect", { comp: C, layer: "Title", effect: partialFx, remove: true });
 await call("import_files", { paths: ["C:/nao/existe.png"] }, { expectError: true });
+// nested effect parameters: Lumetri "Vignette Amount", "Vignette/Feather", and close-name suggestions
+await call("apply_effect", { comp: C, layer: "BG", effect: "Lumetri Color", params: { "Vignette Amount": -1.5, "Vignette/Feather": 70 } }, {
+  check: (d, r) => (!/warning/.test(r.content[0].text) && d.results[0].set.length === 2 ? true : r.content[0].text.slice(0, 200)),
+});
+await call("get_layer_effects", { comp: C, layer: "BG" }, {
+  check: (d) => {
+    const lum = d.effects.find((e) => /Lumetri/.test(e.name));
+    return lum ? true : "no Lumetri";
+  },
+});
+await call("get_property", { comp: C, layer: "BG", property: "Effects/Lumetri Color/Vignette/Amount" }, { check: (d) => (Math.abs(d.value - -1.5) < 1e-3 ? true : "Vignette Amount = " + d.value) });
+await call("apply_effect", { comp: C, layer: "BG", effect: "Gaussian Blur", params: { Blurines: 3 } }, { check: (_d, r) => (/closest: Blurriness/.test(r.content[0].text) ? true : r.content[0].text.slice(0, 200)) });
 await call("get_background_render", { jobId: "nope" }, { expectError: true });
 await call("apply_effect_template", { comp: C, layer: "Grade", template: "cinematic-look" });
 await call("apply_effect_template", { comp: C, layer: "Title", template: "text-pop" });
