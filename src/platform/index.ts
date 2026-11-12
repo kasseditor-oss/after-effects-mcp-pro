@@ -18,11 +18,12 @@ const other: Platform = {
   compose: () => null,
 };
 
-/** The implementation for this OS. AE_MCP_PLATFORM=windows|macos overrides (tests). */
+/** The implementation for this OS. AE_MCP_PLATFORM=windows|macos|other overrides (tests). */
 export function platform(): Platform {
   const forced = process.env.AE_MCP_PLATFORM;
   if (forced === "windows") return windows;
   if (forced === "macos") return macos;
+  if (forced === "other") return other; // unit tests: never see the real After Effects
   if (process.platform === "win32") return windows;
   if (process.platform === "darwin") return macos;
   return other;

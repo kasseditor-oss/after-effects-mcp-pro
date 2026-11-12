@@ -16,7 +16,8 @@ async function connect(env = {}) {
     command: process.execPath,
     args: [path.join(root, "build", "index.js")],
     // AE_MCP_AE_PATH points nowhere so tests never touch a real After Effects
-    env: { ...process.env, AE_MCP_BRIDGE_DIR: tmpBridge, AE_MCP_MODE: "listener", ...env },
+    // AE_MCP_PLATFORM=other: unit tests never talk to an After Effects that happens to be open
+    env: { ...process.env, AE_MCP_BRIDGE_DIR: tmpBridge, AE_MCP_MODE: "listener", AE_MCP_PLATFORM: "other", ...env },
     stderr: "pipe",
   });
   const client = new Client({ name: "unit", version: "1.0.0" });
@@ -388,7 +389,7 @@ test("long single calls send heartbeat progress when a progressToken is given", 
     }
   }, 30);
   await new Promise((r) => setTimeout(r, 80));
-  const client = await connect({ AE_MCP_BRIDGE_DIR: dir });
+  const client = await connect({ AE_MCP_BRIDGE_DIR: dir, AE_MCP_ASSUME_RUNNING: "1" });
   const seen = [];
   const r = await client.callTool({ name: "new_project", arguments: { discardChanges: false } }, undefined, { onprogress: (p) => seen.push(p) });
   clearInterval(timer);

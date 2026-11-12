@@ -160,6 +160,7 @@ export class Bridge {
   }
 
   aeRunning(): boolean {
+    if (process.env.AE_MCP_ASSUME_RUNNING === "1") return true; // test hook (fake After Effects)
     if (Date.now() - this.runningCache.at < 2000) return this.runningCache.value;
     this.pids = aePids();
     const value = this.pids.length > 0;
