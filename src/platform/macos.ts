@@ -3,7 +3,7 @@ import * as os from "node:os";
 import * as path from "node:path";
 import { execFile, execFileSync, spawn } from "node:child_process";
 import type { ComposeSpec } from "../imaging.js";
-import type { AEInstall, Platform } from "./types.js";
+import { sortInstalls, type AEInstall, type Platform } from "./types.js";
 
 /** Installed versions under an Applications folder (parameter so tests can use a fake tree). */
 export function findInstallsIn(appsRoot: string, override?: string): AEInstall[] {
@@ -17,10 +17,9 @@ export function findInstallsIn(appsRoot: string, override?: string): AEInstall[]
     const app = fs.readdirSync(dir).find((f) => /^Adobe After Effects.*\.app$/i.test(f));
     if (!app) continue;
     const aer = path.join(dir, "aerender");
-    out.push({ version: (path.basename(dir).match(/(\d{4}|Beta)/i) || ["?"])[0], appDir: dir, executable: path.join(dir, app), aerender: fs.existsSync(aer) ? aer : null });
+    out.push({ version: (path.basename(dir).match(/(\d{4}|Beta)/i) || ["?"])[0], appDir: dir, executable: path.join(dir, app), aerender: fs.existsSync(aer) ? aer : null, beta: /beta/i.test(path.basename(dir)) });
   }
-  out.sort((a, b) => b.version.localeCompare(a.version));
-  return out;
+  return sortInstalls(out);
 }
 
 /** AppleScript that makes After Effects run a script file (AE's DoScriptFile command). */

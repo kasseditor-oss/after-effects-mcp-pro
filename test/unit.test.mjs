@@ -132,11 +132,11 @@ test("prompts and resources are exposed", async () => {
 });
 
 // Fake listener: consumes queue files like AE would and writes results itself.
-function fakeListener(dir, respond, version = "2.0.1") {
+function fakeListener(dir, respond, version = "2.0.1", ae = "fake") {
   const q = path.join(dir, "queue");
   let n = 0;
   const timer = setInterval(() => {
-    fs.writeFileSync(path.join(dir, "heartbeat.json"), JSON.stringify({ time: Date.now(), version, ae: "fake", paused: false, executed: n, project: "" }));
+    fs.writeFileSync(path.join(dir, "heartbeat.json"), JSON.stringify({ time: Date.now(), version, ae, paused: false, executed: n, project: "" }));
     for (const f of fs.existsSync(q) ? fs.readdirSync(q) : []) {
       if (!f.endsWith(".jsx")) continue;
       const src = fs.readFileSync(path.join(q, f), "utf8");
@@ -497,3 +497,58 @@ for (const profile of ["core", "minimal"]) {
     assert.deepEqual(current, JSON.parse(fs.readFileSync(file, "utf8")));
   });
 }
+
+test("AE version: older After Effects gets the legacy track matte path and clear errors (mocked version)", async () => {
+  const run = async (ae, env = {}) => {
+    const dir = fs.mkdtempSync(path.join(os.tmpdir(), "aemcp-aever-"));
+    const seen = [];
+    const stop = fakeListener(dir, (p) => { seen.push(p); return { ok: true, id: p.id, data: { name: "x", fonts: [] } }; }, undefined, ae);
+    while (!fs.existsSync(path.join(dir, "heartbeat.json"))) await new Promise((r) => setTimeout(r, 20));
+    const client = await connect({ AE_MCP_BRIDGE_DIR: dir, ...env });
+    const matte = await client.callTool({ name: "set_track_matte", arguments: { comp: "C", layer: "L", type: "alpha" } });
+    const fonts = await client.callTool({ name: "list_fonts", arguments: {} });
+    const caps = await client.callTool({ name: "create_text_layer", arguments: { comp: "C", text: "hi", caps: "small" } });
+    const plain = await client.callTool({ name: "create_text_layer", arguments: { comp: "C", text: "hi" } });
+    const inBatch = await client.callTool({ name: "batch", arguments: { operations: [{ tool: "set_text", args: { comp: "C", layer: "L", caps: "all" } }] } });
+    const st = JSON.parse((await client.callTool({ name: "bridge_status", arguments: {} })).content[0].text);
+    stop();
+    await client.close();
+    return { seen, matte, fonts, caps, plain, inBatch, st };
+  };
+  const old = await run("22.6x45");
+  assert.ok(!old.matte.isError);
+  assert.equal(old.seen.find((p) => p.tool === "set_track_matte")?.args.legacyMatte, true, "AE 2022 uses trackMatteType");
+  assert.ok(old.fonts.isError && /needs After Effects 2024 \(24\.0\) or newer; this is After Effects 22\.6x45/.test(old.fonts.content[0].text), old.fonts.content[0].text);
+  assert.ok(old.caps.isError && /fontCapsOption/.test(old.caps.content[0].text));
+  assert.ok(!old.plain.isError, "normal caps still work");
+  assert.ok(old.inBatch.isError && /batch operation 0: set_text/.test(old.inBatch.content[0].text));
+  assert.ok(!old.seen.some((p) => p.tool === "list_fonts"), "refused before reaching AE");
+  assert.equal(old.st.compatibility.aeVersion, "22.6x45");
+
+  const cur = await run("26.5x89");
+  assert.equal(cur.seen.find((p) => p.tool === "set_track_matte")?.args.legacyMatte, undefined, "AE 2026 uses setTrackMatte");
+  assert.ok(!cur.fonts.isError && !cur.caps.isError);
+
+  // AE_MCP_ASSUME_AE_VERSION overrides what AE reports
+  const forced = await run("26.5x89", { AE_MCP_ASSUME_AE_VERSION: "23.0" });
+  assert.ok(forced.fonts.isError);
+  assert.equal(forced.seen.find((p) => p.tool === "set_track_matte")?.args.legacyMatte, undefined, "23.0 has setTrackMatte");
+  const ancient = await run("21.0x1");
+  assert.match(ancient.st.compatibility.warning, /older than the oldest tested version \(2022/);
+});
+
+test("After Effects (Beta) is detected on Windows and macOS, releases preferred", async () => {
+  const { findWindowsInstallsIn } = await import(new URL("../build/platform/windows.js", import.meta.url).href);
+  const { findInstallsIn } = await import(new URL("../build/platform/macos.js", import.meta.url).href);
+  const win = fs.mkdtempSync(path.join(os.tmpdir(), "aemcp-win-"));
+  for (const v of ["Adobe After Effects (Beta)", "Adobe After Effects 2025", "Adobe After Effects 2026"]) {
+    fs.mkdirSync(path.join(win, "Adobe", v, "Support Files"), { recursive: true });
+    fs.writeFileSync(path.join(win, "Adobe", v, "Support Files", "AfterFX.exe"), "");
+  }
+  const w = findWindowsInstallsIn([win]);
+  assert.deepEqual(w.map((i) => [i.version, !!i.beta]), [["2026", false], ["2025", false], ["Beta", true]]);
+  const mac = fs.mkdtempSync(path.join(os.tmpdir(), "aemcp-mac-"));
+  for (const v of ["Adobe After Effects (Beta)", "Adobe After Effects 2026"]) fs.mkdirSync(path.join(mac, v, `${v}.app`), { recursive: true });
+  const m = findInstallsIn(mac);
+  assert.deepEqual(m.map((i) => [i.version, !!i.beta]), [["2026", false], ["Beta", true]]);
+});

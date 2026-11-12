@@ -3,7 +3,7 @@ import * as os from "node:os";
 import * as path from "node:path";
 import { execFile, execFileSync, execSync, spawn } from "node:child_process";
 import type { ComposeSpec } from "../imaging.js";
-import type { AEInstall, Platform } from "./types.js";
+import { sortInstalls, type AEInstall, type Platform } from "./types.js";
 
 // One PowerShell process does every resize, the grid and the encoding:
 // starting PowerShell costs ~0.5-1 s, so doing it per frame was the bottleneck.
@@ -119,34 +119,37 @@ export function aeWindowTitle(): string | null {
   }
 }
 
+/** Installed versions under <root>/Adobe (parameter so tests can use a fake tree). Beta builds are flagged. */
+export function findWindowsInstallsIn(roots: string[], override?: string): AEInstall[] {
+  const out: AEInstall[] = [];
+  const seen = new Set<string>();
+  const dirs: string[] = [];
+  if (override) dirs.push(override);
+  for (const root of roots) {
+    const adobe = path.join(root, "Adobe");
+    if (!fs.existsSync(adobe)) continue;
+    for (const d of fs.readdirSync(adobe)) if (/^Adobe After Effects/i.test(d)) dirs.push(path.join(adobe, d));
+  }
+  for (const dir of dirs) {
+    const key = dir.toLowerCase();
+    if (seen.has(key)) continue;
+    seen.add(key);
+    const sf = path.join(dir, "Support Files");
+    const exe = path.join(sf, "AfterFX.exe");
+    if (!fs.existsSync(exe)) continue;
+    const aer = path.join(sf, "aerender.exe");
+    const base = path.basename(dir);
+    out.push({ version: (base.match(/(\d{4}|CC \d{4}|Beta)/i) || ["?"])[0], appDir: dir, executable: exe, aerender: fs.existsSync(aer) ? aer : null, beta: /beta/i.test(base) });
+  }
+  return sortInstalls(out);
+}
+
 export const windows: Platform = {
   name: "windows",
   userDataDir: () => process.env.APPDATA || path.join(os.homedir(), "AppData", "Roaming"),
 
   findInstalls() {
-    const out: AEInstall[] = [];
-    const override = process.env.AE_MCP_AE_PATH;
-    const roots = [process.env.ProgramFiles || "C:\\Program Files", "C:\\Program Files"];
-    const seen = new Set<string>();
-    const dirs: string[] = [];
-    if (override) dirs.push(override);
-    for (const root of roots) {
-      const adobe = path.join(root, "Adobe");
-      if (!fs.existsSync(adobe)) continue;
-      for (const d of fs.readdirSync(adobe)) if (/^Adobe After Effects/i.test(d)) dirs.push(path.join(adobe, d));
-    }
-    for (const dir of dirs) {
-      const key = dir.toLowerCase();
-      if (seen.has(key)) continue;
-      seen.add(key);
-      const sf = path.join(dir, "Support Files");
-      const exe = path.join(sf, "AfterFX.exe");
-      if (!fs.existsSync(exe)) continue;
-      const aer = path.join(sf, "aerender.exe");
-      out.push({ version: (dir.match(/(\d{4}|CC \d{4}|Beta)/i) || ["?"])[0], appDir: dir, executable: exe, aerender: fs.existsSync(aer) ? aer : null });
-    }
-    out.sort((a, b) => b.version.localeCompare(a.version));
-    return out;
+    return findWindowsInstallsIn([process.env.ProgramFiles || "C:\\Program Files", "C:\\Program Files"], process.env.AE_MCP_AE_PATH);
   },
 
   aePids() {

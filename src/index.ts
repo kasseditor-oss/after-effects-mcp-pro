@@ -23,6 +23,7 @@ import { AEError, Bridge, SERVER_VERSION } from "./bridge.js";
 import { findInstalls } from "./env.js";
 import { TOOLS, NODE_ONLY, OUTPUTS, type ToolDef } from "./tools.js";
 import { checkPaths, disabledReason, listed, policySummary, toolset } from "./policy.js";
+import { checkCompat, currentAEVersion, MIN_AE, noteAEVersion, versionWarning } from "./compat.js";
 import { compose, type ImageFormat } from "./imaging.js";
 import { WIDGET_MIME, WIDGET_URI, widgetHtml } from "./widget.js";
 
@@ -287,13 +288,14 @@ async function nodeTool(name: string, a: any, report?: Progress): Promise<CallTo
       const status: any = {
         server: SERVER_VERSION,
         bridgeDir: bridge.dir,
-        installs: installs.map((i) => ({ version: i.version, path: i.appDir, aerender: !!i.aerender })),
+        installs: installs.map((i) => ({ version: i.version, path: i.appDir, aerender: !!i.aerender, ...(i.beta ? { beta: true } : {}) })),
         afterEffectsRunning: running,
         listener: hb ? { alive: hb.ageMs < 4000, lastHeartbeatMsAgo: hb.ageMs, paused: hb.paused, executed: hb.executed, version: hb.version } : "not installed (run: npm run install-ae) - direct mode will be used",
       };
       if (running) {
         try {
           status.ae = await bridge.call("ping", {}, { undo: false, timeoutMs: 15_000 });
+          noteAEVersion(status.ae?.aeVersion);
           status.mode = bridge.lastMode;
         } catch (e: any) {
           status.error = e.message;
@@ -303,6 +305,8 @@ async function nodeTool(name: string, a: any, report?: Progress): Promise<CallTo
       status.diagnostics = bridge.diagnostics();
       status.modes = policySummary();
       status.undoGroup = undoGroupState();
+      const aeVer = currentAEVersion(hb?.ae);
+      status.compatibility = { aeVersion: aeVer, minimumTested: MIN_AE, beta: installs.some((i) => i.beta) ? installs.filter((i) => i.beta).map((i) => i.appDir) : undefined, warning: versionWarning(aeVer) ?? undefined };
       const warn = bridge.listenerVersionWarning();
       if (warn) status.warning = warn;
       return ok(status);
@@ -609,6 +613,13 @@ async function dispatch(req: { params: { name: string; arguments?: Record<string
         op.args = p.data;
       }
     }
+    // AE version: refuse features this AE does not have, or pick the older API
+    const aeVer = currentAEVersion(bridge.heartbeat()?.ae);
+    for (const [i, c] of (name === "batch" ? args.operations.map((op: any) => ({ tool: op.tool, a: op.args })) : [{ tool: name, a: args }]).entries()) {
+      const r = checkCompat(c.tool, c.a, aeVer);
+      if (r.error) return err(name === "batch" ? `batch operation ${i}: ${r.error}` : r.error, r.hint);
+      if (r.extra) Object.assign(c.a, r.extra);
+    }
     undoGroupState(); // auto-close an idle group
     // AE only registers a script's undo group once it is idle again: an Undo sent right
     // after a change (< 1 s) was sometimes ignored. Let it settle first.
@@ -644,6 +655,7 @@ async function dispatch(req: { params: { name: string; arguments?: Record<string
     // read-only tools change nothing: no undo group (it costs time and adds empty undo steps)
     const undo = name === "run_extendscript" ? args.undoable !== false : def.undo !== false && !def.readOnly;
     const data: any = await bridge.call(def.handler ?? name, args, { timeoutMs, undo, timeoutParam: true, signal, onProgress: report });
+    if (name === "get_project_info") noteAEVersion(data?.aeVersion);
     // one AE undo step per successful changing call (an atomic batch that rolled back leaves none)
     if (undo) {
       lastChangeAt = Date.now();

@@ -55,6 +55,25 @@ Existing output files are never replaced unless the call passes `overwrite: true
 
 For shared or audited setups use `AE_MCP_EVAL=off`. `bridge_status` reports the active modes.
 
+## Compatibility
+
+- **After Effects:** 2022 (22.0) or newer; developed and tested on 2026 (26.x). Older versions get a warning in `bridge_status`.
+- **Node.js:** 18 or newer (`engines` in `package.json`; CI runs 18, 20 and 22).
+- **After Effects (Beta)** is detected on Windows and macOS and listed in `bridge_status` (`beta: true`), but a release install is preferred.
+
+The server learns the AE version from the listener heartbeat (or the first `bridge_status` / `get_project_info` in direct mode). Features this AE lacks are refused before the call reaches After Effects, with a clear message:
+
+| Feature | Needs | On older versions |
+|---|---|---|
+| `set_track_matte` with any matte layer (`setTrackMatte`) | 23.0 (2023) | Automatic fallback: the matte layer is moved directly above and `trackMatteType` is used |
+| `caps` other than `normal` in `create_text_layer` / `set_text` (`fontCapsOption`) | 24.0 (2024) | Refused: type the text in capitals |
+| `list_fonts` (`app.fonts`) | 24.0 (2024) | Refused: pass the PostScript name directly |
+| `instantiate_template` (Essential Properties) | 17.0 (2020) | Refused |
+| `set_essential_properties`, `export_mogrt` | 16.1 (2019) | Refused |
+| Shape gradient colors | any | Always a Gradient Ramp effect (no scripting API for gradient stops) |
+
+`AE_MCP_ASSUME_AE_VERSION=23.0` forces a version (testing, or forcing the older paths).
+
 ## Limitations
 
 - Roto Brush and Content-Aware Fill have no ExtendScript API, so no tool can drive them.
@@ -105,6 +124,7 @@ Each tool links to the MCP App resource `ui://after-effects/activity.html`. Clie
 | `AE_MCP_BRIDGE_DIR` | Use a different bridge folder |
 | `AE_MCP_DISABLE_EVAL=1` | Turn off `run_extendscript` |
 | `AE_MCP_PRETTY=1` | Indented JSON in responses (default is compact, fewer tokens) |
+| `AE_MCP_ASSUME_AE_VERSION` | Treat After Effects as this version (e.g. `23.0`), see Compatibility |
 
 ## Tests
 

@@ -451,7 +451,8 @@
             td.fontCapsOption = FontCapsOption[k];
         } else {
             // AE before 24.0: only allCaps / smallCaps booleans exist
-            td.allCaps = caps === "all" || caps === "all-small";
+            // (read-only in some versions: the server refuses caps other than normal there)
+            try { td.allCaps = caps === "all" || caps === "all-small"; } catch (e0) { }
             try { td.smallCaps = caps === "small" || caps === "all-small"; } catch (e) { }
         }
     }
@@ -1605,7 +1606,8 @@
         var l = t.layer;
         var type = TrackMatteType[MATTES[lower(def(a.type, "alpha"))]];
         if (type === undefined) fail("Unknown matte type '" + a.type + "'");
-        if (typeof l.setTrackMatte === "function") {
+        // legacyMatte: set by the server for AE before 23.0 (or forced with AE_MCP_ASSUME_AE_VERSION)
+        if (typeof l.setTrackMatte === "function" && !a.legacyMatte) {
             // AE 2023+: any layer can be the matte
             if (type === TrackMatteType.NO_TRACK_MATTE) l.removeTrackMatte();
             else l.setTrackMatte(a.matteLayer !== undefined ? getLayer(t.comp, a.matteLayer) : t.comp.layer(l.index - 1), type);

@@ -5,6 +5,13 @@ export interface AEInstall {
   appDir: string;
   executable: string; // AfterFX.exe on Windows, the .app bundle on macOS
   aerender: string | null;
+  /** After Effects (Beta) from Creative Cloud: listed, but releases are preferred */
+  beta?: boolean;
+}
+
+/** Releases first (newest first), then Beta builds. */
+export function sortInstalls(list: AEInstall[]): AEInstall[] {
+  return list.sort((a, b) => Number(!!a.beta) - Number(!!b.beta) || b.version.localeCompare(a.version));
 }
 
 /** Everything that differs between Windows and macOS. */
