@@ -520,6 +520,17 @@ await call("preview_contact_sheet", { comp: C, frames: 4, maxSize: 400 }, {
   const dist = mid ? Math.hypot(mid[0] - 400, mid[1] - 100) : 999;
   results.push({ tool: "position along path: corner at half time", pass: dist <= 10, ms: 0, note: `t=1 at ${JSON.stringify(mid)} (${dist.toFixed(1)} px from the corner)` });
 }
+// layer styles via menu commands, edited by parameter name
+{
+  const ls = await call("create_composition", { name: COMP + " styles", width: 640, height: 360, duration: 1, backgroundColor: "#000000", open: false });
+  created.push(ls.data?.id);
+  await call("create_shape_layer", { comp: ls.data?.id, type: "rectangle", size: [200, 120], fill: "#3366ff", name: "Box" });
+  const plain = await lumaAt(ls.data?.id, 0, "style-before");
+  await call("add_layer_style", { comp: ls.data?.id, layer: "Box", style: "stroke", params: { Color: "#ffff00", Size: 12 } }, { check: (d) => (d.set.length === 2 && !d.errors.length ? true : JSON.stringify(d)) });
+  await call("add_layer_style", { comp: ls.data?.id, layer: "Box", style: "drop-shadow", params: { Distance: 20, Size: 15 } }, { check: (d) => (d.set.length === 2 ? true : JSON.stringify(d)) });
+  const styled = await lumaAt(ls.data?.id, 0, "style-after");
+  results.push({ tool: "layer styles change the frame", pass: styled > plain + 1, ms: 0, note: `luma ${plain} -> ${styled}` });
+}
 // text-fade-up must REVEAL the text: invisible before, fully visible after (pixel check)
 {
   const fc = await call("create_composition", { name: COMP + " fade", width: 640, height: 360, duration: 3, backgroundColor: "#000000", open: false });
@@ -610,6 +621,23 @@ if (job.data?.jobId) {
   }
 }
 
+// render presets: container/codec checked with ffprobe when available
+{
+  let ffprobe = null;
+  try { execFileSync("ffprobe", ["-version"], { stdio: "ignore" }); ffprobe = "ffprobe"; } catch { /* not installed */ }
+  const probe = (f) => (ffprobe ? JSON.parse(execFileSync(ffprobe, ["-v", "error", "-show_streams", "-of", "json", f], { encoding: "utf8" })).streams.find((s) => s.codec_type === "video") : null);
+  for (const [preset, ext, codec] of [["mp4-h264-high", "mp4", "h264"], ["prores-422", "mov", "prores"], ["prores-4444-alpha", "mov", "prores"]]) {
+    const file = path.join(out, "presets", `${preset}.${ext}`);
+    const r = await call("render_in_background", { comp: COMP, outputPath: file, startFrame: 0, endFrame: 4, preset, wait: true }, { check: (d) => (d.status === "done" ? true : JSON.stringify(d).slice(0, 200)) });
+    if (r.data?.status === "done") {
+      const v = probe(file);
+      const pass = fs.existsSync(file) && (!v || (v.codec_name === codec && (preset !== "prores-4444-alpha" || /4444|a/.test(`${v.profile} ${v.pix_fmt}`))));
+      results.push({ tool: `render preset ${preset}`, pass, ms: 0, note: v ? `${v.codec_name} ${v.profile ?? ""} ${v.pix_fmt}` : "ffprobe not installed" });
+    }
+  }
+  await call("render_in_background", { comp: COMP, outputPath: path.join(out, "x.gif"), preset: "gif" }, { expectError: true });
+  await call("add_to_render_queue", { comp: COMP, preset: "png-seq", outputPath: path.join(out, "y_[####].png") }, { expectError: true });
+}
 // a job survives a server restart (jobs are written to disk)
 if (job.data?.jobId) {
   const c2 = new Client({ name: "live-test-2", version: "1.0.0" });

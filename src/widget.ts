@@ -76,6 +76,7 @@ export const TOOL_LABELS: Record<string, string> = {
   apply_effect_template: "Aplicando look",
   apply_preset_file: "Aplicando preset .ffx",
   add_mask: "Criando máscara",
+  add_layer_style: "Aplicando estilo de layer",
   remove_masks: "Removendo máscaras",
   add_marker: "Adicionando marcador",
   markers: "Marcadores",

@@ -2221,6 +2221,45 @@
         return layerSummary(t.layer);
     };
 
+    // ---- Layer styles: no scripting API to add them, so the Layer > Layer Styles menu
+    // command runs on the (temporarily) selected layer, then the style is edited.
+    var LAYER_STYLES = {
+        "drop-shadow": [9000, "dropShadow/enabled"], "inner-shadow": [9001, "innerShadow/enabled"], "outer-glow": [9002, "outerGlow/enabled"],
+        "inner-glow": [9003, "innerGlow/enabled"], "bevel-emboss": [9004, "bevelEmboss/enabled"], "satin": [9005, "chromeFX/enabled"],
+        "color-overlay": [9006, "solidFill/enabled"], "gradient-overlay": [9007, "gradientFill/enabled"], "stroke": [9008, "frameFX/enabled"]
+    };
+    var STYLE_MENU = { "drop-shadow": "Drop Shadow", "inner-shadow": "Inner Shadow", "outer-glow": "Outer Glow", "inner-glow": "Inner Glow", "bevel-emboss": "Bevel and Emboss", "satin": "Satin", "color-overlay": "Color Overlay", "gradient-overlay": "Gradient Overlay", "stroke": "Stroke" };
+    H.add_layer_style = function (a) {
+        var t = target(a), c = t.comp, l = t.layer;
+        var st = LAYER_STYLES[a.style];
+        if (!st) fail("Unknown layer style '" + a.style + "'");
+        var prevSel = [];
+        for (var i = 1; i <= c.numLayers; i++) { if (c.layer(i).selected) prevSel.push(c.layer(i)); c.layer(i).selected = false; }
+        c.openInViewer();
+        l.selected = true;
+        var cmd = app.findMenuCommandId(STYLE_MENU[a.style]) || st[0];
+        app.executeCommand(cmd);
+        l.selected = false;
+        for (var j = 0; j < prevSel.length; j++) prevSel[j].selected = true;
+        var group = null;
+        try { group = l.property("ADBE Layer Styles").property(st[1]); } catch (e) { }
+        if (!group || !group.enabled) fail("After Effects did not add the '" + a.style + "' layer style", "The comp must be able to open in the viewer; layer styles need an AV layer.");
+        var set = [], errors = [];
+        var params = a.params || {};
+        for (var k in params) {
+            if (!params.hasOwnProperty(k)) continue;
+            try {
+                var p = child(group, k);
+                if (!p || !isProperty(p)) throw new Error("not found");
+                p.setValue(coerce(p, params[k]));
+                set.push(p.name);
+            } catch (e2) { errors.push(k + ": " + String(e2).replace(/^Error: /, "")); }
+        }
+        var available = [];
+        for (var m = 1; m <= group.numProperties; m++) { var q = group.property(m); if (isProperty(q)) available.push(q.name); }
+        return { layer: l.name, style: a.style, path: propPath(group), set: set, errors: errors, params: available };
+    };
+
     // ---- Masks
     H.add_mask = function (a) {
         var t = target(a);
@@ -2483,6 +2522,13 @@
     };
     H.add_to_render_queue = function (a) {
         var c = getComp(a.comp);
+        if (a.preset) {
+            var PR = { "mp4-h264-high": ["H.264 - Match Render Settings - 40 Mbps", "h264"], "prores-422": ["High Quality", "prores"], "prores-4444-alpha": ["High Quality with Alpha", "prores-alpha"] };
+            if (a.preset === "png-seq") fail("No PNG sequence output template in this After Effects", "Use render_png_sequence for numbered PNG frames.");
+            if (a.preset === "gif") fail("GIF is not available from scripts", "AE has no GIF output module and scripts cannot choose an Adobe Media Encoder preset. Render prores-422 or mp4-h264-high and convert, or send the comp to Media Encoder by hand.");
+            if (!PR[a.preset]) fail("Unknown preset '" + a.preset + "'");
+            a.outputModuleTemplate = PR[a.preset][0];
+        }
         var rq = app.project.renderQueue;
         var it = rq.items.add(c);
         try {

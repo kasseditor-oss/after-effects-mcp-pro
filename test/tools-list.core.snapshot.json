@@ -49,9 +49,6 @@
    "properties": {
     "path": {
      "type": "string"
-    },
-    "overwrite": {
-     "type": "boolean"
     }
    }
   },
@@ -2337,9 +2334,6 @@
       }
      ]
     },
-    "overwrite": {
-     "type": "boolean"
-    },
     "time": {
      "type": "number"
     },
@@ -2470,8 +2464,15 @@
   "inputSchema": {
    "type": "object",
    "properties": {
-    "overwrite": {
-     "type": "boolean"
+    "preset": {
+     "type": "string",
+     "enum": [
+      "mp4-h264-high",
+      "prores-422",
+      "prores-4444-alpha",
+      "png-seq",
+      "gif"
+     ]
     },
     "wait": {
      "type": "boolean"

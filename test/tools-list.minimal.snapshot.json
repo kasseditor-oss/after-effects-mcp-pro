@@ -393,9 +393,6 @@
       }
      ]
     },
-    "overwrite": {
-     "type": "boolean"
-    },
     "time": {
      "type": "number"
     },

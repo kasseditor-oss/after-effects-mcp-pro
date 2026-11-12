@@ -99,7 +99,7 @@ function compactSchema(js: any, toolName: string): any {
   };
   const c = strip(js);
   // rarely needed fields are not listed (still accepted: validation uses the full schema)
-  for (const k of ["inPoint", "outPoint", "label", "anchorPoint", "threeD", "blendMode", "timeoutSeconds"]) if (c.properties && k in c.properties && !(c.required ?? []).includes(k)) delete c.properties[k];
+  for (const k of ["inPoint", "outPoint", "label", "anchorPoint", "threeD", "blendMode", "timeoutSeconds", "overwrite"]) if (c.properties && k in c.properties && !(c.required ?? []).includes(k)) delete c.properties[k];
   // create_shape_layer: list only the shapes[] form (the single-shape top-level form still works)
   if (toolName === "create_shape_layer" && c.properties) {
     const keep = new Set(["comp", "shapes", "name", "position", "anchor", "scale", "rotation", "opacity", "startTime", "duration", "parent"]);
@@ -368,6 +368,12 @@ async function nodeTool(name: string, a: any, report?: Progress): Promise<CallTo
         throw new AEError(`Project must be saved before background rendering: ${e.message}`, "Call save_project with a path first.");
       });
       const id = Math.random().toString(36).slice(2, 8);
+      const PRESETS: Record<string, string> = { "mp4-h264-high": "H.264 - Match Render Settings - 40 Mbps", "prores-422": "High Quality", "prores-4444-alpha": "High Quality with Alpha" };
+      if (a.preset === "png-seq") return err("No PNG sequence output template in this After Effects", "Use render_png_sequence for numbered PNG frames.");
+      if (a.preset === "gif") return err("GIF is not available from scripts", "Render prores-422 or mp4-h264-high and convert; AE has no GIF output module and scripts cannot pick a Media Encoder preset.");
+      if (a.preset) a.outputModuleTemplate = PRESETS[a.preset];
+      // aerender fails with "Directory does not exist": create the output folder
+      try { fs.mkdirSync(path.dirname(a.outputPath), { recursive: true }); } catch { /* aerender reports it */ }
       const argv = ["-project", saved.file, "-comp", a.comp, "-output", a.outputPath];
       if (a.outputModuleTemplate) argv.push("-OMtemplate", a.outputModuleTemplate);
       if (a.renderSettingsTemplate) argv.push("-RStemplate", a.renderSettingsTemplate);

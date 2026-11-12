@@ -5439,6 +5439,79 @@
   }
  },
  {
+  "name": "add_layer_style",
+  "title": "Add layer style",
+  "description": "Add a Photoshop-style layer style (drop-shadow, inner-shadow, outer-glow, inner-glow, bevel-emboss, satin, color-overlay, gradient-overlay, stroke) and set its parameters by name (Color, Opacity, Size, Distance, ...). The result lists the available parameters.",
+  "inputSchema": {
+   "type": "object",
+   "properties": {
+    "comp": {
+     "anyOf": [
+      {
+       "type": "string"
+      },
+      {
+       "type": "integer"
+      }
+     ],
+     "description": "Composition name or numeric item id. Omit to use the active composition."
+    },
+    "layer": {
+     "anyOf": [
+      {
+       "type": "integer",
+       "exclusiveMinimum": 0
+      },
+      {
+       "type": "string"
+      }
+     ],
+     "description": "Layer: 1-based index, exact name, or 'id:<layerId>' (stable across reordering)."
+    },
+    "style": {
+     "type": "string",
+     "enum": [
+      "drop-shadow",
+      "inner-shadow",
+      "outer-glow",
+      "inner-glow",
+      "bevel-emboss",
+      "satin",
+      "color-overlay",
+      "gradient-overlay",
+      "stroke"
+     ]
+    },
+    "params": {
+     "type": "object",
+     "additionalProperties": {}
+    },
+    "timeoutSeconds": {
+     "type": "integer",
+     "minimum": 1,
+     "maximum": 3600,
+     "description": "Max seconds to wait for After Effects (default 60, long tools 300+)."
+    }
+   },
+   "required": [
+    "layer",
+    "style"
+   ]
+  },
+  "annotations": {
+   "readOnlyHint": false,
+   "destructiveHint": false,
+   "idempotentHint": false,
+   "openWorldHint": false
+  },
+  "_meta": {
+   "ui": {
+    "resourceUri": "ui://after-effects/activity.html"
+   },
+   "ui/resourceUri": "ui://after-effects/activity.html"
+  }
+ },
+ {
   "name": "add_mask",
   "title": "Add mask",
   "description": "Add a rectangle, ellipse or custom path mask with mode, feather, opacity, expansion and inversion. rect is [x,y,w,h] in layer space (default: layer bounds).",
@@ -6187,6 +6260,17 @@
   "inputSchema": {
    "type": "object",
    "properties": {
+    "preset": {
+     "type": "string",
+     "enum": [
+      "mp4-h264-high",
+      "prores-422",
+      "prores-4444-alpha",
+      "png-seq",
+      "gif"
+     ],
+     "description": "Overrides format. png-seq/gif: error with alternative."
+    },
     "comp": {
      "anyOf": [
       {
@@ -6498,6 +6582,17 @@
   "inputSchema": {
    "type": "object",
    "properties": {
+    "preset": {
+     "type": "string",
+     "enum": [
+      "mp4-h264-high",
+      "prores-422",
+      "prores-4444-alpha",
+      "png-seq",
+      "gif"
+     ],
+     "description": "Overrides format. png-seq/gif: error with alternative."
+    },
     "overwrite": {
      "type": "boolean",
      "description": "Replace an existing output file."
