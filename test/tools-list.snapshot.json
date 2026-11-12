@@ -4808,6 +4808,88 @@
   }
  },
  {
+  "name": "apply_expression_preset",
+  "title": "Expression preset",
+  "description": "Apply a ready expression (with its own Slider controls when useful): loop-cycle, loop-pingpong, inertia-bounce, wiggle-controlled, link-to-slider, time-remap-loop, follow-layer, fit-text-box, counter-number. Details: ae://docs/apply_expression_preset",
+  "inputSchema": {
+   "type": "object",
+   "properties": {
+    "comp": {
+     "anyOf": [
+      {
+       "type": "string"
+      },
+      {
+       "type": "integer"
+      }
+     ],
+     "description": "Composition name or numeric item id. Omit to use the active composition."
+    },
+    "layer": {
+     "anyOf": [
+      {
+       "type": "integer",
+       "exclusiveMinimum": 0
+      },
+      {
+       "type": "string"
+      }
+     ],
+     "description": "Layer: 1-based index, exact name, or 'id:<layerId>' (stable across reordering)."
+    },
+    "property": {
+     "type": "string",
+     "description": "Target property (each preset has a sensible default)."
+    },
+    "preset": {
+     "type": "string",
+     "enum": [
+      "loop-cycle",
+      "loop-pingpong",
+      "inertia-bounce",
+      "wiggle-controlled",
+      "link-to-slider",
+      "time-remap-loop",
+      "follow-layer",
+      "fit-text-box",
+      "counter-number"
+     ]
+    },
+    "params": {
+     "type": "object",
+     "additionalProperties": {}
+    },
+    "timeoutSeconds": {
+     "type": "integer",
+     "minimum": 1,
+     "maximum": 3600,
+     "description": "Max seconds to wait for After Effects (default 60, long tools 300+)."
+    }
+   },
+   "required": [
+    "layer",
+    "preset"
+   ]
+  },
+  "annotations": {
+   "title": "Expression preset",
+   "readOnlyHint": false,
+   "destructiveHint": false,
+   "idempotentHint": false,
+   "openWorldHint": false
+  },
+  "_meta": {
+   "ui": {
+    "resourceUri": "ui://after-effects/activity.html",
+    "visibility": [
+     "model",
+     "app"
+    ]
+   },
+   "ui/resourceUri": "ui://after-effects/activity.html"
+  }
+ },
+ {
   "name": "animate_layer",
   "title": "Animation preset",
   "description": "One-call animation preset: fade-in/out, slide-in/out, pop, scale-in, blur-in, typewriter, text-fade-up, wiggle, pulse, float, bounce, loop... e.g. {layer:'Title', preset:'pop', startTime:0.5}. Details: ae://docs/animate_layer",

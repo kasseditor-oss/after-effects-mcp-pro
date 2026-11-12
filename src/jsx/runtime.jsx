@@ -1794,6 +1794,84 @@
         return addTextAnimator(t.layer, a);
     };
 
+    // ---- Expression presets (with their own controls when useful)
+    function addSlider(layer, name, value) {
+        var parade = layer.property("ADBE Effect Parade");
+        var fx = null;
+        for (var i = 1; i <= parade.numProperties; i++) if (parade.property(i).name === name) fx = parade.property(i);
+        if (!fx) { fx = parade.addProperty("ADBE Slider Control"); fx.name = name; }
+        if (value !== undefined) fx.property(1).setValue(value);
+        return fx;
+    }
+    function exprQuote(s) { return '"' + String(s).replace(/\\/g, "\\\\").replace(/"/g, '\\"') + '"'; }
+    H.apply_expression_preset = function (a) {
+        var t = target(a), l = t.layer, c = t.comp, pr = a.params || {};
+        var preset = a.preset, controls = [];
+        var prop = a.property ? resolveProp(l, a.property) : null;
+        var expr;
+        function needProp(defaultPath) { if (!prop) prop = resolveProp(l, defaultPath); return prop; }
+        var dims = function () { var v = prop.value; return v instanceof Array ? v.length : 1; };
+        if (preset === "loop-cycle" || preset === "loop-pingpong") {
+            needProp("Position");
+            if (prop.numKeys < 2) fail("'" + prop.name + "' needs at least 2 keyframes to loop", "Add keyframes with set_keyframes first.");
+            expr = 'loopOut("' + (preset === "loop-cycle" ? "cycle" : "pingpong") + '")';
+        } else if (preset === "inertia-bounce") {
+            needProp("Position");
+            expr = "amp = " + def(pr.amplitude, 0.06) + "; freq = " + def(pr.frequency, 3) + "; decay = " + def(pr.decay, 6) + ";\n" +
+                "n = 0; if (numKeys > 0) { n = nearestKey(time).index; if (key(n).time > time) n--; }\n" +
+                "t = n == 0 ? 0 : time - key(n).time;\n" +
+                "if (n > 0 && t < 2) { v = velocityAtTime(key(n).time - thisComp.frameDuration / 10); value + v * amp * Math.sin(freq * t * 2 * Math.PI) / Math.exp(decay * t); } else value;";
+        } else if (preset === "wiggle-controlled") {
+            needProp("Position");
+            var host = pr.controlLayer ? getLayer(c, pr.controlLayer) : l;
+            addSlider(host, "Wiggle Frequency", def(pr.frequency, 2)); addSlider(host, "Wiggle Amount", def(pr.amount, 30));
+            controls.push(host.name + ": Wiggle Frequency, Wiggle Amount");
+            var ref = host === l ? "" : "thisComp.layer(" + exprQuote(host.name) + ").";
+            expr = "wiggle(" + ref + 'effect("Wiggle Frequency")("Slider"), ' + ref + 'effect("Wiggle Amount")("Slider"))';
+        } else if (preset === "link-to-slider") {
+            needProp("Opacity");
+            var sname = def(pr.name, prop.name + " Control");
+            var cur = prop.value, d = dims();
+            addSlider(l, sname, def(pr.value, cur instanceof Array ? cur[0] : cur));
+            controls.push(l.name + ": " + sname);
+            expr = d === 1 ? 'effect(' + exprQuote(sname) + ')("Slider")' : 's = effect(' + exprQuote(sname) + ')("Slider"); [' + (d === 3 ? "s, s, s" : "s, s") + "]";
+        } else if (preset === "time-remap-loop") {
+            if (!(l instanceof AVLayer) || !l.canSetTimeRemapEnabled) fail("Layer '" + l.name + "' cannot use time remapping (needs footage or a precomp)");
+            l.timeRemapEnabled = true;
+            prop = l.property("ADBE Time Remapping");
+            l.outPoint = c.duration;
+            expr = 'loopOut("cycle")';
+        } else if (preset === "follow-layer") {
+            needProp("Position");
+            if (!pr.target) fail("follow-layer needs params.target (the layer to follow)");
+            var tgt = getLayer(c, pr.target);
+            var off = pr.offset ? "[" + pr.offset.join(", ") + "]" : null;
+            expr = "d = " + def(pr.delay, 0.2) + ";\nthisComp.layer(" + exprQuote(tgt.name) + ").transform.position.valueAtTime(time - d)" + (off ? " + " + off : "");
+        } else if (preset === "fit-text-box") {
+            if (!(l instanceof TextLayer)) fail("fit-text-box needs a text layer");
+            prop = l.property("ADBE Transform Group").property("ADBE Scale");
+            var bw = def(pr.width, c.width * 0.8), bh = def(pr.height, c.height);
+            expr = "r = sourceRectAtTime(time, false);\ns = Math.min(" + def(pr.maxScale, 100) + ", " + bw + " / Math.max(r.width, 1) * 100, " + bh + " / Math.max(r.height, 1) * 100);\n[s, s" + (dims() === 3 ? ", s" : "") + "]";
+        } else if (preset === "counter-number") {
+            if (!(l instanceof TextLayer)) fail("counter-number needs a text layer");
+            prop = l.property("ADBE Text Properties").property("ADBE Text Document");
+            var sl = addSlider(l, "Counter", def(pr.from, 0));
+            var st = def(pr.startTime, l.inPoint), du = def(pr.duration, 2);
+            setKeys(sl.property(1), [{ time: st, value: def(pr.from, 0) }, { time: st + du, value: def(pr.to, 100) }], def(pr.easing, "smooth"));
+            controls.push(l.name + ": Counter (keyframed " + def(pr.from, 0) + " -> " + def(pr.to, 100) + ")");
+            var dec = def(pr.decimals, 0);
+            var body = dec > 0 ? "v.toFixed(" + dec + ")" : "Math.round(v).toString()";
+            if (pr.thousands) body = "(" + body + ').replace(/\\B(?=(\\d{3})+(?!\\d))/g, ' + exprQuote(pr.thousands) + ")";
+            expr = 'v = effect("Counter")("Slider");\n' + exprQuote(def(pr.prefix, "")) + " + " + body + " + " + exprQuote(def(pr.suffix, ""));
+        } else fail("Unknown expression preset '" + preset + "'");
+        if (!prop.canSetExpression) fail("Property '" + prop.name + "' does not accept expressions");
+        prop.expression = expr;
+        try { prop.valueAtTime(c.time, false); } catch (e) { }
+        var res = { layer: l.name, property: propPath(prop), preset: preset, expression: prop.expression, controls: controls };
+        if (prop.expressionError) { res.expressionError = prop.expressionError; prop.expressionEnabled = false; }
+        return res;
+    };
+
     // Procedural animation presets: keyframes and expressions built for you.
     H.animate_layer = function (a) {
         var t = target(a);

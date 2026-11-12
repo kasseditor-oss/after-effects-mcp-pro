@@ -424,6 +424,61 @@ await call("preview_contact_sheet", { comp: C, frames: 4, maxSize: 400 }, {
   const r = await client.callTool({ name: "preview_frame", arguments: { comp: host.data?.id, time: 0, format: "jpeg" } });
   fs.writeFileSync(path.join(out, "a4-eg.jpg"), Buffer.from(r.content.find((c) => c.type === "image").data, "base64"));
 }
+// expression presets: no expression errors and values that change over time
+{
+  const ex = await call("create_composition", { name: COMP + " expr", width: 640, height: 360, duration: 4, open: false });
+  const exId = ex.data?.id;
+  created.push(exId);
+  const inner = await call("create_composition", { name: COMP + " expr inner", width: 640, height: 360, duration: 1, open: false });
+  created.push(inner.data?.id);
+  await call("create_null_layer", { comp: inner.data?.id, name: "IN" });
+  await call("set_keyframes", { comp: inner.data?.id, layer: "IN", property: "Rotation", keyframes: [{ time: 0, value: 0 }, { time: 0.9, value: 90 }] });
+  await call("batch", { operations: [
+    { tool: "create_null_layer", args: { comp: exId, name: "L1" } },
+    { tool: "set_keyframes", args: { comp: exId, layer: "L1", property: "Rotation", keyframes: [{ time: 0, value: 0 }, { time: 1, value: 90 }] } },
+    { tool: "create_null_layer", args: { comp: exId, name: "L2" } },
+    { tool: "set_keyframes", args: { comp: exId, layer: "L2", property: "Position", keyframes: [{ time: 0, value: [100, 180] }, { time: 0.5, value: [500, 180] }] } },
+    { tool: "create_null_layer", args: { comp: exId, name: "L3" } },
+    { tool: "create_null_layer", args: { comp: exId, name: "L4" } },
+    { tool: "create_null_layer", args: { comp: exId, name: "L5" } },
+    { tool: "create_text_layer", args: { comp: exId, text: "a very long title that will not fit the box at all", fontSize: 80, name: "T1" } },
+    { tool: "create_text_layer", args: { comp: exId, text: "0", fontSize: 80, name: "T2" } },
+    { tool: "add_item_to_comp", args: { comp: exId, item: inner.data?.id, name: "Pre" } },
+  ] });
+  const cases = [
+    ["L1", "Rotation", "loop-cycle", {}, [0.5, 1.5]],
+    ["L1", "Rotation", "loop-pingpong", {}, [0.5, 1.25]],
+    ["L2", "Position", "inertia-bounce", { amplitude: 0.1 }, [0.55, 0.75]],
+    ["L3", "Position", "wiggle-controlled", { frequency: 3, amount: 40 }, [0.3, 1.3]],
+    ["L4", "Opacity", "link-to-slider", { value: 40 }, null],
+    ["L5", "Position", "follow-layer", { target: "L2", delay: 0.25 }, [0.2, 0.6]],
+    ["T1", undefined, "fit-text-box", { width: 400 }, null],
+    ["T2", undefined, "counter-number", { from: 0, to: 1000, duration: 2, startTime: 0, thousands: "." }, [0.5, 3]],
+    ["Pre", undefined, "time-remap-loop", {}, [0.5, 1.5]],
+  ];
+  for (const [layer, property, preset, params, times] of cases) {
+    const r = await call("apply_expression_preset", { comp: exId, layer, property, preset, params }, { check: (d) => (!d.expressionError ? true : d.expressionError) });
+    const prop = r.data?.property;
+    if (!prop) continue;
+    const v = async (t) => (await call("get_properties_at_time", { comp: exId, time: t, requests: [{ layer, properties: [prop] }] })).data?.results?.[0]?.values?.[prop];
+    let pass = true, note = "";
+    if (times) {
+      const a = await v(times[0]), b = await v(times[1]);
+      pass = JSON.stringify(a) !== JSON.stringify(b);
+      note = `${JSON.stringify(a)} -> ${JSON.stringify(b)}`;
+      if (preset === "loop-cycle") { const later = await v(1.5); const first = await v(0.5); pass = Math.abs(later - first) < 1e-3; note = `t=0.5 ${first}, t=1.5 ${later} (one cycle apart)`; }
+      // time remap loop: 1.5 s plays the same source time as 0.5 s (without the loop it would hold the last frame)
+      if (preset === "time-remap-loop") { pass = Math.abs(a - b) < 1e-3 && a > 0.4 && a < 0.6; note = `source time at 0.5 s ${a}, at 1.5 s ${b}`; }
+    } else if (preset === "link-to-slider") {
+      const val = await v(0); pass = Math.abs(val - 40) < 1e-6; note = `opacity ${val}`;
+    } else if (preset === "fit-text-box") {
+      const val = await v(0); pass = val[0] < 100; note = `scale ${JSON.stringify(val)}`;
+    }
+    results.push({ tool: `expression preset ${preset}`, pass, ms: 0, note });
+    if (!pass) console.log(`FAIL expression preset ${preset}: ${note}`);
+  }
+  await call("check_expressions", { comp: exId }, { check: (d) => (d.errors.length === 0 ? true : JSON.stringify(d.errors).slice(0, 200)) });
+}
 // text-fade-up must REVEAL the text: invisible before, fully visible after (pixel check)
 {
   const fc = await call("create_composition", { name: COMP + " fade", width: 640, height: 360, duration: 3, backgroundColor: "#000000", open: false });

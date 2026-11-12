@@ -66,6 +66,7 @@ export const TOOL_LABELS: Record<string, string> = {
   check_expressions: "Verificando expressões",
   animate_layer: "Animando layer",
   add_text_animator: "Criando animador de texto",
+  apply_expression_preset: "Aplicando expressão pronta",
   list_available_effects: "Procurando efeitos",
   apply_effect: "Aplicando efeito",
   get_layer_effects: "Lendo efeitos",
