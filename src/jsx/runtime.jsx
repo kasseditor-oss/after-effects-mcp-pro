@@ -2030,6 +2030,8 @@
         try { p.tmp.remove(); } catch (e2) { }
     }
 
+    var PARKABLE = { precompose_layers: 1, duplicate_composition: 1, sequence_layers: 1, run_extendscript: 1 };
+
     H.batch = function (a) {
         var out = [], failed = 0, stoppedAt = null, firstHint = null;
         var parked = a.operations.length > 20 && a.parkViewer !== false ? parkViewer() : null;
@@ -2098,7 +2100,11 @@
             if (!app.project && payload.tool !== "ping" && payload.tool !== "new_project") app.newProject();
             app.beginSuppressDialogs();
             if (payload.undo !== false) { app.beginUndoGroup("MCP: " + payload.tool); undoOpen = true; }
-            var data = h(payload.args || {});
+            var args = payload.args || {};
+            // heavy single tools can opt in to parking the viewer (batch handles it itself)
+            var parked = args.parkViewer === true && PARKABLE[payload.tool] ? parkViewer() : null;
+            var data;
+            try { data = h(args); } finally { unparkViewer(parked); }
             res = { ok: true, data: data };
         } catch (e) {
             res = { ok: false, error: e.toString().replace(/^Error: /, ""), hint: e.aeHint, line: e.line };

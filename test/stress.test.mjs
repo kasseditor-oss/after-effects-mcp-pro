@@ -121,6 +121,18 @@ await scenario("batch error in a 1000-layer comp", async () => {
   return { ms: r.ms, errorChars: r.text.length };
 });
 
+await scenario("run_extendscript 200 shapes, comp open: parkViewer off vs on", async () => {
+  const out = {};
+  for (const park of [false, true]) {
+    const comp = JSON.parse((await call("create_composition", { name: `MCP Stress Park ${park}`, preset: "1080p", open: true })).text);
+    const r = await call("run_extendscript", { code: "var c=AEMCP.getComp(args.c); for (var i=0;i<200;i++){ var l=c.layers.addShape(); var g=l.property('ADBE Root Vectors Group').addProperty('ADBE Vector Group'); g.property('ADBE Vectors Group').addProperty('ADBE Vector Shape - Ellipse'); } return c.numLayers;", args: { c: comp.id }, parkViewer: park, timeoutSeconds: 600 });
+    out[park ? "parkedMs" : "openMs"] = r.ms;
+    await call("modify_item", { item: comp.id, delete: true });
+  }
+  out.speedup = +(out.openMs / out.parkedMs).toFixed(2);
+  return out;
+});
+
 await scenario("get_project_info with ~50 comps", async () => {
   const made = JSON.parse((await call("run_extendscript", { code: "var ids=[]; for (var i=0;i<50;i++) ids.push(app.project.items.addComp('MCP Stress PI '+i,640,360,1,5,30).id); return ids;" })).text).result;
   const ms = [];

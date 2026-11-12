@@ -125,6 +125,8 @@ const matte = await call("create_text_layer", { comp: C, text: "MATTE", fontSize
 await call("create_solid_layer", { comp: C, name: "Gradient fill", color: "#ff8800" });
 await call("set_track_matte", { comp: C, layer: "Gradient fill", matteLayer: "MatteText", type: "alpha" }, { check: (d) => (d.trackMatte === "alpha" ? true : JSON.stringify(d.trackMatte)) });
 await call("split_layer", { comp: C, layer: "Hex 3", time: 3 });
+await call("run_extendscript", { code: "throw new Error('fail while parked')", parkViewer: true }, { expectError: true });
+await call("run_extendscript", { code: "var n=0; for (var i=1;i<=app.project.numItems;i++) if (app.project.item(i).name==='__aemcp_parked__') n++; return n;" }, { check: (d) => (d.result === 0 ? true : `parked comp left behind: ${d.result}`) });
 const pre = await call("precompose_layers", { comp: C, layers: ["MatteText", "Gradient fill"], name: "Matte Precomp" });
 if (pre.data?.precomp?.id) created.push(pre.data.precomp.id);
 await call("get_layer_details", { comp: C, layer: "Title", onlyAnimated: true }, { check: (d) => (d.properties.length ? true : "no animated props") });
