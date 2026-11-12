@@ -352,3 +352,18 @@ test("tools/list stays small (no per-tool icons)", async () => {
   const bytes = Buffer.byteLength(JSON.stringify({ tools }));
   assert.ok(bytes < 120_000, `tools/list is ${bytes} bytes`);
 });
+
+test("ES3 check rejects chained conditionals (ExtendScript evaluates them wrongly)", async () => {
+  const { execFileSync } = await import("node:child_process");
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), "aemcp-es3-"));
+  fs.mkdirSync(path.join(dir, "src", "jsx"), { recursive: true });
+  fs.mkdirSync(path.join(dir, "bridge"));
+  fs.writeFileSync(path.join(dir, "src", "jsx", "bad.jsx"), "var s = 'a'; var k = s === 'a' ? 0 : s === 'b' ? 1 : 2;");
+  fs.writeFileSync(path.join(dir, "bridge", "ok.jsx"), "var s = 'a'; var k = s === 'a' ? 0 : (s === 'b' ? 1 : 2);");
+  let failed = false, out = "";
+  try { execFileSync(process.execPath, [path.join(root, "scripts", "check-es3.mjs")], { cwd: dir, encoding: "utf8", stdio: "pipe" }); }
+  catch (e) { failed = true; out = String(e.stderr); }
+  assert.ok(failed, "chained ternary must fail the check");
+  assert.match(out, /bad\.jsx: line 1: nested/);
+  assert.doesNotMatch(out, /ok\.jsx/);
+});

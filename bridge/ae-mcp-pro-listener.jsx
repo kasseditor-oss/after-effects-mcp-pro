@@ -9,7 +9,7 @@
  */
 (function () {
     var G = $.global;
-    var VERSION = "2.0.1";
+    var VERSION = "2.0.2";
     if (G.AEMCP_LISTENER && G.AEMCP_LISTENER.version === VERSION && G.AEMCP_LISTENER.taskId) return;
     if (G.AEMCP_LISTENER && G.AEMCP_LISTENER.taskId) { try { app.cancelTask(G.AEMCP_LISTENER.taskId); } catch (e) { } }
 
@@ -60,7 +60,8 @@
             if (!L.paused) {
                 var files = new Folder(base + "/queue").getFiles("*.jsx");
                 if (files && files.length) {
-                    files.sort(function (a, b) { return a.name < b.name ? -1 : a.name > b.name ? 1 : 0; });
+                    // no chained ternary: ExtendScript evaluates a ? x : b ? y : z wrongly (returned 1 for a < b)
+                    files.sort(function (a, b) { if (a.name < b.name) return -1; if (a.name > b.name) return 1; return 0; });
                     var f = files[0];
                     var id = f.name.replace(/\.jsx$/, "").replace(/^\d+-/, "");
                     var running = new File(f.fsName + ".run");
