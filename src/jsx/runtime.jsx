@@ -1004,6 +1004,8 @@
         if (has(a, "inPoint")) l.inPoint = a.inPoint;
         if (has(a, "duration")) l.outPoint = l.inPoint + a.duration;
         if (has(a, "outPoint")) l.outPoint = a.outPoint;
+        // AE gives new layers the comp duration counted from their start: clamp to the comp end
+        if (l.outPoint > comp.duration + 1e-6 && l.inPoint < comp.duration) l.outPoint = comp.duration;
         var tg = l.property("ADBE Transform Group");
         if (has(a, "threeD") && l instanceof AVLayer) l.threeDLayer = !!a.threeD;
         if (has(a, "anchor")) setAnchor(l, a.anchor);
