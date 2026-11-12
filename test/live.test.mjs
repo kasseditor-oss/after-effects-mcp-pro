@@ -250,6 +250,18 @@ await call("preview_contact_sheet", { comp: C, frames: 4, maxSize: 400 }, {
   }
   await call("modify_item", { item: red.data?.id, delete: true });
 }
+// text style must not depend on AE's Character panel: make the panel "dirty" first
+{
+  const dirty = await call("create_composition", { name: COMP + " dirty", width: 320, height: 180, duration: 1, open: false });
+  created.push(dirty.data?.id);
+  await call("run_extendscript", { code: "var c=AEMCP.getComp(args.c); var l=c.layers.addText('dirty'); var p=l.property('ADBE Text Properties').property('ADBE Text Document'); var td=p.value; try{td.font='BebasNeue-Regular';}catch(e){} td.fauxBold=true; td.tracking=200; if (typeof FontCapsOption!=='undefined') td.fontCapsOption=FontCapsOption.FONT_ALL_CAPS; p.setValue(td); return 1;", args: { c: dirty.data?.id } });
+  await call("create_text_layer", { comp: dirty.data?.id, text: "clean text", name: "Clean" }, {
+    check: (d) => (d.appliedFont === "ArialMT" && d.caps === "normal" ? true : JSON.stringify({ font: d.appliedFont, caps: d.caps })),
+  });
+  await call("get_property", { comp: dirty.data?.id, layer: "Clean", property: "Source Text" }, {
+    check: (d) => (d.value.fauxBold === false && d.value.tracking === 0 && d.value.caps === "normal" ? true : JSON.stringify(d.value)),
+  });
+}
 // text-fade-up must REVEAL the text: invisible before, fully visible after (pixel check)
 {
   const fc = await call("create_composition", { name: COMP + " fade", width: 640, height: 360, duration: 3, backgroundColor: "#000000", open: false });

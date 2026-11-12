@@ -396,7 +396,7 @@
         try { o.tracking = td.tracking; o.leading = td.leading; o.autoLeading = td.autoLeading; } catch (e4) { }
         try { o.justification = justName(td.justification); } catch (e5) { }
         try { o.boxText = td.boxText; if (td.boxText) o.boxTextSize = td.boxTextSize; } catch (e6) { }
-        try { o.allCaps = td.allCaps; o.fauxBold = td.fauxBold; o.fauxItalic = td.fauxItalic; } catch (e7) { }
+        try { o.caps = capsName(td); o.allCaps = o.caps === "all"; o.fauxBold = td.fauxBold; o.fauxItalic = td.fauxItalic; } catch (e7) { }
         return o;
     }
 
@@ -415,6 +415,28 @@
         fail("Unknown justification '" + s + "'", "Use left, center, right or justify.");
     }
 
+    var CAPS = { "normal": "FONT_NORMAL_CAPS", "all": "FONT_ALL_CAPS", "small": "FONT_SMALL_CAPS", "all-small": "FONT_ALL_SMALL_CAPS" };
+    function setCaps(td, caps) {
+        if (typeof FontCapsOption !== "undefined") {
+            var k = CAPS[caps];
+            if (!k) fail("Unknown caps '" + caps + "'", "Use normal, all, small or all-small.");
+            td.fontCapsOption = FontCapsOption[k];
+        } else {
+            // AE before 24.0: only allCaps / smallCaps booleans exist
+            td.allCaps = caps === "all" || caps === "all-small";
+            try { td.smallCaps = caps === "small" || caps === "all-small"; } catch (e) { }
+        }
+    }
+    function capsName(td) {
+        try {
+            if (typeof FontCapsOption !== "undefined") {
+                for (var k in CAPS) if (CAPS.hasOwnProperty(k) && td.fontCapsOption === FontCapsOption[CAPS[k]]) return k;
+            }
+            return td.allCaps ? "all" : (td.smallCaps ? "small" : "normal");
+        } catch (e) { return null; }
+    }
+    A.capsName = capsName;
+
     function applyTextStyle(td, s) {
         if (has(s, "text")) td.text = String(s.text);
         if (has(s, "font")) td.font = s.font;
@@ -427,7 +449,8 @@
         if (has(s, "tracking")) td.tracking = s.tracking;
         if (has(s, "leading")) { td.autoLeading = false; td.leading = s.leading; }
         if (has(s, "justification")) td.justification = justValue(s.justification);
-        if (has(s, "allCaps")) td.allCaps = !!s.allCaps;
+        if (has(s, "caps")) setCaps(td, s.caps);
+        else if (has(s, "allCaps")) setCaps(td, s.allCaps ? "all" : "normal");
         if (has(s, "fauxBold")) td.fauxBold = !!s.fauxBold;
         if (has(s, "fauxItalic")) td.fauxItalic = !!s.fauxItalic;
         if (has(s, "baselineShift")) td.baselineShift = s.baselineShift;
@@ -962,9 +985,16 @@
         else l = c.layers.addText(String(a.text));
         var p = l.property("ADBE Text Properties").property("ADBE Text Document");
         var td = p.value;
-        var style = { font: a.font, fontSize: def(a.fontSize, 72), fillColor: def(a.color, "#ffffff"), strokeColor: a.strokeColor, strokeWidth: a.strokeWidth,
-            tracking: a.tracking, leading: a.leading, justification: def(a.justification, "center"), allCaps: a.allCaps, fauxBold: a.fauxBold, fauxItalic: a.fauxItalic };
-        if (!has(a, "strokeColor")) delete style.strokeColor;
+        // A new text layer copies AE's Character panel (last used font, ALL CAPS, faux styles...).
+        // Set every style explicitly so the result does not depend on the machine's UI state.
+        var style = { font: def(a.font, "ArialMT"), fontSize: def(a.fontSize, 72), fillColor: def(a.color, "#ffffff"), applyFill: true,
+            tracking: def(a.tracking, 0), baselineShift: 0, justification: def(a.justification, "center"),
+            caps: def(a.caps, has(a, "allCaps") ? (a.allCaps ? "all" : "normal") : "normal"),
+            fauxBold: !!a.fauxBold, fauxItalic: !!a.fauxItalic };
+        if (has(a, "leading")) style.leading = a.leading; else td.autoLeading = true;
+        if (has(a, "strokeColor")) { style.strokeColor = a.strokeColor; style.strokeWidth = def(a.strokeWidth, 2); }
+        else if (has(a, "strokeWidth")) style.strokeWidth = a.strokeWidth;
+        else td.applyStroke = false;
         try { applyTextStyle(td, style); } catch (e) {
             if (style.font) { delete style.font; applyTextStyle(td, style); } else throw e;
         }
@@ -974,6 +1004,7 @@
         placeLayer(c, l, a);
         var res = layerSummary(l);
         res.appliedFont = p.value.font;
+        res.caps = capsName(p.value);
         if (has(a, "font") && !fontExists(a.font)) res.warning = "Font '" + a.font + "' is not installed (AE shows it as missing). Use list_fonts to find an installed PostScript name.";
         return res;
     };
