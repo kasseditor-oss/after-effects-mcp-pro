@@ -502,7 +502,7 @@ await call("preview_contact_sheet", { comp: C, frames: 4, maxSize: 400 }, {
     check: (d) => (d.markers >= 4 && [0.25, 0.75, 1.25, 1.75].every((b) => d.times.some((t) => Math.abs(t - b) < 0.12)) ? true : JSON.stringify(d)),
   });
 }
-// keyframes on markers
+// keyframes on markers; motion along an L-shaped path
 {
   const kc = await call("create_composition", { name: COMP + " beats", width: 640, height: 640, duration: 4, open: false });
   created.push(kc.data?.id);
@@ -511,6 +511,14 @@ await call("preview_contact_sheet", { comp: C, frames: 4, maxSize: 400 }, {
   await call("keyframes_from_markers", { comp: kc.data?.id, layer: "K", property: "Scale", values: [[100, 100], [130, 130]], pattern: "alternate" }, {
     check: (d) => (d.keys === 4 && JSON.stringify(d.times) === "[0.5,1,1.5,2]" ? true : JSON.stringify(d)),
   });
+  // path: solid the size of the comp (layer space = comp space), open L with two 300 px legs
+  await call("create_solid_layer", { comp: kc.data?.id, name: "PathHolder", color: "#000000" });
+  await call("add_mask", { comp: kc.data?.id, layer: "PathHolder", shape: "path", vertices: [[100, 100], [400, 100], [400, 400]], closed: false });
+  await call("create_null_layer", { comp: kc.data?.id, name: "Rider" });
+  await call("position_along_path", { comp: kc.data?.id, layer: "Rider", pathLayer: "PathHolder", startTime: 0, duration: 2 }, { check: (d) => (d.keys === 3 && Math.abs(d.length - 600) < 2 ? true : JSON.stringify(d)) });
+  const mid = (await call("get_properties_at_time", { comp: kc.data?.id, time: 1, requests: [{ layer: "Rider", properties: ["Position"] }] })).data?.results?.[0]?.values?.Position;
+  const dist = mid ? Math.hypot(mid[0] - 400, mid[1] - 100) : 999;
+  results.push({ tool: "position along path: corner at half time", pass: dist <= 10, ms: 0, note: `t=1 at ${JSON.stringify(mid)} (${dist.toFixed(1)} px from the corner)` });
 }
 // text-fade-up must REVEAL the text: invisible before, fully visible after (pixel check)
 {

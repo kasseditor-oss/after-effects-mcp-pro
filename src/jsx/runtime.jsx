@@ -2342,6 +2342,84 @@
         return { property: propPath(p), keys: keys.length, times: (function () { var o = []; for (var j = 0; j < keys.length; j++) o.push(round(keys[j].time, 3)); return o; })() };
     };
 
+    // ---- Motion along a path (mask or shape path) -> Position keyframes
+    function toCompPoint(layer, pt, time) {
+        // 2D layer transform: position + R(rotation) * ((pt - anchor) * scale)
+        var tg = layer.property("ADBE Transform Group");
+        var ap = tg.property("ADBE Anchor Point").valueAtTime(time, false), pos = tg.property("ADBE Position").valueAtTime(time, false);
+        var sc = tg.property("ADBE Scale").valueAtTime(time, false), r = tg.property("ADBE Rotate Z").valueAtTime(time, false) * Math.PI / 180;
+        var x = (pt[0] - ap[0]) * sc[0] / 100, y = (pt[1] - ap[1]) * sc[1] / 100;
+        return [pos[0] + x * Math.cos(r) - y * Math.sin(r), pos[1] + x * Math.sin(r) + y * Math.cos(r)];
+    }
+    function toCompVector(layer, v, time) {
+        var tg = layer.property("ADBE Transform Group");
+        var sc = tg.property("ADBE Scale").valueAtTime(time, false), r = tg.property("ADBE Rotate Z").valueAtTime(time, false) * Math.PI / 180;
+        var x = v[0] * sc[0] / 100, y = v[1] * sc[1] / 100;
+        return [x * Math.cos(r) - y * Math.sin(r), x * Math.sin(r) + y * Math.cos(r)];
+    }
+    function segLength(p0, o0, i1, p1) {
+        // cubic bezier length by sampling
+        var c1 = [p0[0] + o0[0], p0[1] + o0[1]], c2 = [p1[0] + i1[0], p1[1] + i1[1]], len = 0, prev = p0;
+        for (var s = 1; s <= 16; s++) {
+            var u = s / 16, w = 1 - u;
+            var x = w * w * w * p0[0] + 3 * w * w * u * c1[0] + 3 * w * u * u * c2[0] + u * u * u * p1[0];
+            var y = w * w * w * p0[1] + 3 * w * w * u * c1[1] + 3 * w * u * u * c2[1] + u * u * u * p1[1];
+            len += Math.sqrt((x - prev[0]) * (x - prev[0]) + (y - prev[1]) * (y - prev[1]));
+            prev = [x, y];
+        }
+        return len;
+    }
+    H.position_along_path = function (a) {
+        var c = getComp(a.comp);
+        var l = getLayer(c, a.layer), pl = getLayer(c, a.pathLayer);
+        var pp = a.pathProperty ? resolveProp(pl, a.pathProperty) : null;
+        if (!pp) {
+            try { pp = pl.property("ADBE Mask Parade").property(1).property("ADBE Mask Shape"); } catch (e) { pp = null; }
+        }
+        if (!pp || pp.propertyValueType !== PropertyValueType.SHAPE) fail("No path found on '" + pl.name + "'", "Pass pathProperty, e.g. 'Masks/Mask 1/Mask Path' or a shape layer 'Contents/Shape 1/Contents/Path 1/Path'.");
+        var start = def(a.startTime, l.inPoint), dur = def(a.duration, 2);
+        var sh = pp.valueAtTime(start, false);
+        // shape paths live inside their group: add the group's position when reading a shape layer path
+        var off = [0, 0];
+        try { var grp = pp.propertyGroup(3); var gp = grp.property("ADBE Vector Transform Group").property("ADBE Vector Position").value; off = [gp[0], gp[1]]; } catch (e2) { }
+        var n = sh.vertices.length, pts = [], ins = [], outs = [];
+        for (var i = 0; i < n; i++) {
+            var v = [sh.vertices[i][0] + off[0], sh.vertices[i][1] + off[1]];
+            pts.push(toCompPoint(pl, v, start));
+            ins.push(toCompVector(pl, sh.inTangents[i], start));
+            outs.push(toCompVector(pl, sh.outTangents[i], start));
+        }
+        var order = []; for (var k = 0; k < n; k++) order.push(k);
+        if (sh.closed) order.push(0);
+        var lens = [0], total = 0;
+        for (var j = 1; j < order.length; j++) {
+            total += segLength(pts[order[j - 1]], outs[order[j - 1]], ins[order[j]], pts[order[j]]);
+            lens.push(total);
+        }
+        if (total <= 0) fail("Path has no length");
+        var pos = l.property("ADBE Transform Group").property("ADBE Position");
+        if (a.replace !== false) while (pos.numKeys > 0) pos.removeKey(1);
+        var dims = pos.value.length;
+        for (var m = 0; m < order.length; m++) {
+            var tm = start + dur * lens[m] / total;
+            var pt = pts[order[m]];
+            var key = pos.addKey(tm);
+            pos.setValueAtKey(key, dims === 3 ? [pt[0], pt[1], pos.value[2]] : pt);
+        }
+        for (var q2 = 1; q2 <= pos.numKeys; q2++) {
+            var idx = order[q2 - 1];
+            var tin = ins[idx], tout = outs[idx];
+            if (!sh.closed && q2 === 1) tin = [0, 0];
+            if (!sh.closed && q2 === pos.numKeys) tout = [0, 0];
+            pos.setSpatialTangentsAtKey(q2, dims === 3 ? [tin[0], tin[1], 0] : tin, dims === 3 ? [tout[0], tout[1], 0] : tout);
+            pos.setInterpolationTypeAtKey(q2, KeyframeInterpolationType.LINEAR, KeyframeInterpolationType.LINEAR);
+            // constant speed along the path
+            if (q2 > 1 && q2 < pos.numKeys) { try { pos.setRovingAtKey(q2, true); } catch (e3) { } }
+        }
+        if (a.autoOrient) l.autoOrient = AutoOrientType.ALONG_PATH;
+        return { layer: l.name, keys: pos.numKeys, length: round(total, 2), start: round(start), end: round(start + dur) };
+    };
+
     // ---- Markers
     function listMarkers(mp) {
         var out = [];

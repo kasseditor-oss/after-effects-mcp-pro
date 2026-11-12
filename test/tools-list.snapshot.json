@@ -4800,6 +4800,90 @@
   }
  },
  {
+  "name": "position_along_path",
+  "title": "Move along a path",
+  "description": "Animate a layer's Position along a mask path or shape path of another layer: keyframes at every vertex, timed by path length (constant speed), with the path's curves as spatial tangents; autoOrient turns it along the path.",
+  "inputSchema": {
+   "type": "object",
+   "properties": {
+    "comp": {
+     "anyOf": [
+      {
+       "type": "string"
+      },
+      {
+       "type": "integer"
+      }
+     ],
+     "description": "Composition name or numeric item id. Omit to use the active composition."
+    },
+    "layer": {
+     "anyOf": [
+      {
+       "type": "integer",
+       "exclusiveMinimum": 0
+      },
+      {
+       "type": "string"
+      }
+     ],
+     "description": "Layer: 1-based index, exact name, or 'id:<layerId>' (stable across reordering)."
+    },
+    "pathLayer": {
+     "anyOf": [
+      {
+       "type": "integer",
+       "exclusiveMinimum": 0
+      },
+      {
+       "type": "string"
+      }
+     ],
+     "description": "Layer: 1-based index, exact name, or 'id:<layerId>' (stable across reordering)."
+    },
+    "pathProperty": {
+     "type": "string",
+     "description": "Default: the first mask's path."
+    },
+    "startTime": {
+     "type": "number"
+    },
+    "duration": {
+     "type": "number",
+     "exclusiveMinimum": 0
+    },
+    "autoOrient": {
+     "type": "boolean"
+    },
+    "replace": {
+     "type": "boolean"
+    },
+    "timeoutSeconds": {
+     "type": "integer",
+     "minimum": 1,
+     "maximum": 3600,
+     "description": "Max seconds to wait for After Effects (default 60, long tools 300+)."
+    }
+   },
+   "required": [
+    "layer",
+    "pathLayer"
+   ]
+  },
+  "annotations": {
+   "readOnlyHint": false,
+   "destructiveHint": false,
+   "idempotentHint": false,
+   "openWorldHint": false
+  },
+  "_meta": {
+   "ui": {
+    "resourceUri": "ui://after-effects/activity.html"
+   },
+   "ui/resourceUri": "ui://after-effects/activity.html"
+  }
+ },
+ {
   "name": "animate_layer",
   "title": "Animation preset",
   "description": "One-call animation preset: fade-in/out, slide-in/out, pop, scale-in, blur-in, typewriter, text-fade-up, wiggle, pulse, float, bounce, loop... e.g. {layer:'Title', preset:'pop', startTime:0.5}. Details: ae://docs/animate_layer",
