@@ -295,3 +295,25 @@ test("tools/list matches the committed snapshot", async () => {
   const saved = JSON.parse(fs.readFileSync(file, "utf8"));
   assert.deepEqual(current, saved, "tools/list changed: run UPDATE_SNAPSHOT=1 npm test if intended");
 });
+
+test("an undo group makes one undo call revert every grouped call", async () => {
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), "aemcp-undo-"));
+  const seen = [];
+  const stop = fakeListener(dir, (p) => { seen.push(p); return { ok: true, id: p.id, data: { name: "x" } }; });
+  await new Promise((r) => setTimeout(r, 60));
+  const client = await connect({ AE_MCP_BRIDGE_DIR: dir, AE_MCP_NO_COALESCE: "1" });
+  await client.callTool({ name: "begin_undo_group", arguments: { name: "idea" } });
+  for (let i = 0; i < 3; i++) await client.callTool({ name: "create_null_layer", arguments: { name: "n" + i } });
+  await client.callTool({ name: "list_layers", arguments: {} }); // read-only: not a step
+  const end = JSON.parse((await client.callTool({ name: "end_undo_group", arguments: {} })).content[0].text);
+  assert.equal(end.steps, 3);
+  const u = await client.callTool({ name: "undo", arguments: {} });
+  assert.match(u.content[0].text, /3 step/);
+  assert.equal(seen.at(-1).tool, "undo");
+  assert.equal(seen.at(-1).args.steps, 3);
+  // the group is consumed: a plain undo afterwards is one step again
+  await client.callTool({ name: "undo", arguments: {} });
+  assert.equal(seen.at(-1).args.steps, undefined);
+  stop();
+  await client.close();
+});

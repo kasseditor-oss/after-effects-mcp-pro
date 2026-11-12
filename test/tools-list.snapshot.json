@@ -6234,9 +6234,65 @@
   }
  },
  {
+  "name": "begin_undo_group",
+  "title": "Begin undo group",
+  "description": "Start grouping the following calls so ONE undo call reverts them all (e.g. 10 calls that build one idea). Closes automatically after 120 s without calls or at the next begin_undo_group. After Effects' own Ctrl+Z still undoes one call at a time.",
+  "inputSchema": {
+   "type": "object",
+   "properties": {
+    "name": {
+     "type": "string"
+    }
+   }
+  },
+  "annotations": {
+   "title": "Begin undo group",
+   "readOnlyHint": false,
+   "destructiveHint": false,
+   "idempotentHint": false,
+   "openWorldHint": false
+  },
+  "_meta": {
+   "ui": {
+    "resourceUri": "ui://after-effects/activity.html",
+    "visibility": [
+     "model",
+     "app"
+    ]
+   },
+   "ui/resourceUri": "ui://after-effects/activity.html"
+  }
+ },
+ {
+  "name": "end_undo_group",
+  "title": "End undo group",
+  "description": "Close the open undo group. The next undo call without steps reverts every call of the group.",
+  "inputSchema": {
+   "type": "object",
+   "properties": {}
+  },
+  "annotations": {
+   "title": "End undo group",
+   "readOnlyHint": false,
+   "destructiveHint": false,
+   "idempotentHint": false,
+   "openWorldHint": false
+  },
+  "_meta": {
+   "ui": {
+    "resourceUri": "ui://after-effects/activity.html",
+    "visibility": [
+     "model",
+     "app"
+    ]
+   },
+   "ui/resourceUri": "ui://after-effects/activity.html"
+  }
+ },
+ {
   "name": "undo",
   "title": "Undo / redo",
-  "description": "Undo or redo the last After Effects steps. Every MCP call is a single undo step.",
+  "description": "Undo or redo the last After Effects steps. Every MCP call is a single undo step; right after end_undo_group, undo without steps reverts the whole group.",
   "inputSchema": {
    "type": "object",
    "properties": {

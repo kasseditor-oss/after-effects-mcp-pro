@@ -43,6 +43,7 @@ The server also has 3 resources (`aftereffects://project`, `aftereffects://compo
 
 - Roto Brush and Content-Aware Fill have no ExtendScript API, so no tool can drive them.
 - A script that After Effects is already running cannot be interrupted (cancel and timeouts only stop waiting).
+- After Effects closes an undo group at the end of each script run, so `begin_undo_group` / `end_undo_group` are tracked by the server: the `undo` tool reverts the whole group in one call, but Ctrl+Z inside After Effects still undoes one call at a time.
 - Live tests run on Windows; macOS support is implemented but has not been tested on a Mac.
 
 ## Install

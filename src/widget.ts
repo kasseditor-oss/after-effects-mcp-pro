@@ -85,6 +85,8 @@ export const TOOL_LABELS: Record<string, string> = {
   get_selection: "Lendo a seleção",
   select_layers: "Selecionando layers",
   undo: "Desfazendo",
+  begin_undo_group: "Iniciando grupo de undo",
+  end_undo_group: "Fechando grupo de undo",
   execute_menu_command: "Executando comando de menu",
   run_extendscript: "Executando ExtendScript",
   batch: "Executando lote de operações",

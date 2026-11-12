@@ -175,6 +175,15 @@ await call("batch", { atomic: true, operations: [
 await call("list_layers", { comp: C }, { check: (d) => (d.total === nBefore ? true : `atomic batch not reverted: ${nBefore} -> ${d.total}`) });
 await call("create_null_layer", { comp: C, name: "TmpNull" });
 await call("delete_layers", { comp: C, layers: ["TmpNull"], removeSources: true }, { check: (d) => (d.removedSources === 1 ? true : JSON.stringify(d)) });
+// undo group: 3 calls, one undo, all 3 layers gone
+{
+  const before = (await call("list_layers", { comp: C })).data?.total;
+  await call("begin_undo_group", { name: "three nulls" });
+  for (let i = 0; i < 3; i++) await call("create_null_layer", { comp: C, name: `UG${i}` });
+  await call("end_undo_group", {}, { check: (d) => (d.steps === 3 ? true : JSON.stringify(d)) });
+  await call("undo", {}, { check: (d) => (/3 step/.test(d.note) ? true : JSON.stringify(d)) });
+  await call("list_layers", { comp: C }, { check: (d) => (d.total === before ? true : `expected ${before} layers, got ${d.total}`) });
+}
 await call("delete_layers", { comp: C, layers: ["Grade"] });
 await call("remove_keyframes", { comp: C, layer: "Title", property: "Position", from: 1 });
 await call("remove_masks", { comp: C, layer: "BG" });

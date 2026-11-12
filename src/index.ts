@@ -221,9 +221,22 @@ async function nodeTool(name: string, a: any, report?: Progress): Promise<CallTo
         }
       }
       status.diagnostics = bridge.diagnostics();
+      status.undoGroup = undoGroupState();
       const warn = bridge.listenerVersionWarning();
       if (warn) status.warning = warn;
       return ok(status);
+    }
+    case "begin_undo_group": {
+      undoGroupState();
+      const previous = closeUndoGroup("replaced");
+      undoGroup = { name: a.name ?? "MCP group", steps: 0, opened: Date.now(), lastCall: Date.now() };
+      return ok({ open: undoGroup.name, closedPrevious: previous });
+    }
+    case "end_undo_group": {
+      undoGroupState();
+      if (!undoGroup) return ok({ closed: null, note: "No group was open", lastClosed: closedGroup });
+      const g = closeUndoGroup("ended")!;
+      return ok({ closed: g.name, steps: g.steps, note: g.steps ? `The next undo (without steps) reverts these ${g.steps} step(s).` : "Nothing to undo in this group." });
     }
     case "launch_after_effects": {
       const r = await bridge.launch(a.waitSeconds ?? 180);
@@ -323,6 +336,26 @@ async function nodeTool(name: string, a: any, report?: Progress): Promise<CallTo
 }
 
 // ------------------------------------------------------------------ dispatcher
+// ------------------------------------------------------------------ undo groups
+// AE closes an undo group when a script run ends, so a group cannot span calls inside
+// AE. The server counts the undo steps of the calls made while a group is open; the
+// next undo without "steps" after end_undo_group reverts exactly that many.
+const UNDO_IDLE_MS = 120_000;
+const NOT_COUNTED = new Set(["undo", "begin_undo_group", "end_undo_group"]);
+let undoGroup: { name: string; steps: number; opened: number; lastCall: number } | null = null;
+let closedGroup: { name: string; steps: number } | null = null;
+function closeUndoGroup(reason: string) {
+  if (!undoGroup) return null;
+  closedGroup = { name: undoGroup.name, steps: undoGroup.steps };
+  const g = { ...closedGroup, reason };
+  undoGroup = null;
+  return g;
+}
+function undoGroupState() {
+  if (undoGroup && Date.now() - undoGroup.lastCall > UNDO_IDLE_MS) closeUndoGroup("idle");
+  return { open: undoGroup ? { name: undoGroup.name, steps: undoGroup.steps, idleSeconds: Math.round((Date.now() - undoGroup.lastCall) / 1000) } : null, lastClosed: closedGroup };
+}
+
 const MAX_TEXT = 20_000;
 function largeTextIssue(tool: string, a: any): string | null {
   if ((tool === "create_text_layer" || tool === "set_text") && typeof a.text === "string" && a.text.length > MAX_TEXT && !a.allowLargeText) {
@@ -386,12 +419,30 @@ async function dispatch(req: { params: { name: string; arguments?: Record<string
         op.args = p.data;
       }
     }
+    undoGroupState(); // auto-close an idle group
+    if (name === "undo" && args.steps === undefined && (args.action ?? "undo") === "undo") {
+      if (undoGroup) closeUndoGroup("undo");
+      if (closedGroup && closedGroup.steps > 0) {
+        const g = closedGroup;
+        closedGroup = null;
+        args.steps = g.steps;
+        const data = await bridge.call("undo", args, { undo: false, signal });
+        return ok({ ...(data as object), group: g.name, note: `Reverted undo group '${g.name}' (${g.steps} step(s))` });
+      }
+    }
     let timeoutMs = def.timeoutMs ?? 60_000;
     if (args.timeoutSeconds) timeoutMs = args.timeoutSeconds * 1000;
     delete args.timeoutSeconds;
     // read-only tools change nothing: no undo group (it costs time and adds empty undo steps)
     const undo = name === "run_extendscript" ? args.undoable !== false : def.undo !== false && !def.readOnly;
     const data: any = await bridge.call(def.handler ?? name, args, { timeoutMs, undo, timeoutParam: true, signal, onProgress: report });
+    // one AE undo step per successful changing call (an atomic batch that rolled back leaves none)
+    if (undo && !NOT_COUNTED.has(name) && !(name === "batch" && data?.rolledBack)) {
+      if (undoGroup) {
+        undoGroup.steps++;
+        undoGroup.lastCall = Date.now();
+      } else closedGroup = null; // a new step after the group: "undo" means just this step again
+    }
     if (name === "batch" && data?.failed > 0) {
       const first = data.results.find((r: any) => !r.ok);
       return {
