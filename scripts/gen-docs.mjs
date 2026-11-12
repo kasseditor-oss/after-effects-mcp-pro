@@ -25,7 +25,7 @@ const EXAMPLES = {
   batch: { operations: [{ tool: "create_text_layer", args: { comp: "Main", text: "Hello" } }, { tool: "animate_layer", args: { comp: "Main", layer: "Hello", preset: "fade-in" } }] },
   set_keyframes: { comp: "Main", layer: "Title", property: "Position", keyframes: [{ time: 0, value: [960, 700] }, { time: 0.6, value: [960, 540] }], easing: "easy-ease" },
   create_shape_layer: { comp: "Main", shapes: [{ type: "rectangle", size: [600, 120], fill: "#1e90ff", roundness: 20 }], name: "Bar" },
-  create_text_layer: { comp: "Main", text: "LAUNCH DAY", fontSize: 120, fillColor: "#ffffff", position: [960, 540] },
+  create_text_layer: { comp: "Main", text: "LAUNCH DAY", fontSize: 120, color: "#ffffff", position: [960, 540] },
   create_composition: { name: "Main", preset: "1080p", duration: 10 },
   animate_layer: { comp: "Main", layer: "Title", preset: "text-fade-up", startTime: 0, duration: 0.8 },
   apply_effect: { comp: "Main", layer: "Title", effect: "Gaussian Blur", params: { Blurriness: 12 } },
@@ -125,6 +125,7 @@ for (const [c, list] of byCategory) {
     // required parameters, plus comp/layer when the tool takes them (most calls name them)
     const shown = [...(t.inputSchema?.required ?? [])];
     for (const k of ["comp", "layer"]) if (props[k] && !shown.includes(k)) shown.unshift(k);
+    for (const k of Object.keys(EXAMPLES[t.name] ?? {})) if (!props[k]) throw new Error(`example for ${t.name} uses unknown parameter '${k}'`);
     const ex = EXAMPLES[t.name] ?? example({ type: "object", required: shown, properties: props });
     md += "```json\n" + JSON.stringify({ name: t.name, arguments: ex }) + "\n```\n";
   }

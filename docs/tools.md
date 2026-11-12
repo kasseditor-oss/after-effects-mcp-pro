@@ -365,7 +365,7 @@ No parameters.
 | `parent` | number \| string |  | Parent layer, or '' for none. |
 
 ```json
-{"name":"create_text_layer","arguments":{"comp":"Main","text":"LAUNCH DAY","fontSize":120,"fillColor":"#ffffff","position":[960,540]}}
+{"name":"create_text_layer","arguments":{"comp":"Main","text":"LAUNCH DAY","fontSize":120,"color":"#ffffff","position":[960,540]}}
 ```
 
 ### create_shape_layer
