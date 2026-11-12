@@ -11,7 +11,7 @@ It started from the most-starred After Effects MCP on GitHub ([Dakkshin/after-ef
 | Results | Most tools return "queued", then you call `get-results` | Every tool returns the real result in the same call |
 | Concurrency | One shared command file and one shared result file. Calls overwrite each other. | Each call has its own id and its own result file. Calls are serialized. |
 | Setup in AE | Open a floating panel by hand. Copying the panel needs admin rights. | Works with zero setup (`AfterFX.exe -r`). Optional startup listener with no admin rights and no panel to open. |
-| Speed | Polls every 2 s | ~0.35 s per call in direct mode, ~0.15 s with the listener |
+| Speed | Polls every 2 s | ~0.4-0.6 s per call in direct mode, ~0.1-0.15 s with the listener |
 | Comp addressing | `app.project.items[compIndex]` (breaks when there are folders or footage) | Name or item id, with the active comp as the default |
 | Layer addressing | Index only | Index, name, or a stable `id:<n>` |
 | Non-English AE | Uses display names ("Transform", "Position") | Uses match names internally, so it works in any AE language |

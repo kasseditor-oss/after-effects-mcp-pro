@@ -3,7 +3,7 @@ import * as fs from "node:fs";
 import * as path from "node:path";
 import { execFile, execSync, spawn } from "node:child_process";
 import { fileURLToPath } from "node:url";
-import { aeReady, bridgeDir, findInstalls, isAERunning, isMac, isWin } from "./env.js";
+import { aePids, aeReady, bridgeDir, findInstalls, isMac, isWin } from "./env.js";
 
 const here = path.dirname(fileURLToPath(import.meta.url));
 
@@ -70,7 +70,8 @@ export class Bridge {
   private runningCache: { at: number; value: boolean } = { at: 0, value: false };
   private chain: Promise<unknown> = Promise.resolve();
   lastMode: Mode | null = null;
-  private readyAt = 0;
+  private pids: number[] = [];
+  private readyPids = new Set<number>();
   private lastAliveCheck = 0;
   readonly stats = { calls: 0, timeouts: 0, ioErrors: 0, latencies: [] as number[] };
 
@@ -132,7 +133,8 @@ export class Bridge {
 
   aeRunning(): boolean {
     if (Date.now() - this.runningCache.at < 2000) return this.runningCache.value;
-    const value = isAERunning();
+    this.pids = aePids();
+    const value = this.pids.length > 0;
     this.runningCache = { at: Date.now(), value };
     return value;
   }
@@ -149,9 +151,11 @@ export class Bridge {
       throw new AEError("After Effects is not running", "Open After Effects, or call the launch_after_effects tool.", "AE_NOT_RUNNING");
     }
     // once AE has been seen ready, skip the (slow) window-title check for 60 s
-    if (Date.now() - this.readyAt > 60_000) {
+    // The window-title check (tasklist /V) is slow: once an AE process has been
+    // seen ready it stays ready, so only re-check when the PID changes.
+    if (!this.pids.some((p) => this.readyPids.has(p))) {
       if (!aeReady()) throw new AEError("After Effects is still starting up", "Wait until the main window shows a project, then retry (launch_after_effects waits for you).", "AE_STARTING");
-      this.readyAt = Date.now();
+      for (const p of this.pids) this.readyPids.add(p);
     }
     return "direct";
   }

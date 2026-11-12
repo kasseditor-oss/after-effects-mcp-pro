@@ -67,21 +67,31 @@ export function findInstalls(): AEInstall[] {
   return out;
 }
 
-/** True if an After Effects process is running. */
-export function isAERunning(): boolean {
+/** PIDs of running After Effects processes (empty when closed). */
+export function aePids(): number[] {
   try {
     if (isWin) {
-      const out = execFileSync("tasklist", ["/FI", "IMAGENAME eq AfterFX.exe", "/NH"], { encoding: "utf8", windowsHide: true });
-      return /AfterFX\.exe/i.test(out);
+      const out = execFileSync("tasklist", ["/FI", "IMAGENAME eq AfterFX.exe", "/FO", "CSV", "/NH"], { encoding: "utf8", windowsHide: true });
+      return out
+        .split(/\r?\n/)
+        .filter((l) => /AfterFX\.exe/i.test(l))
+        .map((l) => Number((l.split('","')[1] || "").replace(/"/g, "")))
+        .filter((n) => n > 0);
     }
     if (isMac) {
-      const out = execFileSync("pgrep", ["-f", "After Effects"], { encoding: "utf8" });
-      return out.trim().length > 0;
+      // exact process name: "-f After Effects" also matched aerender and anything mentioning it
+      const out = execFileSync("pgrep", ["-x", "After Effects"], { encoding: "utf8" });
+      return out.split(/\s+/).map(Number).filter((n) => n > 0);
     }
   } catch {
-    return false;
+    return [];
   }
-  return false;
+  return [];
+}
+
+/** True if an After Effects process is running. */
+export function isAERunning(): boolean {
+  return aePids().length > 0;
 }
 
 /**
