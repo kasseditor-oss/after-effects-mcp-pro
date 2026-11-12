@@ -494,6 +494,19 @@ const NOT_COUNTED = new Set(["undo", "begin_undo_group", "end_undo_group"]);
 let undoGroup: { name: string; steps: number; opened: number; lastCall: number } | null = null;
 let closedGroup: { name: string; steps: number } | null = null;
 let undoneGroup: { name: string; steps: number } | null = null;
+let lastChangeAt = 0;
+// layers created by the last changing call, to verify that an undo really removed them
+let lastCreated: number[] = [];
+function createdIds(tool: string, data: any): number[] {
+  if (!data) return [];
+  if (tool.startsWith("create_") && typeof data.id === "number" && typeof data.index === "number") return [data.id];
+  if (tool === "add_item_to_comp" && typeof data.id === "number") return [data.id];
+  if (tool === "batch") {
+    const t = data.tool;
+    return (data.results ?? []).filter((r: any) => r.ok && typeof r.id === "number" && /^(create_|add_item_to_comp)/.test(r.tool ?? t ?? "")).map((r: any) => r.id);
+  }
+  return [];
+}
 function closeUndoGroup(reason: string) {
   if (!undoGroup) return null;
   closedGroup = { name: undoGroup.name, steps: undoGroup.steps };
@@ -590,6 +603,15 @@ async function dispatch(req: { params: { name: string; arguments?: Record<string
       }
     }
     undoGroupState(); // auto-close an idle group
+    // AE only registers a script's undo group once it is idle again: an Undo sent right
+    // after a change (< 1 s) was sometimes ignored. Let it settle first.
+    let verifyIds: number[] = [];
+    if (name === "undo") {
+      const wait = 1000 - (Date.now() - lastChangeAt);
+      if (wait > 0) await new Promise((r) => setTimeout(r, wait));
+      if ((args.action ?? "undo") === "undo") verifyIds = lastCreated;
+      lastCreated = [];
+    }
     if (name === "undo" && args.steps === undefined && (args.action ?? "undo") === "undo") {
       if (undoGroup) closeUndoGroup("undo");
       if (closedGroup && closedGroup.steps > 0) {
@@ -616,6 +638,21 @@ async function dispatch(req: { params: { name: string; arguments?: Record<string
     const undo = name === "run_extendscript" ? args.undoable !== false : def.undo !== false && !def.readOnly;
     const data: any = await bridge.call(def.handler ?? name, args, { timeoutMs, undo, timeoutParam: true, signal, onProgress: report });
     // one AE undo step per successful changing call (an atomic batch that rolled back leaves none)
+    if (undo) {
+      lastChangeAt = Date.now();
+      lastCreated = createdIds(name, data);
+    }
+    // plain one-step undo of a call that created layers: check they are really gone.
+    // AE occasionally does not record a script's undo step (seen right after some batches).
+    if (name === "undo" && (args.action ?? "undo") === "undo" && (args.steps ?? 1) === 1 && verifyIds.length) {
+      const still = (await bridge.call<any>("layers_exist", { ids: verifyIds }, { undo: false })).existing;
+      if (still.length) {
+        return err(
+          `After Effects did not undo the last change: ${still.length} layer(s) it created still exist (ids ${still.join(", ")})`,
+          "AE sometimes does not record a script's undo step. Remove them with delete_layers (e.g. layers ['id:" + still[0] + "']) or use Edit > Undo in AE.",
+        );
+      }
+    }
     if (undo && !NOT_COUNTED.has(name) && !(name === "batch" && data?.rolledBack)) {
       if (undoGroup) {
         undoGroup.steps++;

@@ -2579,8 +2579,21 @@
     H.undo = function (a) {
         var n = def(a.steps, 1), ids = { undo: 16, redo: 2035 };
         var id = ids[def(a.action, "undo")];
+        // Edit > Undo is routed to the active panel; a text field or palette with focus
+        // can swallow it. Give focus to the viewer (or the project) first.
+        var focused = null;
+        try { if (app.activeViewer) { app.activeViewer.setActive(); focused = "viewer"; } } catch (e) { }
         for (var i = 0; i < n; i++) app.executeCommand(id);
-        return { done: a.action || "undo", steps: n };
+        return { done: a.action || "undo", steps: n, focused: focused };
+    };
+
+    // which of these layer ids still exist (used to verify an undo)
+    H.layers_exist = function (a) {
+        var out = [];
+        for (var i = 0; i < a.ids.length; i++) {
+            try { if (app.project.layerByID(a.ids[i])) out.push(a.ids[i]); } catch (e) { }
+        }
+        return { existing: out };
     };
 
     H.execute_menu_command = function (a) {
