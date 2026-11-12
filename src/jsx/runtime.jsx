@@ -1932,6 +1932,124 @@
         return { comp: c.name, resolutionFactor: c.resolutionFactor };
     };
 
+    // ---- Footage replacement, presets, multi-property reads, Essential Graphics
+    H.replace_footage = function (a) {
+        var it = findItem(a.item);
+        if (!it || !(it instanceof FootageItem) || it.mainSource instanceof SolidSource) fail("Footage item not found: " + a.item, "Use list_project_items type:'footage' to find ids.");
+        var f = new File(a.file);
+        if (!f.exists) fail("File not found: " + a.file);
+        var oldFile = it.file ? it.file.fsName : null;
+        if (a.sequence) it.replaceWithSequence(f, !!a.forceAlphabetical);
+        else it.replace(f);
+        if (a.name) it.name = a.name;
+        var users = [];
+        for (var i = 0; i < it.usedIn.length && users.length < 20; i++) users.push(it.usedIn[i].name);
+        return { id: it.id, name: it.name, file: it.file ? it.file.fsName : null, previousFile: oldFile, usedInComps: it.usedIn.length, comps: users, missing: it.footageMissing };
+    };
+
+    function presetRoots() {
+        var year = parseInt(app.version, 10) + 2000;
+        var roots = [];
+        var user = new Folder(Folder.myDocuments.fsName + "/Adobe/After Effects " + year + "/User Presets");
+        if (user.exists) roots.push({ kind: "user", folder: user });
+        try { var appP = new Folder(Folder.appPackage.fsName + "/Presets"); if (appP.exists) roots.push({ kind: "app", folder: appP }); } catch (e) { }
+        return roots;
+    }
+    H.list_presets = function (a) {
+        var q = a.query ? lower(a.query) : null, lim = def(a.limit, 200), out = [], total = 0;
+        var roots = presetRoots();
+        function walk(folder, base, kind, depth) {
+            if (depth > 6) return;
+            var items = folder.getFiles();
+            for (var i = 0; i < items.length; i++) {
+                var f = items[i];
+                if (f instanceof Folder) { walk(f, base, kind, depth + 1); continue; }
+                if (!/\.ffx$/i.test(f.name)) continue;
+                var name = decodeURI(f.name).replace(/\.ffx$/i, "");
+                var rel = decodeURI(f.parent.fsName.substr(base.length)).replace(/^[\\\/]+/, "").replace(/\\/g, "/");
+                if (q && lower(name).indexOf(q) < 0 && lower(rel).indexOf(q) < 0) continue;
+                if (a.source && a.source !== kind) continue;
+                total++;
+                if (out.length < lim) out.push({ name: name, category: rel, source: kind, path: f.fsName });
+            }
+        }
+        for (var r = 0; r < roots.length; r++) walk(roots[r].folder, roots[r].folder.fsName, roots[r].kind, 0);
+        var rootsOut = [];
+        for (r = 0; r < roots.length; r++) rootsOut.push({ source: roots[r].kind, folder: roots[r].folder.fsName });
+        return { count: out.length, total: total, truncated: total > out.length, roots: rootsOut, presets: out };
+    };
+
+    H.get_properties_at_time = function (a) {
+        var c = getComp(a.comp);
+        var t = def(a.time, c.time);
+        var out = [];
+        for (var i = 0; i < a.requests.length; i++) {
+            var rq = a.requests[i];
+            var entry = { layer: rq.layer, values: {} };
+            try {
+                var l = getLayer(c, rq.layer);
+                entry.layer = l.name;
+                for (var j = 0; j < rq.properties.length; j++) {
+                    var path = rq.properties[j];
+                    try {
+                        var p = resolveProp(l, path);
+                        entry.values[path] = isProperty(p) ? serValue(p.valueAtTime(t, a.preExpression === true)) : "(group)";
+                    } catch (pe) { entry.values[path] = { error: String(pe).replace(/^Error: /, "") }; }
+                }
+            } catch (le) { entry.error = String(le).replace(/^Error: /, ""); }
+            out.push(entry);
+        }
+        return { comp: c.name, time: round(t, 4), results: out };
+    };
+
+    function overridesOf(layer) {
+        var ov = null;
+        try { ov = layer.property("ADBE Layer Overrides"); } catch (e) { }
+        if (!ov) fail("Layer '" + layer.name + "' has no Essential Properties", "Use a layer whose source is a comp with Essential Graphics controllers.");
+        return ov;
+    }
+    function listOverrides(group, prefix, out) {
+        for (var i = 1; i <= group.numProperties; i++) {
+            var p = group.property(i);
+            var name = prefix ? prefix + "/" + p.name : p.name;
+            if (isProperty(p)) {
+                var o = { name: name, matchName: p.matchName };
+                try { if (p.propertyValueType !== PropertyValueType.NO_VALUE) o.value = serValue(p.value); } catch (e) { }
+                out.push(o);
+            } else listOverrides(p, name, out);
+        }
+        return out;
+    }
+    H.list_essential_properties = function (a) {
+        if (a.layer !== undefined) {
+            var c = getComp(a.comp);
+            var l = getLayer(c, a.layer);
+            return { comp: c.name, layer: l.name, source: l.source ? l.source.name : null, properties: listOverrides(overridesOf(l), "", []) };
+        }
+        var src = getComp(a.comp);
+        var names = [];
+        for (var i = 1; i <= src.motionGraphicsTemplateControllerCount; i++) names.push({ index: i, name: src.getMotionGraphicsTemplateControllerName(i) });
+        return { comp: src.name, templateName: src.motionGraphicsTemplateName || null, controllers: names };
+    };
+    H.set_essential_property = function (a) {
+        var c = getComp(a.comp);
+        var l = getLayer(c, a.layer);
+        var ov = overridesOf(l);
+        var p = typeof a.property === "number" ? ov.property(a.property) : resolveProp(ov, a.property);
+        if (!p || !isProperty(p)) fail("Essential property '" + a.property + "' not found on '" + l.name + "'", "Properties: " + (function () { var n = []; var all = listOverrides(ov, "", []); for (var i = 0; i < all.length && i < 10; i++) n.push(all[i].name); return n.join(", "); })());
+        if (has(a, "time")) p.setValueAtTime(a.time, coerce(p, a.value)); else p.setValue(coerce(p, a.value));
+        return { layer: l.name, property: p.name, value: serValue(p.value) };
+    };
+    H.add_to_essential_graphics = function (a) {
+        var t = target(a);
+        var p = resolveProp(t.layer, a.property);
+        if (!isProperty(p) || !p.canAddToMotionGraphicsTemplate(t.comp)) fail("'" + a.property + "' cannot be added to Essential Graphics", "Supported: most transform, effect, text and color properties.");
+        var ok = a.name ? p.addToMotionGraphicsTemplateAs(t.comp, a.name) : p.addToMotionGraphicsTemplate(t.comp);
+        var names = [];
+        for (var i = 1; i <= t.comp.motionGraphicsTemplateControllerCount; i++) names.push(t.comp.getMotionGraphicsTemplateControllerName(i));
+        return { added: ok !== false, comp: t.comp.name, controllers: names };
+    };
+
     // ---- Misc
     H.list_fonts = function (a) {
         var out = [];

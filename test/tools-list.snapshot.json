@@ -5715,6 +5715,393 @@
   }
  },
  {
+  "name": "replace_footage",
+  "title": "Replace footage",
+  "description": "Swap the source file of a footage item (or a still/image sequence) for another file. Every comp that uses it keeps its layers, timing and effects.",
+  "inputSchema": {
+   "type": "object",
+   "properties": {
+    "item": {
+     "type": [
+      "string",
+      "number"
+     ],
+     "description": "Footage item name or id."
+    },
+    "file": {
+     "type": "string"
+    },
+    "sequence": {
+     "type": "boolean",
+     "description": "Replace with an image sequence starting at file."
+    },
+    "forceAlphabetical": {
+     "type": "boolean"
+    },
+    "name": {
+     "type": "string"
+    },
+    "timeoutSeconds": {
+     "type": "integer",
+     "minimum": 1,
+     "maximum": 3600,
+     "description": "Max seconds to wait for After Effects (default 60, long tools 300+)."
+    }
+   },
+   "required": [
+    "item",
+    "file"
+   ]
+  },
+  "annotations": {
+   "title": "Replace footage",
+   "readOnlyHint": false,
+   "destructiveHint": false,
+   "idempotentHint": false,
+   "openWorldHint": false
+  },
+  "_meta": {
+   "ui": {
+    "resourceUri": "ui://after-effects/activity.html",
+    "visibility": [
+     "model",
+     "app"
+    ]
+   },
+   "ui/resourceUri": "ui://after-effects/activity.html"
+  }
+ },
+ {
+  "name": "list_presets",
+  "title": "List animation presets",
+  "description": "List .ffx animation presets from the user's User Presets folder and the After Effects Presets folder, with name filter. Use the path with apply_preset_file.",
+  "inputSchema": {
+   "type": "object",
+   "properties": {
+    "query": {
+     "type": "string"
+    },
+    "source": {
+     "type": "string",
+     "enum": [
+      "user",
+      "app"
+     ]
+    },
+    "limit": {
+     "type": "integer",
+     "minimum": 1,
+     "maximum": 2000
+    },
+    "timeoutSeconds": {
+     "type": "integer",
+     "minimum": 1,
+     "maximum": 3600,
+     "description": "Max seconds to wait for After Effects (default 60, long tools 300+)."
+    }
+   }
+  },
+  "annotations": {
+   "title": "List animation presets",
+   "readOnlyHint": true,
+   "destructiveHint": false,
+   "idempotentHint": true,
+   "openWorldHint": false
+  },
+  "_meta": {
+   "ui": {
+    "resourceUri": "ui://after-effects/activity.html",
+    "visibility": [
+     "model",
+     "app"
+    ]
+   },
+   "ui/resourceUri": "ui://after-effects/activity.html"
+  }
+ },
+ {
+  "name": "get_properties_at_time",
+  "title": "Read properties at a time",
+  "description": "Read many properties of many layers at one time in a single call, e.g. [{layer:'Title', properties:['Position','Opacity']}, {layer:2, properties:['Effects/Gaussian Blur/Blurriness']}]. Errors are reported per property.",
+  "inputSchema": {
+   "type": "object",
+   "properties": {
+    "comp": {
+     "anyOf": [
+      {
+       "type": "string"
+      },
+      {
+       "type": "integer"
+      }
+     ],
+     "description": "Composition name or numeric item id. Omit to use the active composition."
+    },
+    "time": {
+     "type": "number",
+     "description": "Seconds, default playhead."
+    },
+    "requests": {
+     "type": "array",
+     "items": {
+      "type": "object",
+      "properties": {
+       "layer": {
+        "anyOf": [
+         {
+          "type": "integer",
+          "exclusiveMinimum": 0
+         },
+         {
+          "type": "string"
+         }
+        ],
+        "description": "Layer: 1-based index, exact name, or 'id:<layerId>' (stable across reordering)."
+       },
+       "properties": {
+        "type": "array",
+        "items": {
+         "type": "string"
+        },
+        "minItems": 1
+       }
+      },
+      "required": [
+       "layer",
+       "properties"
+      ],
+      "additionalProperties": false
+     },
+     "minItems": 1,
+     "maxItems": 200
+    },
+    "preExpression": {
+     "type": "boolean"
+    },
+    "timeoutSeconds": {
+     "type": "integer",
+     "minimum": 1,
+     "maximum": 3600,
+     "description": "Max seconds to wait for After Effects (default 60, long tools 300+)."
+    }
+   },
+   "required": [
+    "requests"
+   ]
+  },
+  "annotations": {
+   "title": "Read properties at a time",
+   "readOnlyHint": true,
+   "destructiveHint": false,
+   "idempotentHint": true,
+   "openWorldHint": false
+  },
+  "_meta": {
+   "ui": {
+    "resourceUri": "ui://after-effects/activity.html",
+    "visibility": [
+     "model",
+     "app"
+    ]
+   },
+   "ui/resourceUri": "ui://after-effects/activity.html"
+  }
+ },
+ {
+  "name": "list_essential_properties",
+  "title": "List Essential Properties",
+  "description": "Without layer: list the Essential Graphics controllers of a comp. With layer (a precomp layer in comp): list that instance's Essential Properties with their current values.",
+  "inputSchema": {
+   "type": "object",
+   "properties": {
+    "comp": {
+     "anyOf": [
+      {
+       "type": "string"
+      },
+      {
+       "type": "integer"
+      }
+     ],
+     "description": "Composition name or numeric item id. Omit to use the active composition."
+    },
+    "layer": {
+     "anyOf": [
+      {
+       "type": "integer",
+       "exclusiveMinimum": 0
+      },
+      {
+       "type": "string"
+      }
+     ],
+     "description": "Layer: 1-based index, exact name, or 'id:<layerId>' (stable across reordering)."
+    },
+    "timeoutSeconds": {
+     "type": "integer",
+     "minimum": 1,
+     "maximum": 3600,
+     "description": "Max seconds to wait for After Effects (default 60, long tools 300+)."
+    }
+   }
+  },
+  "annotations": {
+   "title": "List Essential Properties",
+   "readOnlyHint": true,
+   "destructiveHint": false,
+   "idempotentHint": true,
+   "openWorldHint": false
+  },
+  "_meta": {
+   "ui": {
+    "resourceUri": "ui://after-effects/activity.html",
+    "visibility": [
+     "model",
+     "app"
+    ]
+   },
+   "ui/resourceUri": "ui://after-effects/activity.html"
+  }
+ },
+ {
+  "name": "set_essential_property",
+  "title": "Set Essential Property",
+  "description": "Set an Essential Property value on one precomp layer instance (by name or 1-based index), e.g. change the title text or color of one use of a template comp.",
+  "inputSchema": {
+   "type": "object",
+   "properties": {
+    "comp": {
+     "anyOf": [
+      {
+       "type": "string"
+      },
+      {
+       "type": "integer"
+      }
+     ],
+     "description": "Composition name or numeric item id. Omit to use the active composition."
+    },
+    "layer": {
+     "anyOf": [
+      {
+       "type": "integer",
+       "exclusiveMinimum": 0
+      },
+      {
+       "type": "string"
+      }
+     ],
+     "description": "Layer: 1-based index, exact name, or 'id:<layerId>' (stable across reordering)."
+    },
+    "property": {
+     "type": [
+      "string",
+      "number"
+     ]
+    },
+    "value": {
+     "description": "Value: number, array ([x,y] / [x,y,z]), color, string (Source Text) or object (shape path / text style)."
+    },
+    "time": {
+     "type": "number"
+    },
+    "timeoutSeconds": {
+     "type": "integer",
+     "minimum": 1,
+     "maximum": 3600,
+     "description": "Max seconds to wait for After Effects (default 60, long tools 300+)."
+    }
+   },
+   "required": [
+    "layer",
+    "property"
+   ]
+  },
+  "annotations": {
+   "title": "Set Essential Property",
+   "readOnlyHint": false,
+   "destructiveHint": false,
+   "idempotentHint": false,
+   "openWorldHint": false
+  },
+  "_meta": {
+   "ui": {
+    "resourceUri": "ui://after-effects/activity.html",
+    "visibility": [
+     "model",
+     "app"
+    ]
+   },
+   "ui/resourceUri": "ui://after-effects/activity.html"
+  }
+ },
+ {
+  "name": "add_to_essential_graphics",
+  "title": "Add to Essential Graphics",
+  "description": "Expose a property of a layer in its comp's Essential Graphics panel (optionally with a custom name) so precomp instances can override it.",
+  "inputSchema": {
+   "type": "object",
+   "properties": {
+    "comp": {
+     "anyOf": [
+      {
+       "type": "string"
+      },
+      {
+       "type": "integer"
+      }
+     ],
+     "description": "Composition name or numeric item id. Omit to use the active composition."
+    },
+    "layer": {
+     "anyOf": [
+      {
+       "type": "integer",
+       "exclusiveMinimum": 0
+      },
+      {
+       "type": "string"
+      }
+     ],
+     "description": "Layer: 1-based index, exact name, or 'id:<layerId>' (stable across reordering)."
+    },
+    "property": {
+     "type": "string"
+    },
+    "name": {
+     "type": "string"
+    },
+    "timeoutSeconds": {
+     "type": "integer",
+     "minimum": 1,
+     "maximum": 3600,
+     "description": "Max seconds to wait for After Effects (default 60, long tools 300+)."
+    }
+   },
+   "required": [
+    "layer",
+    "property"
+   ]
+  },
+  "annotations": {
+   "title": "Add to Essential Graphics",
+   "readOnlyHint": false,
+   "destructiveHint": false,
+   "idempotentHint": false,
+   "openWorldHint": false
+  },
+  "_meta": {
+   "ui": {
+    "resourceUri": "ui://after-effects/activity.html",
+    "visibility": [
+     "model",
+     "app"
+    ]
+   },
+   "ui/resourceUri": "ui://after-effects/activity.html"
+  }
+ },
+ {
   "name": "list_fonts",
   "title": "List fonts",
   "description": "Search installed fonts; returns PostScript names to use in text tools (AE 2024+).",

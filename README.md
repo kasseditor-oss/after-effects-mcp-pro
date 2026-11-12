@@ -39,6 +39,12 @@ Every tool that runs inside After Effects accepts `timeoutSeconds`. `batch` runs
 
 The server also has 3 resources (`aftereffects://project`, `aftereffects://compositions`, `aftereffects://selection`) and 3 prompts (`lower-third`, `kinetic-title`, `analyze-comp`).
 
+## Limitations
+
+- Roto Brush and Content-Aware Fill have no ExtendScript API, so no tool can drive them.
+- A script that After Effects is already running cannot be interrupted (cancel and timeouts only stop waiting).
+- Live tests run on Windows; macOS support is implemented but has not been tested on a Mac.
+
 ## Install
 
 Requirements: After Effects 2022 or later on Windows or macOS, and Node 18 or later.

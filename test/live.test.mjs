@@ -231,6 +231,26 @@ for (const it of imp.data?.imported ?? []) created.push(it.id);
 if (folder.data?.id) created.push(folder.data.id);
 const items = await call("list_project_items", { type: "still" });
 await call("add_item_to_comp", { comp: C, item: items.data?.items?.[0]?.id, fitToComp: "fit", opacity: 20, name: "Ref" });
+// new tools (item 13)
+{
+  // replace_footage: swap the imported frame for the red preview, comps keep using it
+  const fr = (await call("list_project_items", { type: "still", query: "frame" })).data?.items?.[0];
+  if (fr) await call("replace_footage", { item: fr.id, file: path.join(out, "red.png") }, { check: (d) => (/red\.png$/i.test(d.file) && d.usedInComps >= 1 ? true : JSON.stringify(d)) });
+  await call("list_presets", { query: "fade", limit: 5 }, { check: (d) => (d.roots.length >= 1 && d.total >= 1 && d.presets[0].path.endsWith(".ffx") ? true : JSON.stringify(d).slice(0, 200)) });
+  await call("get_properties_at_time", { comp: C, time: 1, requests: [{ layer: "Title", properties: ["Opacity", "Scale", "Effects/Gaussian Blur/Blurriness", "No/Such"] }, { layer: "Nope", properties: ["Opacity"] }] }, {
+    check: (d) => (typeof d.results[0].values.Opacity === "number" && d.results[0].values["No/Such"].error && d.results[1].error ? true : JSON.stringify(d).slice(0, 300)),
+  });
+  // Essential Graphics: expose a property in a template comp, override it on one instance
+  const tpl = await call("create_composition", { name: COMP + " tpl", width: 400, height: 200, duration: 2, open: false });
+  created.push(tpl.data?.id);
+  await call("create_text_layer", { comp: tpl.data?.id, text: "Template", name: "T" });
+  await call("add_to_essential_graphics", { comp: tpl.data?.id, layer: "T", property: "Opacity", name: "Title Opacity" }, { check: (d) => (d.controllers.includes("Title Opacity") ? true : JSON.stringify(d)) });
+  await call("list_essential_properties", { comp: tpl.data?.id }, { check: (d) => (d.controllers.length === 1 ? true : JSON.stringify(d)) });
+  const inst = await call("add_item_to_comp", { comp: C, item: tpl.data?.id, name: "TplInstance" });
+  await call("set_essential_property", { comp: C, layer: "TplInstance", property: "Title Opacity", value: 25 }, { check: (d) => (d.value === 25 ? true : JSON.stringify(d)) });
+  await call("list_essential_properties", { comp: C, layer: "TplInstance" }, { check: (d) => (d.properties[0].value === 25 ? true : JSON.stringify(d)) });
+}
+
 await call("duplicate_composition", { comp: C, newName: COMP + " copy" });
 await call("organize_items", { items: [COMP + " copy"], folder: "MCP Test Assets" });
 await call("modify_item", { item: COMP + " copy", delete: true });
