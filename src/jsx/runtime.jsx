@@ -681,22 +681,30 @@
         return { ok: true, aeVersion: app.version, buildName: app.buildName, language: app.isoLanguage, runtime: A.version, project: app.project ? (app.project.file ? app.project.file.fsName : "(unsaved)") : null };
     };
 
-    H.get_project_info = function () {
+    // Summary by default (counts + first 50 comps); detail:true lists every comp.
+    // Never walks layers: only item-level properties are read.
+    H.get_project_info = function (a) {
+        a = a || {};
         var p = app.project;
-        var counts = { compositions: 0, footage: 0, folders: 0, solids: 0 };
-        var comps = [];
-        for (var i = 1; i <= p.numItems; i++) {
+        var counts = {}, comps = [], nComps = 0;
+        var limit = a.detail ? 100000 : 50;
+        for (var i = 1, n = p.numItems; i <= n; i++) {
             var it = p.item(i);
             var t = itemType(it);
-            if (t === "composition") { counts.compositions++; comps.push({ id: it.id, name: it.name, numLayers: it.numLayers }); }
-            else if (t === "folder") counts.folders++;
-            else if (t === "solid") counts.solids++;
-            else counts.footage++;
+            counts[t] = (counts[t] || 0) + 1;
+            if (t === "composition") {
+                nComps++;
+                if (comps.length < limit) {
+                    var o = { id: it.id, name: it.name, width: it.width, height: it.height, duration: round(it.duration), frameRate: round(it.frameRate, 3) };
+                    if (a.detail) { o.numLayers = it.numLayers; o.folder = folderName(it.parentFolder); }
+                    comps.push(o);
+                }
+            }
         }
         var active = p.activeItem instanceof CompItem ? { id: p.activeItem.id, name: p.activeItem.name } : null;
-        var bpc = p.bitsPerChannel;
-        var out = { file: p.file ? p.file.fsName : null, dirty: p.dirty, numItems: p.numItems, counts: counts, compositions: comps, activeComp: active,
-            bitsPerChannel: bpc, renderQueueItems: p.renderQueue.numItems, aeVersion: app.version };
+        var out = { name: p.file ? p.file.name : "(unsaved)", file: p.file ? p.file.fsName : null, dirty: p.dirty, numItems: p.numItems, counts: counts,
+            compositionCount: nComps, compositions: comps, activeComp: active, bitsPerChannel: p.bitsPerChannel, renderQueueItems: p.renderQueue.numItems, aeVersion: app.version };
+        if (!a.detail && nComps > comps.length) { out.compositionsTruncated = true; out.hint = "Showing " + comps.length + " of " + nComps + " compositions; pass detail:true or use list_compositions."; }
         try { out.workingSpace = p.workingSpace; } catch (e) { }
         try { out.expressionEngine = p.expressionEngine; } catch (e2) { }
         return out;

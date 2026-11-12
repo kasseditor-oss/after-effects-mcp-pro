@@ -113,6 +113,16 @@ await scenario("timeoutSeconds honoured", async () => {
   return { timeoutMs: r.ms, nextCallMs: after.ms };
 });
 
+await scenario("get_project_info with ~50 comps", async () => {
+  const made = JSON.parse((await call("run_extendscript", { code: "var ids=[]; for (var i=0;i<50;i++) ids.push(app.project.items.addComp('MCP Stress PI '+i,640,360,1,5,30).id); return ids;" })).text).result;
+  const ms = [];
+  for (let i = 0; i < 5; i++) ms.push((await call("get_project_info", {})).ms);
+  await call("run_extendscript", { code: "for (var i=0;i<args.ids.length;i++) AEMCP.findItem(args.ids[i]).remove(); return 1;", args: { ids: made } });
+  const st = stats(ms);
+  if (st.median > 500) { failures++; console.log(`  get_project_info median ${st.median} ms`); }
+  return st;
+});
+
 await call("modify_item", { item: C, delete: true });
 const status = JSON.parse((await call("bridge_status", {})).text);
 console.log("\nbridge diagnostics:", JSON.stringify(status.diagnostics));

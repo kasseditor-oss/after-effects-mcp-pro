@@ -51,9 +51,10 @@ const COMP = `MCP Test ${Date.now() % 100000}`;
 const st = await call("bridge_status", {}, { check: (d) => (d.ae?.ok ? true : JSON.stringify(d)) });
 console.log("mode:", st.data?.mode, "AE", st.data?.ae?.aeVersion);
 
-await call("get_project_info");
+await call("get_project_info", {}, { check: (d) => (typeof d.compositionCount === "number" && d.counts && !("numLayers" in (d.compositions[0] ?? {})) ? true : JSON.stringify(d).slice(0, 200)) });
 const comp = await call("create_composition", { name: COMP, preset: "1080p", duration: 6, frameRate: 30, backgroundColor: "#101820" }, { check: (d) => d.width === 1920 || "size" });
 const C = comp.data?.id;
+await call("get_project_info", { detail: true }, { check: (d) => (d.compositions.some((c) => c.id === C && typeof c.numLayers === "number") ? true : "detail missing comp") });
 await call("create_solid_layer", { comp: C, name: "BG", color: "#1b2a41" });
 await call("create_solid_layer", { comp: C, name: "Grade", adjustment: true });
 await call("create_text_layer", { comp: C, text: "AFTER EFFECTS MCP", font: "Arial-BoldMT", fontSize: 120, color: "#ffffff", tracking: 40, name: "Title" }, { check: (d) => (d.type === "text" ? true : "type") });
