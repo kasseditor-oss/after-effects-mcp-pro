@@ -2323,6 +2323,25 @@
         return { markers: added.length, times: added, threshold: thr };
     };
 
+    // ---- Keyframes on markers (animate on the beat)
+    H.keyframes_from_markers = function (a) {
+        var t = target(a);
+        var mp = def(a.markerSource, "comp") === "layer" ? t.layer.property("ADBE Marker") : t.comp.markerProperty;
+        if (!mp.numKeys) fail("No markers on the " + def(a.markerSource, "comp"), "Add some with markers {action:'add'} or markers_from_audio_peaks.");
+        var p = resolveProp(t.layer, a.property);
+        if (!isProperty(p) || !p.canVaryOverTime) fail("'" + a.property + "' cannot be keyframed");
+        var vals = a.values;
+        if (!vals || !vals.length) fail("Pass values: one per marker, or two with pattern:'alternate'");
+        var keys = [];
+        for (var i = 1; i <= mp.numKeys; i++) {
+            var v = a.pattern === "alternate" ? vals[(i - 1) % vals.length] : vals[Math.min(i - 1, vals.length - 1)];
+            keys.push({ time: mp.keyTime(i) + def(a.offset, 0), value: v });
+        }
+        if (a.replace) while (p.numKeys > 0) p.removeKey(1);
+        setKeys(p, keys, def(a.easing, "easy-ease"));
+        return { property: propPath(p), keys: keys.length, times: (function () { var o = []; for (var j = 0; j < keys.length; j++) o.push(round(keys[j].time, 3)); return o; })() };
+    };
+
     // ---- Markers
     function listMarkers(mp) {
         var out = [];

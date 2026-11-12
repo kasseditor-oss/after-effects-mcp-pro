@@ -502,6 +502,16 @@ await call("preview_contact_sheet", { comp: C, frames: 4, maxSize: 400 }, {
     check: (d) => (d.markers >= 4 && [0.25, 0.75, 1.25, 1.75].every((b) => d.times.some((t) => Math.abs(t - b) < 0.12)) ? true : JSON.stringify(d)),
   });
 }
+// keyframes on markers
+{
+  const kc = await call("create_composition", { name: COMP + " beats", width: 640, height: 640, duration: 4, open: false });
+  created.push(kc.data?.id);
+  await call("create_null_layer", { comp: kc.data?.id, name: "K" });
+  for (const t of [0.5, 1, 1.5, 2]) await call("markers", { action: "add", comp: kc.data?.id, time: t });
+  await call("keyframes_from_markers", { comp: kc.data?.id, layer: "K", property: "Scale", values: [[100, 100], [130, 130]], pattern: "alternate" }, {
+    check: (d) => (d.keys === 4 && JSON.stringify(d.times) === "[0.5,1,1.5,2]" ? true : JSON.stringify(d)),
+  });
+}
 // text-fade-up must REVEAL the text: invisible before, fully visible after (pixel check)
 {
   const fc = await call("create_composition", { name: COMP + " fade", width: 640, height: 360, duration: 3, backgroundColor: "#000000", open: false });

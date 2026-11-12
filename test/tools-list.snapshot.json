@@ -28,7 +28,6 @@
    "additionalProperties": true
   },
   "annotations": {
-   "title": "Bridge status",
    "readOnlyHint": true,
    "destructiveHint": false,
    "idempotentHint": true,
@@ -36,11 +35,7 @@
   },
   "_meta": {
    "ui": {
-    "resourceUri": "ui://after-effects/activity.html",
-    "visibility": [
-     "model",
-     "app"
-    ]
+    "resourceUri": "ui://after-effects/activity.html"
    },
    "ui/resourceUri": "ui://after-effects/activity.html"
   }
@@ -60,7 +55,6 @@
    }
   },
   "annotations": {
-   "title": "Launch After Effects",
    "readOnlyHint": false,
    "destructiveHint": false,
    "idempotentHint": false,
@@ -68,11 +62,7 @@
   },
   "_meta": {
    "ui": {
-    "resourceUri": "ui://after-effects/activity.html",
-    "visibility": [
-     "model",
-     "app"
-    ]
+    "resourceUri": "ui://after-effects/activity.html"
    },
    "ui/resourceUri": "ui://after-effects/activity.html"
   }
@@ -139,7 +129,6 @@
    "additionalProperties": true
   },
   "annotations": {
-   "title": "Project info",
    "readOnlyHint": true,
    "destructiveHint": false,
    "idempotentHint": true,
@@ -147,11 +136,7 @@
   },
   "_meta": {
    "ui": {
-    "resourceUri": "ui://after-effects/activity.html",
-    "visibility": [
-     "model",
-     "app"
-    ]
+    "resourceUri": "ui://after-effects/activity.html"
    },
    "ui/resourceUri": "ui://after-effects/activity.html"
   }
@@ -248,7 +233,6 @@
    "additionalProperties": true
   },
   "annotations": {
-   "title": "List project items",
    "readOnlyHint": true,
    "destructiveHint": false,
    "idempotentHint": true,
@@ -256,11 +240,7 @@
   },
   "_meta": {
    "ui": {
-    "resourceUri": "ui://after-effects/activity.html",
-    "visibility": [
-     "model",
-     "app"
-    ]
+    "resourceUri": "ui://after-effects/activity.html"
    },
    "ui/resourceUri": "ui://after-effects/activity.html"
   }
@@ -288,7 +268,6 @@
    }
   },
   "annotations": {
-   "title": "Save project",
    "readOnlyHint": false,
    "destructiveHint": false,
    "idempotentHint": false,
@@ -296,11 +275,7 @@
   },
   "_meta": {
    "ui": {
-    "resourceUri": "ui://after-effects/activity.html",
-    "visibility": [
-     "model",
-     "app"
-    ]
+    "resourceUri": "ui://after-effects/activity.html"
    },
    "ui/resourceUri": "ui://after-effects/activity.html"
   }
@@ -330,7 +305,6 @@
    ]
   },
   "annotations": {
-   "title": "Open project",
    "readOnlyHint": false,
    "destructiveHint": true,
    "idempotentHint": false,
@@ -338,11 +312,7 @@
   },
   "_meta": {
    "ui": {
-    "resourceUri": "ui://after-effects/activity.html",
-    "visibility": [
-     "model",
-     "app"
-    ]
+    "resourceUri": "ui://after-effects/activity.html"
    },
    "ui/resourceUri": "ui://after-effects/activity.html"
   }
@@ -366,7 +336,6 @@
    }
   },
   "annotations": {
-   "title": "New project",
    "readOnlyHint": false,
    "destructiveHint": true,
    "idempotentHint": false,
@@ -374,11 +343,7 @@
   },
   "_meta": {
    "ui": {
-    "resourceUri": "ui://after-effects/activity.html",
-    "visibility": [
-     "model",
-     "app"
-    ]
+    "resourceUri": "ui://after-effects/activity.html"
    },
    "ui/resourceUri": "ui://after-effects/activity.html"
   }
@@ -437,7 +402,6 @@
    ]
   },
   "annotations": {
-   "title": "Import files",
    "readOnlyHint": false,
    "destructiveHint": false,
    "idempotentHint": false,
@@ -445,11 +409,7 @@
   },
   "_meta": {
    "ui": {
-    "resourceUri": "ui://after-effects/activity.html",
-    "visibility": [
-     "model",
-     "app"
-    ]
+    "resourceUri": "ui://after-effects/activity.html"
    },
    "ui/resourceUri": "ui://after-effects/activity.html"
   }
@@ -486,7 +446,6 @@
    }
   },
   "annotations": {
-   "title": "Remove unused footage",
    "readOnlyHint": false,
    "destructiveHint": true,
    "idempotentHint": false,
@@ -494,11 +453,7 @@
   },
   "_meta": {
    "ui": {
-    "resourceUri": "ui://after-effects/activity.html",
-    "visibility": [
-     "model",
-     "app"
-    ]
+    "resourceUri": "ui://after-effects/activity.html"
    },
    "ui/resourceUri": "ui://after-effects/activity.html"
   }
@@ -528,7 +483,6 @@
    ]
   },
   "annotations": {
-   "title": "Create folder",
    "readOnlyHint": false,
    "destructiveHint": false,
    "idempotentHint": false,
@@ -536,11 +490,7 @@
   },
   "_meta": {
    "ui": {
-    "resourceUri": "ui://after-effects/activity.html",
-    "visibility": [
-     "model",
-     "app"
-    ]
+    "resourceUri": "ui://after-effects/activity.html"
    },
    "ui/resourceUri": "ui://after-effects/activity.html"
   }
@@ -581,7 +531,6 @@
    ]
   },
   "annotations": {
-   "title": "Move items to folder",
    "readOnlyHint": false,
    "destructiveHint": false,
    "idempotentHint": false,
@@ -589,11 +538,7 @@
   },
   "_meta": {
    "ui": {
-    "resourceUri": "ui://after-effects/activity.html",
-    "visibility": [
-     "model",
-     "app"
-    ]
+    "resourceUri": "ui://after-effects/activity.html"
    },
    "ui/resourceUri": "ui://after-effects/activity.html"
   }
@@ -646,7 +591,6 @@
    ]
   },
   "annotations": {
-   "title": "Modify project item",
    "readOnlyHint": false,
    "destructiveHint": false,
    "idempotentHint": false,
@@ -654,11 +598,7 @@
   },
   "_meta": {
    "ui": {
-    "resourceUri": "ui://after-effects/activity.html",
-    "visibility": [
-     "model",
-     "app"
-    ]
+    "resourceUri": "ui://after-effects/activity.html"
    },
    "ui/resourceUri": "ui://after-effects/activity.html"
   }
@@ -727,7 +667,6 @@
    "additionalProperties": true
   },
   "annotations": {
-   "title": "List compositions",
    "readOnlyHint": true,
    "destructiveHint": false,
    "idempotentHint": true,
@@ -735,11 +674,7 @@
   },
   "_meta": {
    "ui": {
-    "resourceUri": "ui://after-effects/activity.html",
-    "visibility": [
-     "model",
-     "app"
-    ]
+    "resourceUri": "ui://after-effects/activity.html"
    },
    "ui/resourceUri": "ui://after-effects/activity.html"
   }
@@ -851,7 +786,6 @@
    "additionalProperties": true
   },
   "annotations": {
-   "title": "Composition details",
    "readOnlyHint": true,
    "destructiveHint": false,
    "idempotentHint": true,
@@ -859,11 +793,7 @@
   },
   "_meta": {
    "ui": {
-    "resourceUri": "ui://after-effects/activity.html",
-    "visibility": [
-     "model",
-     "app"
-    ]
+    "resourceUri": "ui://after-effects/activity.html"
    },
    "ui/resourceUri": "ui://after-effects/activity.html"
   }
@@ -958,7 +888,6 @@
    ]
   },
   "annotations": {
-   "title": "Create composition",
    "readOnlyHint": false,
    "destructiveHint": false,
    "idempotentHint": false,
@@ -966,11 +895,7 @@
   },
   "_meta": {
    "ui": {
-    "resourceUri": "ui://after-effects/activity.html",
-    "visibility": [
-     "model",
-     "app"
-    ]
+    "resourceUri": "ui://after-effects/activity.html"
    },
    "ui/resourceUri": "ui://after-effects/activity.html"
   }
@@ -1073,7 +998,6 @@
    }
   },
   "annotations": {
-   "title": "Composition settings",
    "readOnlyHint": false,
    "destructiveHint": false,
    "idempotentHint": false,
@@ -1081,11 +1005,7 @@
   },
   "_meta": {
    "ui": {
-    "resourceUri": "ui://after-effects/activity.html",
-    "visibility": [
-     "model",
-     "app"
-    ]
+    "resourceUri": "ui://after-effects/activity.html"
    },
    "ui/resourceUri": "ui://after-effects/activity.html"
   }
@@ -1124,7 +1044,6 @@
    }
   },
   "annotations": {
-   "title": "Duplicate composition",
    "readOnlyHint": false,
    "destructiveHint": false,
    "idempotentHint": false,
@@ -1132,11 +1051,7 @@
   },
   "_meta": {
    "ui": {
-    "resourceUri": "ui://after-effects/activity.html",
-    "visibility": [
-     "model",
-     "app"
-    ]
+    "resourceUri": "ui://after-effects/activity.html"
    },
    "ui/resourceUri": "ui://after-effects/activity.html"
   }
@@ -1171,7 +1086,6 @@
    }
   },
   "annotations": {
-   "title": "Open composition",
    "readOnlyHint": false,
    "destructiveHint": false,
    "idempotentHint": false,
@@ -1179,11 +1093,7 @@
   },
   "_meta": {
    "ui": {
-    "resourceUri": "ui://after-effects/activity.html",
-    "visibility": [
-     "model",
-     "app"
-    ]
+    "resourceUri": "ui://after-effects/activity.html"
    },
    "ui/resourceUri": "ui://after-effects/activity.html"
   }
@@ -1244,7 +1154,6 @@
    ]
   },
   "annotations": {
-   "title": "Pre-compose",
    "readOnlyHint": false,
    "destructiveHint": false,
    "idempotentHint": false,
@@ -1252,11 +1161,7 @@
   },
   "_meta": {
    "ui": {
-    "resourceUri": "ui://after-effects/activity.html",
-    "visibility": [
-     "model",
-     "app"
-    ]
+    "resourceUri": "ui://after-effects/activity.html"
    },
    "ui/resourceUri": "ui://after-effects/activity.html"
   }
@@ -1485,7 +1390,6 @@
    ]
   },
   "annotations": {
-   "title": "Create text layer",
    "readOnlyHint": false,
    "destructiveHint": false,
    "idempotentHint": false,
@@ -1493,11 +1397,7 @@
   },
   "_meta": {
    "ui": {
-    "resourceUri": "ui://after-effects/activity.html",
-    "visibility": [
-     "model",
-     "app"
-    ]
+    "resourceUri": "ui://after-effects/activity.html"
    },
    "ui/resourceUri": "ui://after-effects/activity.html"
   }
@@ -2127,7 +2027,6 @@
    }
   },
   "annotations": {
-   "title": "Create shape layer",
    "readOnlyHint": false,
    "destructiveHint": false,
    "idempotentHint": false,
@@ -2135,11 +2034,7 @@
   },
   "_meta": {
    "ui": {
-    "resourceUri": "ui://after-effects/activity.html",
-    "visibility": [
-     "model",
-     "app"
-    ]
+    "resourceUri": "ui://after-effects/activity.html"
    },
    "ui/resourceUri": "ui://after-effects/activity.html"
   }
@@ -2294,7 +2189,6 @@
    }
   },
   "annotations": {
-   "title": "Create solid / adjustment layer",
    "readOnlyHint": false,
    "destructiveHint": false,
    "idempotentHint": false,
@@ -2302,11 +2196,7 @@
   },
   "_meta": {
    "ui": {
-    "resourceUri": "ui://after-effects/activity.html",
-    "visibility": [
-     "model",
-     "app"
-    ]
+    "resourceUri": "ui://after-effects/activity.html"
    },
    "ui/resourceUri": "ui://after-effects/activity.html"
   }
@@ -2452,7 +2342,6 @@
    }
   },
   "annotations": {
-   "title": "Create null",
    "readOnlyHint": false,
    "destructiveHint": false,
    "idempotentHint": false,
@@ -2460,11 +2349,7 @@
   },
   "_meta": {
    "ui": {
-    "resourceUri": "ui://after-effects/activity.html",
-    "visibility": [
-     "model",
-     "app"
-    ]
+    "resourceUri": "ui://after-effects/activity.html"
    },
    "ui/resourceUri": "ui://after-effects/activity.html"
   }
@@ -2533,7 +2418,6 @@
    }
   },
   "annotations": {
-   "title": "Create camera",
    "readOnlyHint": false,
    "destructiveHint": false,
    "idempotentHint": false,
@@ -2541,11 +2425,7 @@
   },
   "_meta": {
    "ui": {
-    "resourceUri": "ui://after-effects/activity.html",
-    "visibility": [
-     "model",
-     "app"
-    ]
+    "resourceUri": "ui://after-effects/activity.html"
    },
    "ui/resourceUri": "ui://after-effects/activity.html"
   }
@@ -2633,7 +2513,6 @@
    }
   },
   "annotations": {
-   "title": "Create light",
    "readOnlyHint": false,
    "destructiveHint": false,
    "idempotentHint": false,
@@ -2641,11 +2520,7 @@
   },
   "_meta": {
    "ui": {
-    "resourceUri": "ui://after-effects/activity.html",
-    "visibility": [
-     "model",
-     "app"
-    ]
+    "resourceUri": "ui://after-effects/activity.html"
    },
    "ui/resourceUri": "ui://after-effects/activity.html"
   }
@@ -2792,7 +2667,6 @@
    ]
   },
   "annotations": {
-   "title": "Add footage/comp to comp",
    "readOnlyHint": false,
    "destructiveHint": false,
    "idempotentHint": false,
@@ -2800,11 +2674,7 @@
   },
   "_meta": {
    "ui": {
-    "resourceUri": "ui://after-effects/activity.html",
-    "visibility": [
-     "model",
-     "app"
-    ]
+    "resourceUri": "ui://after-effects/activity.html"
    },
    "ui/resourceUri": "ui://after-effects/activity.html"
   }
@@ -2931,7 +2801,6 @@
    "additionalProperties": true
   },
   "annotations": {
-   "title": "List layers",
    "readOnlyHint": true,
    "destructiveHint": false,
    "idempotentHint": true,
@@ -2939,11 +2808,7 @@
   },
   "_meta": {
    "ui": {
-    "resourceUri": "ui://after-effects/activity.html",
-    "visibility": [
-     "model",
-     "app"
-    ]
+    "resourceUri": "ui://after-effects/activity.html"
    },
    "ui/resourceUri": "ui://after-effects/activity.html"
   }
@@ -3029,7 +2894,6 @@
    "additionalProperties": true
   },
   "annotations": {
-   "title": "Layer details",
    "readOnlyHint": true,
    "destructiveHint": false,
    "idempotentHint": true,
@@ -3037,11 +2901,7 @@
   },
   "_meta": {
    "ui": {
-    "resourceUri": "ui://after-effects/activity.html",
-    "visibility": [
-     "model",
-     "app"
-    ]
+    "resourceUri": "ui://after-effects/activity.html"
    },
    "ui/resourceUri": "ui://after-effects/activity.html"
   }
@@ -3288,7 +3148,6 @@
    }
   },
   "annotations": {
-   "title": "Set layer properties",
    "readOnlyHint": false,
    "destructiveHint": false,
    "idempotentHint": false,
@@ -3296,11 +3155,7 @@
   },
   "_meta": {
    "ui": {
-    "resourceUri": "ui://after-effects/activity.html",
-    "visibility": [
-     "model",
-     "app"
-    ]
+    "resourceUri": "ui://after-effects/activity.html"
    },
    "ui/resourceUri": "ui://after-effects/activity.html"
   }
@@ -3366,7 +3221,6 @@
    ]
   },
   "annotations": {
-   "title": "Duplicate layer",
    "readOnlyHint": false,
    "destructiveHint": false,
    "idempotentHint": false,
@@ -3374,11 +3228,7 @@
   },
   "_meta": {
    "ui": {
-    "resourceUri": "ui://after-effects/activity.html",
-    "visibility": [
-     "model",
-     "app"
-    ]
+    "resourceUri": "ui://after-effects/activity.html"
    },
    "ui/resourceUri": "ui://after-effects/activity.html"
   }
@@ -3432,7 +3282,6 @@
    ]
   },
   "annotations": {
-   "title": "Delete layers",
    "readOnlyHint": false,
    "destructiveHint": true,
    "idempotentHint": false,
@@ -3440,11 +3289,7 @@
   },
   "_meta": {
    "ui": {
-    "resourceUri": "ui://after-effects/activity.html",
-    "visibility": [
-     "model",
-     "app"
-    ]
+    "resourceUri": "ui://after-effects/activity.html"
    },
    "ui/resourceUri": "ui://after-effects/activity.html"
   }
@@ -3517,7 +3362,6 @@
    ]
   },
   "annotations": {
-   "title": "Reorder layer",
    "readOnlyHint": false,
    "destructiveHint": false,
    "idempotentHint": false,
@@ -3525,11 +3369,7 @@
   },
   "_meta": {
    "ui": {
-    "resourceUri": "ui://after-effects/activity.html",
-    "visibility": [
-     "model",
-     "app"
-    ]
+    "resourceUri": "ui://after-effects/activity.html"
    },
    "ui/resourceUri": "ui://after-effects/activity.html"
   }
@@ -3588,7 +3428,6 @@
    ]
   },
   "annotations": {
-   "title": "Parent layers",
    "readOnlyHint": false,
    "destructiveHint": false,
    "idempotentHint": false,
@@ -3596,11 +3435,7 @@
   },
   "_meta": {
    "ui": {
-    "resourceUri": "ui://after-effects/activity.html",
-    "visibility": [
-     "model",
-     "app"
-    ]
+    "resourceUri": "ui://after-effects/activity.html"
    },
    "ui/resourceUri": "ui://after-effects/activity.html"
   }
@@ -3669,7 +3504,6 @@
    ]
   },
   "annotations": {
-   "title": "Track matte",
    "readOnlyHint": false,
    "destructiveHint": false,
    "idempotentHint": false,
@@ -3677,11 +3511,7 @@
   },
   "_meta": {
    "ui": {
-    "resourceUri": "ui://after-effects/activity.html",
-    "visibility": [
-     "model",
-     "app"
-    ]
+    "resourceUri": "ui://after-effects/activity.html"
    },
    "ui/resourceUri": "ui://after-effects/activity.html"
   }
@@ -3731,7 +3561,6 @@
    ]
   },
   "annotations": {
-   "title": "Split layer",
    "readOnlyHint": false,
    "destructiveHint": false,
    "idempotentHint": false,
@@ -3739,11 +3568,7 @@
   },
   "_meta": {
    "ui": {
-    "resourceUri": "ui://after-effects/activity.html",
-    "visibility": [
-     "model",
-     "app"
-    ]
+    "resourceUri": "ui://after-effects/activity.html"
    },
    "ui/resourceUri": "ui://after-effects/activity.html"
   }
@@ -3815,7 +3640,6 @@
    ]
   },
   "annotations": {
-   "title": "Sequence layers",
    "readOnlyHint": false,
    "destructiveHint": false,
    "idempotentHint": false,
@@ -3823,11 +3647,7 @@
   },
   "_meta": {
    "ui": {
-    "resourceUri": "ui://after-effects/activity.html",
-    "visibility": [
-     "model",
-     "app"
-    ]
+    "resourceUri": "ui://after-effects/activity.html"
    },
    "ui/resourceUri": "ui://after-effects/activity.html"
   }
@@ -3899,7 +3719,6 @@
    ]
   },
   "annotations": {
-   "title": "Align layers",
    "readOnlyHint": false,
    "destructiveHint": false,
    "idempotentHint": false,
@@ -3907,11 +3726,7 @@
   },
   "_meta": {
    "ui": {
-    "resourceUri": "ui://after-effects/activity.html",
-    "visibility": [
-     "model",
-     "app"
-    ]
+    "resourceUri": "ui://after-effects/activity.html"
    },
    "ui/resourceUri": "ui://after-effects/activity.html"
   }
@@ -4046,7 +3861,6 @@
    ]
   },
   "annotations": {
-   "title": "Edit text",
    "readOnlyHint": false,
    "destructiveHint": false,
    "idempotentHint": false,
@@ -4054,11 +3868,7 @@
   },
   "_meta": {
    "ui": {
-    "resourceUri": "ui://after-effects/activity.html",
-    "visibility": [
-     "model",
-     "app"
-    ]
+    "resourceUri": "ui://after-effects/activity.html"
    },
    "ui/resourceUri": "ui://after-effects/activity.html"
   }
@@ -4112,7 +3922,6 @@
    ]
   },
   "annotations": {
-   "title": "Read property",
    "readOnlyHint": true,
    "destructiveHint": false,
    "idempotentHint": true,
@@ -4120,11 +3929,7 @@
   },
   "_meta": {
    "ui": {
-    "resourceUri": "ui://after-effects/activity.html",
-    "visibility": [
-     "model",
-     "app"
-    ]
+    "resourceUri": "ui://after-effects/activity.html"
    },
    "ui/resourceUri": "ui://after-effects/activity.html"
   }
@@ -4181,7 +3986,6 @@
    ]
   },
   "annotations": {
-   "title": "Set property",
    "readOnlyHint": false,
    "destructiveHint": false,
    "idempotentHint": false,
@@ -4189,11 +3993,7 @@
   },
   "_meta": {
    "ui": {
-    "resourceUri": "ui://after-effects/activity.html",
-    "visibility": [
-     "model",
-     "app"
-    ]
+    "resourceUri": "ui://after-effects/activity.html"
    },
    "ui/resourceUri": "ui://after-effects/activity.html"
   }
@@ -4374,7 +4174,6 @@
    ]
   },
   "annotations": {
-   "title": "Set keyframes",
    "readOnlyHint": false,
    "destructiveHint": false,
    "idempotentHint": false,
@@ -4382,11 +4181,7 @@
   },
   "_meta": {
    "ui": {
-    "resourceUri": "ui://after-effects/activity.html",
-    "visibility": [
-     "model",
-     "app"
-    ]
+    "resourceUri": "ui://after-effects/activity.html"
    },
    "ui/resourceUri": "ui://after-effects/activity.html"
   }
@@ -4443,7 +4238,6 @@
    ]
   },
   "annotations": {
-   "title": "Remove keyframes",
    "readOnlyHint": false,
    "destructiveHint": true,
    "idempotentHint": false,
@@ -4451,11 +4245,7 @@
   },
   "_meta": {
    "ui": {
-    "resourceUri": "ui://after-effects/activity.html",
-    "visibility": [
-     "model",
-     "app"
-    ]
+    "resourceUri": "ui://after-effects/activity.html"
    },
    "ui/resourceUri": "ui://after-effects/activity.html"
   }
@@ -4517,7 +4307,6 @@
    ]
   },
   "annotations": {
-   "title": "Set expression",
    "readOnlyHint": false,
    "destructiveHint": false,
    "idempotentHint": false,
@@ -4525,11 +4314,7 @@
   },
   "_meta": {
    "ui": {
-    "resourceUri": "ui://after-effects/activity.html",
-    "visibility": [
-     "model",
-     "app"
-    ]
+    "resourceUri": "ui://after-effects/activity.html"
    },
    "ui/resourceUri": "ui://after-effects/activity.html"
   }
@@ -4561,7 +4346,6 @@
    }
   },
   "annotations": {
-   "title": "Check expressions",
    "readOnlyHint": true,
    "destructiveHint": false,
    "idempotentHint": true,
@@ -4569,11 +4353,7 @@
   },
   "_meta": {
    "ui": {
-    "resourceUri": "ui://after-effects/activity.html",
-    "visibility": [
-     "model",
-     "app"
-    ]
+    "resourceUri": "ui://after-effects/activity.html"
    },
    "ui/resourceUri": "ui://after-effects/activity.html"
   }
@@ -4830,7 +4610,6 @@
    ]
   },
   "annotations": {
-   "title": "Add text animator",
    "readOnlyHint": false,
    "destructiveHint": false,
    "idempotentHint": false,
@@ -4838,11 +4617,7 @@
   },
   "_meta": {
    "ui": {
-    "resourceUri": "ui://after-effects/activity.html",
-    "visibility": [
-     "model",
-     "app"
-    ]
+    "resourceUri": "ui://after-effects/activity.html"
    },
    "ui/resourceUri": "ui://after-effects/activity.html"
   }
@@ -4912,7 +4687,6 @@
    ]
   },
   "annotations": {
-   "title": "Expression preset",
    "readOnlyHint": false,
    "destructiveHint": false,
    "idempotentHint": false,
@@ -4920,11 +4694,107 @@
   },
   "_meta": {
    "ui": {
-    "resourceUri": "ui://after-effects/activity.html",
-    "visibility": [
-     "model",
-     "app"
-    ]
+    "resourceUri": "ui://after-effects/activity.html"
+   },
+   "ui/resourceUri": "ui://after-effects/activity.html"
+  }
+ },
+ {
+  "name": "keyframes_from_markers",
+  "title": "Keyframes from markers",
+  "description": "Put a keyframe on a property at every comp (or layer) marker: values one per marker, or pattern:'alternate' cycling values. Animate on the beat.",
+  "inputSchema": {
+   "type": "object",
+   "properties": {
+    "comp": {
+     "anyOf": [
+      {
+       "type": "string"
+      },
+      {
+       "type": "integer"
+      }
+     ],
+     "description": "Composition name or numeric item id. Omit to use the active composition."
+    },
+    "layer": {
+     "anyOf": [
+      {
+       "type": "integer",
+       "exclusiveMinimum": 0
+      },
+      {
+       "type": "string"
+      }
+     ],
+     "description": "Layer: 1-based index, exact name, or 'id:<layerId>' (stable across reordering)."
+    },
+    "property": {
+     "type": "string"
+    },
+    "markerSource": {
+     "type": "string",
+     "enum": [
+      "comp",
+      "layer"
+     ]
+    },
+    "values": {
+     "type": "array",
+     "minItems": 1
+    },
+    "pattern": {
+     "type": "string",
+     "enum": [
+      "alternate"
+     ]
+    },
+    "offset": {
+     "type": "number",
+     "description": "Seconds added to each marker time."
+    },
+    "easing": {
+     "type": "string",
+     "enum": [
+      "linear",
+      "hold",
+      "easy-ease",
+      "ease-in",
+      "ease-out",
+      "ease-in-out",
+      "smooth",
+      "strong-ease",
+      "expo",
+      "snap",
+      "anticipate"
+     ],
+     "description": "Keyframe easing preset."
+    },
+    "replace": {
+     "type": "boolean"
+    },
+    "timeoutSeconds": {
+     "type": "integer",
+     "minimum": 1,
+     "maximum": 3600,
+     "description": "Max seconds to wait for After Effects (default 60, long tools 300+)."
+    }
+   },
+   "required": [
+    "layer",
+    "property",
+    "values"
+   ]
+  },
+  "annotations": {
+   "readOnlyHint": false,
+   "destructiveHint": false,
+   "idempotentHint": false,
+   "openWorldHint": false
+  },
+  "_meta": {
+   "ui": {
+    "resourceUri": "ui://after-effects/activity.html"
    },
    "ui/resourceUri": "ui://after-effects/activity.html"
   }
@@ -5058,7 +4928,6 @@
    ]
   },
   "annotations": {
-   "title": "Animation preset",
    "readOnlyHint": false,
    "destructiveHint": false,
    "idempotentHint": false,
@@ -5066,11 +4935,7 @@
   },
   "_meta": {
    "ui": {
-    "resourceUri": "ui://after-effects/activity.html",
-    "visibility": [
-     "model",
-     "app"
-    ]
+    "resourceUri": "ui://after-effects/activity.html"
    },
    "ui/resourceUri": "ui://after-effects/activity.html"
   }
@@ -5100,7 +4965,6 @@
    }
   },
   "annotations": {
-   "title": "Search effects",
    "readOnlyHint": true,
    "destructiveHint": false,
    "idempotentHint": true,
@@ -5108,11 +4972,7 @@
   },
   "_meta": {
    "ui": {
-    "resourceUri": "ui://after-effects/activity.html",
-    "visibility": [
-     "model",
-     "app"
-    ]
+    "resourceUri": "ui://after-effects/activity.html"
    },
    "ui/resourceUri": "ui://after-effects/activity.html"
   }
@@ -5189,7 +5049,6 @@
    ]
   },
   "annotations": {
-   "title": "Apply effect",
    "readOnlyHint": false,
    "destructiveHint": false,
    "idempotentHint": false,
@@ -5197,11 +5056,7 @@
   },
   "_meta": {
    "ui": {
-    "resourceUri": "ui://after-effects/activity.html",
-    "visibility": [
-     "model",
-     "app"
-    ]
+    "resourceUri": "ui://after-effects/activity.html"
    },
    "ui/resourceUri": "ui://after-effects/activity.html"
   }
@@ -5248,7 +5103,6 @@
    ]
   },
   "annotations": {
-   "title": "Layer effects",
    "readOnlyHint": true,
    "destructiveHint": false,
    "idempotentHint": true,
@@ -5256,11 +5110,7 @@
   },
   "_meta": {
    "ui": {
-    "resourceUri": "ui://after-effects/activity.html",
-    "visibility": [
-     "model",
-     "app"
-    ]
+    "resourceUri": "ui://after-effects/activity.html"
    },
    "ui/resourceUri": "ui://after-effects/activity.html"
   }
@@ -5334,7 +5184,6 @@
    ]
   },
   "annotations": {
-   "title": "Modify effect",
    "readOnlyHint": false,
    "destructiveHint": false,
    "idempotentHint": false,
@@ -5342,11 +5191,7 @@
   },
   "_meta": {
    "ui": {
-    "resourceUri": "ui://after-effects/activity.html",
-    "visibility": [
-     "model",
-     "app"
-    ]
+    "resourceUri": "ui://after-effects/activity.html"
    },
    "ui/resourceUri": "ui://after-effects/activity.html"
   }
@@ -5436,7 +5281,6 @@
    ]
   },
   "annotations": {
-   "title": "Effect look template",
    "readOnlyHint": false,
    "destructiveHint": false,
    "idempotentHint": false,
@@ -5444,11 +5288,7 @@
   },
   "_meta": {
    "ui": {
-    "resourceUri": "ui://after-effects/activity.html",
-    "visibility": [
-     "model",
-     "app"
-    ]
+    "resourceUri": "ui://after-effects/activity.html"
    },
    "ui/resourceUri": "ui://after-effects/activity.html"
   }
@@ -5502,7 +5342,6 @@
    ]
   },
   "annotations": {
-   "title": "Apply .ffx preset",
    "readOnlyHint": false,
    "destructiveHint": false,
    "idempotentHint": false,
@@ -5510,11 +5349,7 @@
   },
   "_meta": {
    "ui": {
-    "resourceUri": "ui://after-effects/activity.html",
-    "visibility": [
-     "model",
-     "app"
-    ]
+    "resourceUri": "ui://after-effects/activity.html"
    },
    "ui/resourceUri": "ui://after-effects/activity.html"
   }
@@ -5652,7 +5487,6 @@
    ]
   },
   "annotations": {
-   "title": "Add mask",
    "readOnlyHint": false,
    "destructiveHint": false,
    "idempotentHint": false,
@@ -5660,11 +5494,7 @@
   },
   "_meta": {
    "ui": {
-    "resourceUri": "ui://after-effects/activity.html",
-    "visibility": [
-     "model",
-     "app"
-    ]
+    "resourceUri": "ui://after-effects/activity.html"
    },
    "ui/resourceUri": "ui://after-effects/activity.html"
   }
@@ -5717,7 +5547,6 @@
    ]
   },
   "annotations": {
-   "title": "Remove masks",
    "readOnlyHint": false,
    "destructiveHint": true,
    "idempotentHint": false,
@@ -5725,11 +5554,7 @@
   },
   "_meta": {
    "ui": {
-    "resourceUri": "ui://after-effects/activity.html",
-    "visibility": [
-     "model",
-     "app"
-    ]
+    "resourceUri": "ui://after-effects/activity.html"
    },
    "ui/resourceUri": "ui://after-effects/activity.html"
   }
@@ -5776,7 +5601,6 @@
    ]
   },
   "annotations": {
-   "title": "Convert audio to keyframes",
    "readOnlyHint": false,
    "destructiveHint": false,
    "idempotentHint": false,
@@ -5784,11 +5608,7 @@
   },
   "_meta": {
    "ui": {
-    "resourceUri": "ui://after-effects/activity.html",
-    "visibility": [
-     "model",
-     "app"
-    ]
+    "resourceUri": "ui://after-effects/activity.html"
    },
    "ui/resourceUri": "ui://after-effects/activity.html"
   }
@@ -5844,7 +5664,6 @@
    }
   },
   "annotations": {
-   "title": "Markers from audio peaks",
    "readOnlyHint": false,
    "destructiveHint": false,
    "idempotentHint": false,
@@ -5852,11 +5671,7 @@
   },
   "_meta": {
    "ui": {
-    "resourceUri": "ui://after-effects/activity.html",
-    "visibility": [
-     "model",
-     "app"
-    ]
+    "resourceUri": "ui://after-effects/activity.html"
    },
    "ui/resourceUri": "ui://after-effects/activity.html"
   }
@@ -5932,7 +5747,6 @@
    ]
   },
   "annotations": {
-   "title": "Markers",
    "readOnlyHint": false,
    "destructiveHint": false,
    "idempotentHint": false,
@@ -5940,11 +5754,7 @@
   },
   "_meta": {
    "ui": {
-    "resourceUri": "ui://after-effects/activity.html",
-    "visibility": [
-     "model",
-     "app"
-    ]
+    "resourceUri": "ui://after-effects/activity.html"
    },
    "ui/resourceUri": "ui://after-effects/activity.html"
   }
@@ -6006,7 +5816,6 @@
    }
   },
   "annotations": {
-   "title": "Add marker",
    "readOnlyHint": false,
    "destructiveHint": false,
    "idempotentHint": false,
@@ -6014,11 +5823,7 @@
   },
   "_meta": {
    "ui": {
-    "resourceUri": "ui://after-effects/activity.html",
-    "visibility": [
-     "model",
-     "app"
-    ]
+    "resourceUri": "ui://after-effects/activity.html"
    },
    "ui/resourceUri": "ui://after-effects/activity.html"
   }
@@ -6053,7 +5858,6 @@
    }
   },
   "annotations": {
-   "title": "List markers",
    "readOnlyHint": true,
    "destructiveHint": false,
    "idempotentHint": true,
@@ -6061,11 +5865,7 @@
   },
   "_meta": {
    "ui": {
-    "resourceUri": "ui://after-effects/activity.html",
-    "visibility": [
-     "model",
-     "app"
-    ]
+    "resourceUri": "ui://after-effects/activity.html"
    },
    "ui/resourceUri": "ui://after-effects/activity.html"
   }
@@ -6115,7 +5915,6 @@
    }
   },
   "annotations": {
-   "title": "Remove markers",
    "readOnlyHint": false,
    "destructiveHint": true,
    "idempotentHint": false,
@@ -6123,11 +5922,7 @@
   },
   "_meta": {
    "ui": {
-    "resourceUri": "ui://after-effects/activity.html",
-    "visibility": [
-     "model",
-     "app"
-    ]
+    "resourceUri": "ui://after-effects/activity.html"
    },
    "ui/resourceUri": "ui://after-effects/activity.html"
   }
@@ -6198,7 +5993,6 @@
    }
   },
   "annotations": {
-   "title": "Preview frame (image)",
    "readOnlyHint": true,
    "destructiveHint": false,
    "idempotentHint": true,
@@ -6206,11 +6000,7 @@
   },
   "_meta": {
    "ui": {
-    "resourceUri": "ui://after-effects/activity.html",
-    "visibility": [
-     "model",
-     "app"
-    ]
+    "resourceUri": "ui://after-effects/activity.html"
    },
    "ui/resourceUri": "ui://after-effects/activity.html"
   }
@@ -6294,7 +6084,6 @@
    }
   },
   "annotations": {
-   "title": "Preview several frames",
    "readOnlyHint": true,
    "destructiveHint": false,
    "idempotentHint": true,
@@ -6302,11 +6091,7 @@
   },
   "_meta": {
    "ui": {
-    "resourceUri": "ui://after-effects/activity.html",
-    "visibility": [
-     "model",
-     "app"
-    ]
+    "resourceUri": "ui://after-effects/activity.html"
    },
    "ui/resourceUri": "ui://after-effects/activity.html"
   }
@@ -6373,7 +6158,6 @@
    }
   },
   "annotations": {
-   "title": "Add to render queue",
    "readOnlyHint": false,
    "destructiveHint": false,
    "idempotentHint": false,
@@ -6381,11 +6165,7 @@
   },
   "_meta": {
    "ui": {
-    "resourceUri": "ui://after-effects/activity.html",
-    "visibility": [
-     "model",
-     "app"
-    ]
+    "resourceUri": "ui://after-effects/activity.html"
    },
    "ui/resourceUri": "ui://after-effects/activity.html"
   }
@@ -6435,7 +6215,6 @@
    ]
   },
   "annotations": {
-   "title": "Render PNG sequence",
    "readOnlyHint": false,
    "destructiveHint": false,
    "idempotentHint": false,
@@ -6443,11 +6222,7 @@
   },
   "_meta": {
    "ui": {
-    "resourceUri": "ui://after-effects/activity.html",
-    "visibility": [
-     "model",
-     "app"
-    ]
+    "resourceUri": "ui://after-effects/activity.html"
    },
    "ui/resourceUri": "ui://after-effects/activity.html"
   }
@@ -6504,7 +6279,6 @@
    "additionalProperties": true
   },
   "annotations": {
-   "title": "Render queue",
    "readOnlyHint": true,
    "destructiveHint": false,
    "idempotentHint": true,
@@ -6512,11 +6286,7 @@
   },
   "_meta": {
    "ui": {
-    "resourceUri": "ui://after-effects/activity.html",
-    "visibility": [
-     "model",
-     "app"
-    ]
+    "resourceUri": "ui://after-effects/activity.html"
    },
    "ui/resourceUri": "ui://after-effects/activity.html"
   }
@@ -6540,7 +6310,6 @@
    }
   },
   "annotations": {
-   "title": "Clear render queue",
    "readOnlyHint": false,
    "destructiveHint": true,
    "idempotentHint": false,
@@ -6548,11 +6317,7 @@
   },
   "_meta": {
    "ui": {
-    "resourceUri": "ui://after-effects/activity.html",
-    "visibility": [
-     "model",
-     "app"
-    ]
+    "resourceUri": "ui://after-effects/activity.html"
    },
    "ui/resourceUri": "ui://after-effects/activity.html"
   }
@@ -6630,7 +6395,6 @@
    }
   },
   "annotations": {
-   "title": "Render queue",
    "readOnlyHint": false,
    "destructiveHint": false,
    "idempotentHint": false,
@@ -6638,11 +6402,7 @@
   },
   "_meta": {
    "ui": {
-    "resourceUri": "ui://after-effects/activity.html",
-    "visibility": [
-     "model",
-     "app"
-    ]
+    "resourceUri": "ui://after-effects/activity.html"
    },
    "ui/resourceUri": "ui://after-effects/activity.html"
   }
@@ -6692,7 +6452,6 @@
    ]
   },
   "annotations": {
-   "title": "Render in background (aerender)",
    "readOnlyHint": false,
    "destructiveHint": false,
    "idempotentHint": false,
@@ -6700,11 +6459,7 @@
   },
   "_meta": {
    "ui": {
-    "resourceUri": "ui://after-effects/activity.html",
-    "visibility": [
-     "model",
-     "app"
-    ]
+    "resourceUri": "ui://after-effects/activity.html"
    },
    "ui/resourceUri": "ui://after-effects/activity.html"
   }
@@ -6722,7 +6477,6 @@
    }
   },
   "annotations": {
-   "title": "Background render status",
    "readOnlyHint": true,
    "destructiveHint": false,
    "idempotentHint": true,
@@ -6730,11 +6484,7 @@
   },
   "_meta": {
    "ui": {
-    "resourceUri": "ui://after-effects/activity.html",
-    "visibility": [
-     "model",
-     "app"
-    ]
+    "resourceUri": "ui://after-effects/activity.html"
    },
    "ui/resourceUri": "ui://after-effects/activity.html"
   }
@@ -6779,7 +6529,6 @@
    ]
   },
   "annotations": {
-   "title": "Replace footage",
    "readOnlyHint": false,
    "destructiveHint": false,
    "idempotentHint": false,
@@ -6787,11 +6536,7 @@
   },
   "_meta": {
    "ui": {
-    "resourceUri": "ui://after-effects/activity.html",
-    "visibility": [
-     "model",
-     "app"
-    ]
+    "resourceUri": "ui://after-effects/activity.html"
    },
    "ui/resourceUri": "ui://after-effects/activity.html"
   }
@@ -6827,7 +6572,6 @@
    }
   },
   "annotations": {
-   "title": "List animation presets",
    "readOnlyHint": true,
    "destructiveHint": false,
    "idempotentHint": true,
@@ -6835,11 +6579,7 @@
   },
   "_meta": {
    "ui": {
-    "resourceUri": "ui://after-effects/activity.html",
-    "visibility": [
-     "model",
-     "app"
-    ]
+    "resourceUri": "ui://after-effects/activity.html"
    },
    "ui/resourceUri": "ui://after-effects/activity.html"
   }
@@ -6915,7 +6655,6 @@
    ]
   },
   "annotations": {
-   "title": "Read properties at a time",
    "readOnlyHint": true,
    "destructiveHint": false,
    "idempotentHint": true,
@@ -6923,11 +6662,7 @@
   },
   "_meta": {
    "ui": {
-    "resourceUri": "ui://after-effects/activity.html",
-    "visibility": [
-     "model",
-     "app"
-    ]
+    "resourceUri": "ui://after-effects/activity.html"
    },
    "ui/resourceUri": "ui://after-effects/activity.html"
   }
@@ -6971,7 +6706,6 @@
    }
   },
   "annotations": {
-   "title": "List Essential Properties",
    "readOnlyHint": true,
    "destructiveHint": false,
    "idempotentHint": true,
@@ -6979,11 +6713,7 @@
   },
   "_meta": {
    "ui": {
-    "resourceUri": "ui://after-effects/activity.html",
-    "visibility": [
-     "model",
-     "app"
-    ]
+    "resourceUri": "ui://after-effects/activity.html"
    },
    "ui/resourceUri": "ui://after-effects/activity.html"
   }
@@ -7043,7 +6773,6 @@
    ]
   },
   "annotations": {
-   "title": "Set Essential Property",
    "readOnlyHint": false,
    "destructiveHint": false,
    "idempotentHint": false,
@@ -7051,11 +6780,7 @@
   },
   "_meta": {
    "ui": {
-    "resourceUri": "ui://after-effects/activity.html",
-    "visibility": [
-     "model",
-     "app"
-    ]
+    "resourceUri": "ui://after-effects/activity.html"
    },
    "ui/resourceUri": "ui://after-effects/activity.html"
   }
@@ -7107,7 +6832,6 @@
    ]
   },
   "annotations": {
-   "title": "Set Essential Properties",
    "readOnlyHint": false,
    "destructiveHint": false,
    "idempotentHint": false,
@@ -7115,11 +6839,7 @@
   },
   "_meta": {
    "ui": {
-    "resourceUri": "ui://after-effects/activity.html",
-    "visibility": [
-     "model",
-     "app"
-    ]
+    "resourceUri": "ui://after-effects/activity.html"
    },
    "ui/resourceUri": "ui://after-effects/activity.html"
   }
@@ -7184,7 +6904,6 @@
    ]
   },
   "annotations": {
-   "title": "Instantiate template",
    "readOnlyHint": false,
    "destructiveHint": false,
    "idempotentHint": false,
@@ -7192,11 +6911,7 @@
   },
   "_meta": {
    "ui": {
-    "resourceUri": "ui://after-effects/activity.html",
-    "visibility": [
-     "model",
-     "app"
-    ]
+    "resourceUri": "ui://after-effects/activity.html"
    },
    "ui/resourceUri": "ui://after-effects/activity.html"
   }
@@ -7231,7 +6946,6 @@
    ]
   },
   "annotations": {
-   "title": "Export .mogrt",
    "readOnlyHint": false,
    "destructiveHint": false,
    "idempotentHint": false,
@@ -7239,11 +6953,7 @@
   },
   "_meta": {
    "ui": {
-    "resourceUri": "ui://after-effects/activity.html",
-    "visibility": [
-     "model",
-     "app"
-    ]
+    "resourceUri": "ui://after-effects/activity.html"
    },
    "ui/resourceUri": "ui://after-effects/activity.html"
   }
@@ -7301,7 +7011,6 @@
    ]
   },
   "annotations": {
-   "title": "Add to Essential Graphics",
    "readOnlyHint": false,
    "destructiveHint": false,
    "idempotentHint": false,
@@ -7309,11 +7018,7 @@
   },
   "_meta": {
    "ui": {
-    "resourceUri": "ui://after-effects/activity.html",
-    "visibility": [
-     "model",
-     "app"
-    ]
+    "resourceUri": "ui://after-effects/activity.html"
    },
    "ui/resourceUri": "ui://after-effects/activity.html"
   }
@@ -7340,7 +7045,6 @@
    }
   },
   "annotations": {
-   "title": "List fonts",
    "readOnlyHint": true,
    "destructiveHint": false,
    "idempotentHint": true,
@@ -7348,11 +7052,7 @@
   },
   "_meta": {
    "ui": {
-    "resourceUri": "ui://after-effects/activity.html",
-    "visibility": [
-     "model",
-     "app"
-    ]
+    "resourceUri": "ui://after-effects/activity.html"
    },
    "ui/resourceUri": "ui://after-effects/activity.html"
   }
@@ -7373,7 +7073,6 @@
    }
   },
   "annotations": {
-   "title": "Get selection",
    "readOnlyHint": true,
    "destructiveHint": false,
    "idempotentHint": true,
@@ -7381,11 +7080,7 @@
   },
   "_meta": {
    "ui": {
-    "resourceUri": "ui://after-effects/activity.html",
-    "visibility": [
-     "model",
-     "app"
-    ]
+    "resourceUri": "ui://after-effects/activity.html"
    },
    "ui/resourceUri": "ui://after-effects/activity.html"
   }
@@ -7433,7 +7128,6 @@
    }
   },
   "annotations": {
-   "title": "Select layers",
    "readOnlyHint": false,
    "destructiveHint": false,
    "idempotentHint": false,
@@ -7441,11 +7135,7 @@
   },
   "_meta": {
    "ui": {
-    "resourceUri": "ui://after-effects/activity.html",
-    "visibility": [
-     "model",
-     "app"
-    ]
+    "resourceUri": "ui://after-effects/activity.html"
    },
    "ui/resourceUri": "ui://after-effects/activity.html"
   }
@@ -7463,7 +7153,6 @@
    }
   },
   "annotations": {
-   "title": "Begin undo group",
    "readOnlyHint": false,
    "destructiveHint": false,
    "idempotentHint": false,
@@ -7471,11 +7160,7 @@
   },
   "_meta": {
    "ui": {
-    "resourceUri": "ui://after-effects/activity.html",
-    "visibility": [
-     "model",
-     "app"
-    ]
+    "resourceUri": "ui://after-effects/activity.html"
    },
    "ui/resourceUri": "ui://after-effects/activity.html"
   }
@@ -7489,7 +7174,6 @@
    "properties": {}
   },
   "annotations": {
-   "title": "End undo group",
    "readOnlyHint": false,
    "destructiveHint": false,
    "idempotentHint": false,
@@ -7497,11 +7181,7 @@
   },
   "_meta": {
    "ui": {
-    "resourceUri": "ui://after-effects/activity.html",
-    "visibility": [
-     "model",
-     "app"
-    ]
+    "resourceUri": "ui://after-effects/activity.html"
    },
    "ui/resourceUri": "ui://after-effects/activity.html"
   }
@@ -7534,7 +7214,6 @@
    }
   },
   "annotations": {
-   "title": "Undo / redo",
    "readOnlyHint": false,
    "destructiveHint": false,
    "idempotentHint": false,
@@ -7542,11 +7221,7 @@
   },
   "_meta": {
    "ui": {
-    "resourceUri": "ui://after-effects/activity.html",
-    "visibility": [
-     "model",
-     "app"
-    ]
+    "resourceUri": "ui://after-effects/activity.html"
    },
    "ui/resourceUri": "ui://after-effects/activity.html"
   }
@@ -7573,7 +7248,6 @@
    }
   },
   "annotations": {
-   "title": "Run menu command",
    "readOnlyHint": false,
    "destructiveHint": false,
    "idempotentHint": false,
@@ -7581,11 +7255,7 @@
   },
   "_meta": {
    "ui": {
-    "resourceUri": "ui://after-effects/activity.html",
-    "visibility": [
-     "model",
-     "app"
-    ]
+    "resourceUri": "ui://after-effects/activity.html"
    },
    "ui/resourceUri": "ui://after-effects/activity.html"
   }
@@ -7623,7 +7293,6 @@
    ]
   },
   "annotations": {
-   "title": "Run ExtendScript",
    "readOnlyHint": false,
    "destructiveHint": false,
    "idempotentHint": false,
@@ -7631,11 +7300,7 @@
   },
   "_meta": {
    "ui": {
-    "resourceUri": "ui://after-effects/activity.html",
-    "visibility": [
-     "model",
-     "app"
-    ]
+    "resourceUri": "ui://after-effects/activity.html"
    },
    "ui/resourceUri": "ui://after-effects/activity.html"
   }
@@ -7695,7 +7360,6 @@
    ]
   },
   "annotations": {
-   "title": "Batch operations",
    "readOnlyHint": false,
    "destructiveHint": false,
    "idempotentHint": false,
@@ -7703,11 +7367,7 @@
   },
   "_meta": {
    "ui": {
-    "resourceUri": "ui://after-effects/activity.html",
-    "visibility": [
-     "model",
-     "app"
-    ]
+    "resourceUri": "ui://after-effects/activity.html"
    },
    "ui/resourceUri": "ui://after-effects/activity.html"
   }
