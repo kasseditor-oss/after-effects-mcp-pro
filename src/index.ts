@@ -381,6 +381,7 @@ const UNDO_IDLE_MS = 120_000;
 const NOT_COUNTED = new Set(["undo", "begin_undo_group", "end_undo_group"]);
 let undoGroup: { name: string; steps: number; opened: number; lastCall: number } | null = null;
 let closedGroup: { name: string; steps: number } | null = null;
+let undoneGroup: { name: string; steps: number } | null = null;
 function closeUndoGroup(reason: string) {
   if (!undoGroup) return null;
   closedGroup = { name: undoGroup.name, steps: undoGroup.steps };
@@ -473,8 +474,17 @@ async function dispatch(req: { params: { name: string; arguments?: Record<string
         closedGroup = null;
         args.steps = g.steps;
         const data = await bridge.call("undo", args, { undo: false, signal });
+        undoneGroup = g; // a following redo without steps redoes the whole group
         return ok({ ...(data as object), group: g.name, note: `Reverted undo group '${g.name}' (${g.steps} step(s))` });
       }
+    }
+    if (name === "undo" && args.steps === undefined && args.action === "redo" && undoneGroup) {
+      const g = undoneGroup;
+      undoneGroup = null;
+      args.steps = g.steps;
+      const data = await bridge.call("undo", args, { undo: false, signal });
+      closedGroup = g; // undo again reverts the group again
+      return ok({ ...(data as object), group: g.name, note: `Redid undo group '${g.name}' (${g.steps} step(s))` });
     }
     let timeoutMs = def.timeoutMs ?? 60_000;
     if (args.timeoutSeconds) timeoutMs = args.timeoutSeconds * 1000;
@@ -488,6 +498,7 @@ async function dispatch(req: { params: { name: string; arguments?: Record<string
         undoGroup.steps++;
         undoGroup.lastCall = Date.now();
       } else closedGroup = null; // a new step after the group: "undo" means just this step again
+      undoneGroup = null; // and the undone group can no longer be redone as a whole
     }
     // Partial results must not look like plain success to an agent that only reads isError.
     if (name === "import_files" && data && !data.imported?.length && data.errors?.length) {

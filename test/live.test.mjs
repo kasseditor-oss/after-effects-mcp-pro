@@ -234,6 +234,9 @@ await call("delete_layers", { comp: C, layers: ["TmpNull"], removeSources: true 
   await call("end_undo_group", {}, { check: (d) => (d.steps === 3 ? true : JSON.stringify(d)) });
   await call("undo", {}, { check: (d) => (/3 step/.test(d.note) ? true : JSON.stringify(d)) });
   await call("list_layers", { comp: C }, { check: (d) => (d.total === before ? true : `expected ${before} layers, got ${d.total}`) });
+  await call("undo", { action: "redo" }, { check: (d) => (/3 step/.test(d.note) ? true : JSON.stringify(d)) });
+  await call("list_layers", { comp: C, query: "UG" }, { check: (d) => (d.total === 3 ? true : `redo brought back ${d.total} of 3`) });
+  await call("delete_layers", { comp: C, layers: ["UG0", "UG1", "UG2"], removeSources: true });
 }
 await call("delete_layers", { comp: C, layers: ["Grade"] });
 await call("remove_keyframes", { comp: C, layer: "Title", property: "Position", from: 1 });
