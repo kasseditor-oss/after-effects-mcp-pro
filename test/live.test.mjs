@@ -479,6 +479,29 @@ await call("preview_contact_sheet", { comp: C, frames: 4, maxSize: 400 }, {
   }
   await call("check_expressions", { comp: exId }, { check: (d) => (d.errors.length === 0 ? true : JSON.stringify(d.errors).slice(0, 200)) });
 }
+// audio: a WAV generated here (4 beeps), levels/fade, amplitude keyframes and peak markers
+{
+  const wav = path.join(out, "beeps.wav");
+  const rate = 44100, secs = 2, n = rate * secs, data = Buffer.alloc(44 + n * 2);
+  data.write("RIFF", 0); data.writeUInt32LE(36 + n * 2, 4); data.write("WAVE", 8); data.write("fmt ", 12);
+  data.writeUInt32LE(16, 16); data.writeUInt16LE(1, 20); data.writeUInt16LE(1, 22); data.writeUInt32LE(rate, 24); data.writeUInt32LE(rate * 2, 28); data.writeUInt16LE(2, 32); data.writeUInt16LE(16, 34);
+  data.write("data", 36); data.writeUInt32LE(n * 2, 40);
+  for (let i = 0; i < n; i++) {
+    const t = i / rate, beep = [0.25, 0.75, 1.25, 1.75].some((b) => t >= b && t < b + 0.08);
+    data.writeInt16LE(beep ? Math.round(Math.sin(2 * Math.PI * 440 * t) * 30000) : 0, 44 + i * 2);
+  }
+  fs.writeFileSync(wav, data);
+  const ac = await call("create_composition", { name: COMP + " audio", width: 320, height: 180, duration: 2, open: false });
+  created.push(ac.data?.id);
+  const imp = await call("import_files", { paths: [wav], addToComp: ac.data?.id });
+  for (const it of imp.data?.imported ?? []) created.push(it.id);
+  await call("set_layer_properties", { comp: ac.data?.id, layer: 1, audioLevels: -6, audioFade: { in: 0.1, out: 0.2 } });
+  await call("get_property", { comp: ac.data?.id, layer: 1, property: "Audio Levels" }, { check: (d) => (d.numKeys === 4 ? true : JSON.stringify(d).slice(0, 200)) });
+  await call("audio_to_keyframes", { comp: ac.data?.id, layer: 1 }, { check: (d) => (d.sliders.some((s) => /Both/.test(s.name) && s.keys > 10) ? true : JSON.stringify(d)) });
+  await call("markers_from_audio_peaks", { comp: ac.data?.id, threshold: 5 }, {
+    check: (d) => (d.markers >= 4 && [0.25, 0.75, 1.25, 1.75].every((b) => d.times.some((t) => Math.abs(t - b) < 0.12)) ? true : JSON.stringify(d)),
+  });
+}
 // text-fade-up must REVEAL the text: invisible before, fully visible after (pixel check)
 {
   const fc = await call("create_composition", { name: COMP + " fade", width: 640, height: 360, duration: 3, backgroundColor: "#000000", open: false });

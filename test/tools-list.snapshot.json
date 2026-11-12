@@ -3127,6 +3127,46 @@
     "audioEnabled": {
      "type": "boolean"
     },
+    "audioLevels": {
+     "anyOf": [
+      {
+       "type": "number"
+      },
+      {
+       "type": "array",
+       "items": {
+        "type": "object",
+        "properties": {
+         "time": {
+          "type": "number"
+         },
+         "value": {
+          "type": "number"
+         }
+        },
+        "required": [
+         "time",
+         "value"
+        ],
+        "additionalProperties": false
+       }
+      }
+     ],
+     "description": "Audio level in dB, or keyframes [{time, value}]."
+    },
+    "audioFade": {
+     "type": "object",
+     "properties": {
+      "in": {
+       "type": "number"
+      },
+      "out": {
+       "type": "number"
+      }
+     },
+     "additionalProperties": false,
+     "description": "Fade in/out in seconds (to -48 dB)."
+    },
     "timeRemapEnabled": {
      "type": "boolean"
     },
@@ -5680,6 +5720,133 @@
    "title": "Remove masks",
    "readOnlyHint": false,
    "destructiveHint": true,
+   "idempotentHint": false,
+   "openWorldHint": false
+  },
+  "_meta": {
+   "ui": {
+    "resourceUri": "ui://after-effects/activity.html",
+    "visibility": [
+     "model",
+     "app"
+    ]
+   },
+   "ui/resourceUri": "ui://after-effects/activity.html"
+  }
+ },
+ {
+  "name": "audio_to_keyframes",
+  "title": "Convert audio to keyframes",
+  "description": "Run Convert Audio to Keyframes on an audio/video layer: creates an 'Audio Amplitude' null with Left/Right/Both Channels sliders keyframed per frame.",
+  "inputSchema": {
+   "type": "object",
+   "properties": {
+    "comp": {
+     "anyOf": [
+      {
+       "type": "string"
+      },
+      {
+       "type": "integer"
+      }
+     ],
+     "description": "Composition name or numeric item id. Omit to use the active composition."
+    },
+    "layer": {
+     "anyOf": [
+      {
+       "type": "integer",
+       "exclusiveMinimum": 0
+      },
+      {
+       "type": "string"
+      }
+     ],
+     "description": "Layer: 1-based index, exact name, or 'id:<layerId>' (stable across reordering)."
+    },
+    "timeoutSeconds": {
+     "type": "integer",
+     "minimum": 1,
+     "maximum": 3600,
+     "description": "Max seconds to wait for After Effects (default 60, long tools 300+)."
+    }
+   },
+   "required": [
+    "layer"
+   ]
+  },
+  "annotations": {
+   "title": "Convert audio to keyframes",
+   "readOnlyHint": false,
+   "destructiveHint": false,
+   "idempotentHint": false,
+   "openWorldHint": false
+  },
+  "_meta": {
+   "ui": {
+    "resourceUri": "ui://after-effects/activity.html",
+    "visibility": [
+     "model",
+     "app"
+    ]
+   },
+   "ui/resourceUri": "ui://after-effects/activity.html"
+  }
+ },
+ {
+  "name": "markers_from_audio_peaks",
+  "title": "Markers from audio peaks",
+  "description": "Add comp markers at the local peaks of the 'Audio Amplitude' Both Channels slider above threshold (beat markers). Run audio_to_keyframes first.",
+  "inputSchema": {
+   "type": "object",
+   "properties": {
+    "comp": {
+     "anyOf": [
+      {
+       "type": "string"
+      },
+      {
+       "type": "integer"
+      }
+     ],
+     "description": "Composition name or numeric item id. Omit to use the active composition."
+    },
+    "amplitudeLayer": {
+     "type": [
+      "string",
+      "number"
+     ]
+    },
+    "channel": {
+     "type": "string",
+     "enum": [
+      "Both Channels",
+      "Left Channel",
+      "Right Channel"
+     ]
+    },
+    "threshold": {
+     "type": "number"
+    },
+    "minGap": {
+     "type": "number",
+     "description": "Seconds between markers, default 0.15."
+    },
+    "comment": {
+     "type": "string"
+    },
+    "timeoutSeconds": {
+     "type": "integer",
+     "minimum": 1,
+     "maximum": 3600,
+     "description": "Max seconds to wait for After Effects (default 60, long tools 300+)."
+    }
+   }
+  },
+  "annotations": {
+   "title": "Markers from audio peaks",
+   "readOnlyHint": false,
+   "destructiveHint": false,
    "idempotentHint": false,
    "openWorldHint": false
   },

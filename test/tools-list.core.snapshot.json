@@ -1384,6 +1384,44 @@
     "audioEnabled": {
      "type": "boolean"
     },
+    "audioLevels": {
+     "anyOf": [
+      {
+       "type": "number"
+      },
+      {
+       "type": "array",
+       "items": {
+        "type": "object",
+        "properties": {
+         "time": {
+          "type": "number"
+         },
+         "value": {
+          "type": "number"
+         }
+        },
+        "required": [
+         "time",
+         "value"
+        ],
+        "additionalProperties": false
+       }
+      }
+     ]
+    },
+    "audioFade": {
+     "type": "object",
+     "properties": {
+      "in": {
+       "type": "number"
+      },
+      "out": {
+       "type": "number"
+      }
+     },
+     "additionalProperties": false
+    },
     "timeRemapEnabled": {
      "type": "boolean"
     },

@@ -1446,6 +1446,7 @@
                 if (has(a, "stretch")) l.stretch = a.stretch;
             }
             if (has(a, "autoOrient")) l.autoOrient = a.autoOrient ? AutoOrientType.ALONG_PATH : AutoOrientType.NO_AUTO_ORIENT;
+            if (has(a, "audioLevels") || a.audioFade) setAudio(l, a);
             if (has(a, "centerAnchor") && !has(a, "anchor")) setAnchor(l, a.centerAnchor ? "center" : "origin");
             if (has(a, "newName") ) l.name = a.newName;
             out.push(layerSummary(l));
@@ -2259,6 +2260,67 @@
             removed.push(m.name); m.remove();
         }
         return { removed: removed };
+    };
+
+    // ---- Audio
+    function audioLevels(l) {
+        if (!(l instanceof AVLayer) || !l.hasAudio) fail("Layer '" + l.name + "' has no audio");
+        return l.property("ADBE Audio Group").property("ADBE Audio Levels");
+    }
+    function setAudio(l, a) {
+        var lv = audioLevels(l);
+        if (has(a, "audioLevels")) {
+            var v = a.audioLevels;
+            if (v instanceof Array) setKeys(lv, (function () { var k = []; for (var i = 0; i < v.length; i++) k.push({ time: v[i].time, value: [v[i].value, v[i].value] }); return k; })(), "linear");
+            else lv.setValue([v, v]);
+        }
+        if (a.audioFade) {
+            var cur = lv.valueAtTime(l.inPoint, true), base = cur instanceof Array ? cur[0] : cur, keys = [];
+            if (a.audioFade["in"]) { keys.push({ time: l.inPoint, value: [-48, -48] }); keys.push({ time: l.inPoint + a.audioFade["in"], value: [base, base] }); }
+            if (a.audioFade.out) { keys.push({ time: l.outPoint - a.audioFade.out, value: [base, base] }); keys.push({ time: l.outPoint, value: [-48, -48] }); }
+            if (keys.length) setKeys(lv, keys, "linear");
+        }
+    }
+    A.setAudio = setAudio;
+
+    // Animation > Keyframe Assistant > Convert Audio to Keyframes: makes an "Audio Amplitude" null
+    var CONVERT_AUDIO = 4218;
+    H.audio_to_keyframes = function (a) {
+        var t = target(a);
+        if (!(t.layer instanceof AVLayer) || !t.layer.hasAudio) fail("Layer '" + t.layer.name + "' has no audio");
+        var c = t.comp;
+        var before = {};
+        for (var i = 1; i <= c.numLayers; i++) before[c.layer(i).id] = true;
+        c.openInViewer();
+        for (var j = 1; j <= c.numLayers; j++) c.layer(j).selected = false;
+        t.layer.selected = true;
+        var id = app.findMenuCommandId("Convert Audio to Keyframes") || CONVERT_AUDIO;
+        app.executeCommand(id);
+        var made = null;
+        for (var k = 1; k <= c.numLayers; k++) if (!before[c.layer(k).id]) made = c.layer(k);
+        if (!made) fail("Convert Audio to Keyframes did not create a layer", "The comp must be open in the viewer and the audio layer selected.");
+        var fx = made.property("ADBE Effect Parade"), sliders = [];
+        for (var s = 1; s <= fx.numProperties; s++) sliders.push({ name: fx.property(s).name, keys: fx.property(s).property(1).numKeys });
+        return { layer: made.name, id: made.id, sliders: sliders };
+    };
+
+    // comp markers at local peaks of an amplitude slider (default: "Both Channels" of "Audio Amplitude")
+    H.markers_from_audio_peaks = function (a) {
+        var c = getComp(a.comp);
+        var amp = getLayer(c, def(a.amplitudeLayer, "Audio Amplitude"));
+        var slider = resolveProp(amp, "Effects/" + def(a.channel, "Both Channels") + "/Slider");
+        var n = slider.numKeys, thr = def(a.threshold, 10), gap = def(a.minGap, 0.15), last = -1e9, added = [];
+        if (n < 3) fail("No amplitude keyframes on '" + amp.name + "'", "Run audio_to_keyframes first.");
+        for (var i = 2; i < n; i++) {
+            var v = slider.keyValue(i), t = slider.keyTime(i);
+            if (v >= thr && v >= slider.keyValue(i - 1) && v > slider.keyValue(i + 1) && t - last >= gap) {
+                var m = new MarkerValue(def(a.comment, "peak") + " " + round(v, 1));
+                c.markerProperty.setValueAtTime(t, m);
+                added.push(round(t, 3));
+                last = t;
+            }
+        }
+        return { markers: added.length, times: added, threshold: thr };
     };
 
     // ---- Markers

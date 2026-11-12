@@ -77,6 +77,8 @@ export const TOOL_LABELS: Record<string, string> = {
   remove_masks: "Removendo máscaras",
   add_marker: "Adicionando marcador",
   markers: "Marcadores",
+  audio_to_keyframes: "Convertendo áudio em keyframes",
+  markers_from_audio_peaks: "Marcando batidas do áudio",
   list_markers: "Listando marcadores",
   remove_markers: "Removendo marcadores",
   preview_frame: "Renderizando preview",
