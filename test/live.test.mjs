@@ -450,6 +450,15 @@ if (job.data?.jobId) {
   }
 }
 
+// a job survives a server restart (jobs are written to disk)
+if (job.data?.jobId) {
+  const c2 = new Client({ name: "live-test-2", version: "1.0.0" });
+  await c2.connect(new StdioClientTransport({ command: process.execPath, args: [path.join(root, "build", "index.js")], env: { ...process.env }, stderr: "pipe" }));
+  const r2 = await c2.callTool({ name: "get_background_render", arguments: { jobId: job.data.jobId } });
+  const j2 = r2.isError ? null : JSON.parse(r2.content[0].text).jobs[0];
+  results.push({ tool: "background job after restart", pass: !!j2 && j2.id === job.data.jobId && ["done", "running"].includes(j2.status), ms: 0, note: JSON.stringify(j2 ?? r2.content[0].text).slice(0, 200) });
+  await c2.close();
+}
 // aerender with wait:true streams per-frame progress
 if (job.data?.jobId) {
   const seen = [];

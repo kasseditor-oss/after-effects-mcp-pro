@@ -129,6 +129,57 @@ interface RenderJob {
   proc?: ChildProcess;
 }
 const jobs = new Map<string, RenderJob>();
+// Jobs are also written to <bridge>/jobs/<id>.json (+ .log) so a restarted server still knows them.
+const jobsDir = () => {
+  const d = path.join(bridge.dir, "jobs");
+  fs.mkdirSync(d, { recursive: true });
+  return d;
+};
+function saveJob(j: RenderJob, pid?: number) {
+  const file = path.join(jobsDir(), `${j.id}.json`);
+  let prev: any = {};
+  try {
+    prev = JSON.parse(fs.readFileSync(file, "utf8"));
+  } catch {
+    /* new */
+  }
+  fs.writeFileSync(file, JSON.stringify({ ...prev, id: j.id, comp: j.comp, output: j.output, started: j.started, ended: j.ended ?? null, status: j.status, exitCode: j.exitCode ?? null, ...(pid ? { pid } : {}), log: path.join(jobsDir(), `${j.id}.log`) }));
+}
+function pidAlive(pid?: number) {
+  if (!pid) return false;
+  try {
+    process.kill(pid, 0);
+    return true;
+  } catch {
+    return false;
+  }
+}
+/** Jobs known on disk but not in memory (started by an earlier server process). */
+function diskJobs(): RenderJob[] {
+  const out: RenderJob[] = [];
+  const d = jobsDir();
+  for (const f of fs.readdirSync(d).filter((x) => x.endsWith(".json"))) {
+    try {
+      const j = JSON.parse(fs.readFileSync(path.join(d, f), "utf8"));
+      if (jobs.has(j.id)) continue;
+      let log: string[] = [];
+      try {
+        log = fs.readFileSync(j.log, "utf8").split(/\r?\n/).filter((l: string) => l.trim());
+      } catch {
+        /* no log */
+      }
+      let status = j.status;
+      if (status === "running" && !pidAlive(j.pid)) {
+        // the process ended while no server was watching: judge by aerender's last lines
+        status = log.some((l) => /Total Time Elapsed|Finished composition/i.test(l)) ? "done" : "error";
+      }
+      out.push({ id: j.id, comp: j.comp, output: j.output, started: j.started, ended: j.ended ?? undefined, status, exitCode: j.exitCode, log });
+    } catch {
+      /* ignore broken file */
+    }
+  }
+  return out;
+}
 
 /** Wait until AE has finished writing each file (saveFrameToPng is asynchronous). */
 async function waitForFiles(files: string[], timeoutMs = 90_000, report?: Progress) {
@@ -296,7 +347,10 @@ async function nodeTool(name: string, a: any, report?: Progress): Promise<CallTo
       if (a.endFrame !== undefined) argv.push("-e", String(a.endFrame));
       const proc = spawn(install.aerender, argv, { windowsHide: true });
       const job: RenderJob = { id, comp: a.comp, output: a.outputPath, started: Date.now(), status: "running", log: [], proc };
+      saveJob(job, proc.pid);
+      const logFile = path.join(jobsDir(), `${id}.log`);
       const onData = (b: Buffer) => {
+        fs.appendFileSync(logFile, b);
         for (const line of b.toString().split(/\r?\n/)) if (line.trim()) job.log.push(line.trim());
         if (job.log.length > 400) job.log.splice(0, job.log.length - 400);
       };
@@ -307,6 +361,7 @@ async function nodeTool(name: string, a: any, report?: Progress): Promise<CallTo
         job.ended = Date.now();
         job.status = code === 0 ? "done" : "error";
         job.proc = undefined;
+        saveJob(job);
       });
       proc.on("error", (e) => {
         job.status = "error";
@@ -360,8 +415,9 @@ async function nodeTool(name: string, a: any, report?: Progress): Promise<CallTo
       return ok({ comp: comp.name, frames: files.length, firstFrame: first, lastFrame: last, first: files[0], last: files[files.length - 1] });
     }
     case "get_background_render": {
-      const list = a.jobId ? [jobs.get(a.jobId)].filter(Boolean) : [...jobs.values()];
-      if (a.jobId && !list.length) return err(`No background render with id '${a.jobId}'`, jobs.size ? `Known jobs: ${[...jobs.keys()].join(", ")}` : "No background renders were started by this server.");
+      const all = [...jobs.values(), ...diskJobs()];
+      const list = a.jobId ? all.filter((j) => j.id === a.jobId) : all;
+      if (a.jobId && !list.length) return err(`No background render with id '${a.jobId}'`, all.length ? `Known jobs: ${all.map((j) => j.id).join(", ")}` : "No background renders are known.");
       if (!list.length) return ok({ jobs: [] });
       return ok({
         jobs: list.map((j) => {
