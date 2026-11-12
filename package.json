@@ -14,7 +14,9 @@
     "test": "node --test test/unit.test.mjs",
     "test:live": "node test/live.test.mjs --cleanup",
     "test:live:keep": "node test/live.test.mjs",
-    "test:stress": "node test/stress.test.mjs"
+    "test:stress": "node test/stress.test.mjs",
+    "typecheck": "tsc -p tsconfig.json --noEmit",
+    "check:es3": "node scripts/check-es3.mjs"
   },
   "author": "",
   "license": "MIT",
@@ -26,6 +28,7 @@
   },
   "devDependencies": {
     "@types/node": "^26.6.6",
+    "acorn": "^8.19.0",
     "typescript": "^7.0.2"
   },
   "bin": {
