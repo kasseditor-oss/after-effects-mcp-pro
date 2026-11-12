@@ -131,11 +131,11 @@ test("prompts and resources are exposed", async () => {
 });
 
 // Fake listener: consumes queue files like AE would and writes results itself.
-function fakeListener(dir, respond) {
+function fakeListener(dir, respond, version = "2.0.1") {
   const q = path.join(dir, "queue");
   let n = 0;
   const timer = setInterval(() => {
-    fs.writeFileSync(path.join(dir, "heartbeat.json"), JSON.stringify({ time: Date.now(), version: "2.0.1", ae: "fake", paused: false, executed: n, project: "" }));
+    fs.writeFileSync(path.join(dir, "heartbeat.json"), JSON.stringify({ time: Date.now(), version, ae: "fake", paused: false, executed: n, project: "" }));
     for (const f of fs.existsSync(q) ? fs.readdirSync(q) : []) {
       if (!f.endsWith(".jsx")) continue;
       const src = fs.readFileSync(path.join(q, f), "utf8");
@@ -177,5 +177,21 @@ test("every tool opens the After Effects activity card (MCP Apps)", async () => 
   // the card script must at least parse
   const script = html.match(/<script>([\s\S]*)<\/script>/)[1];
   assert.doesNotThrow(() => new Function(script));
+  await client.close();
+});
+
+test("an outdated listener is reported on the first call and in bridge_status", async () => {
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), "aemcp-ver-"));
+  const stop = fakeListener(dir, (p) => ({ ok: true, id: p.id, data: { ok: true } }), "1.0.0");
+  await new Promise((r) => setTimeout(r, 60));
+  const client = await connect({ AE_MCP_BRIDGE_DIR: dir });
+  const r1 = await client.callTool({ name: "list_compositions", arguments: {} });
+  assert.match(r1.content.at(-1).text, /listener is version 1\.0\.0.*install-ae/);
+  const r2 = await client.callTool({ name: "list_compositions", arguments: {} });
+  assert.equal(r2.content.length, 1, "warning only once");
+  const st = JSON.parse((await client.callTool({ name: "bridge_status", arguments: {} })).content[0].text);
+  stop();
+  assert.match(st.warning, /install-ae/);
+  assert.ok(st.diagnostics.calls >= 2 && st.diagnostics.latencyMs.p95 !== null);
   await client.close();
 });

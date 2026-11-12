@@ -205,6 +205,9 @@ async function nodeTool(name: string, a: any): Promise<CallToolResult> {
           status.hint = e.hint;
         }
       }
+      status.diagnostics = bridge.diagnostics();
+      const warn = bridge.listenerVersionWarning();
+      if (warn) status.warning = warn;
       return ok(status);
     }
     case "launch_after_effects": {
@@ -285,7 +288,18 @@ async function nodeTool(name: string, a: any): Promise<CallToolResult> {
 }
 
 // ------------------------------------------------------------------ dispatcher
+let versionChecked = false;
 server.setRequestHandler(CallToolRequestSchema, async (req): Promise<CallToolResult> => {
+  const result = await dispatch(req);
+  if (!versionChecked && req.params.name !== "bridge_status") {
+    versionChecked = true;
+    const warn = bridge.listenerVersionWarning();
+    if (warn) result.content = [...(result.content ?? []), { type: "text", text: `Warning: ${warn}` }];
+  }
+  return result;
+});
+
+async function dispatch(req: { params: { name: string; arguments?: Record<string, unknown> } }): Promise<CallToolResult> {
   const name = req.params.name;
   const def = TOOLS.find((d) => d.name === name);
   if (!def) return err(`Unknown tool '${name}'`);
@@ -333,7 +347,7 @@ server.setRequestHandler(CallToolRequestSchema, async (req): Promise<CallToolRes
     if (e instanceof AEError) return err(e.message, e.hint);
     return err(String(e?.message ?? e));
   }
-});
+}
 
 // ------------------------------------------------------------------ resources
 server.setRequestHandler(ListResourcesRequestSchema, async () => ({

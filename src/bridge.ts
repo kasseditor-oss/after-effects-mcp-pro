@@ -122,6 +122,26 @@ export class Bridge {
     }
   }
 
+  /** Latency of the last 50 calls plus error counters, for bridge_status. */
+  diagnostics() {
+    const l = [...this.stats.latencies].sort((a, b) => a - b);
+    const pick = (q: number) => (l.length ? l[Math.min(l.length - 1, Math.floor(q * l.length))] : null);
+    return {
+      calls: this.stats.calls,
+      lastMode: this.lastMode,
+      latencyMs: { samples: l.length, avg: l.length ? Math.round(l.reduce((a, b) => a + b, 0) / l.length) : null, p50: pick(0.5), p95: pick(0.95) },
+      timeouts: this.stats.timeouts,
+      ioErrorsRetried: this.stats.ioErrors,
+    };
+  }
+
+  /** Warning text when the installed listener is older/newer than this server. */
+  listenerVersionWarning(): string | null {
+    const hb = this.heartbeat();
+    if (!hb || hb.ageMs > 10_000 || hb.version === SERVER_VERSION) return null;
+    return `The After Effects listener is version ${hb.version} but the server is ${SERVER_VERSION}. Run "npm run install-ae" in the server folder to update it.`;
+  }
+
   heartbeat(): (Heartbeat & { ageMs: number }) | null {
     try {
       const hb = JSON.parse(fs.readFileSync(path.join(this.dir, "heartbeat.json"), "utf8")) as Heartbeat;
@@ -203,7 +223,11 @@ export class Bridge {
       await this.runDirect(file);
     }
 
+    const t0 = Date.now();
+    this.stats.calls++;
     const raw = await this.waitForResult(resultPath, timeoutMs, mode, id, !!opts.timeoutParam);
+    this.stats.latencies.push(Date.now() - t0);
+    if (this.stats.latencies.length > 50) this.stats.latencies.shift();
     let res: any;
     try {
       res = JSON.parse(raw);
