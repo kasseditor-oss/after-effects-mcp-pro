@@ -420,3 +420,26 @@ test("servers of different versions keep separate runtimes", async () => {
   await a.close();
   await b.close();
 });
+
+test("AE_MCP_EVAL=off hides run_extendscript; AE_MCP_READONLY=1 exposes only read tools", async () => {
+  const off = await connect({ AE_MCP_EVAL: "off" });
+  const t1 = (await off.listTools()).tools.map((t) => t.name);
+  assert.ok(!t1.includes("run_extendscript"));
+  const r = await off.callTool({ name: "run_extendscript", arguments: { code: "return 1;" } });
+  assert.equal(r.isError, true);
+  const rb = await off.callTool({ name: "batch", arguments: { operations: [{ tool: "run_extendscript", args: { code: "return 1;" } }] } });
+  assert.equal(rb.isError, true, "eval cannot sneak in through batch");
+  await off.close();
+  const legacy = await connect({ AE_MCP_DISABLE_EVAL: "1" });
+  assert.ok(!(await legacy.listTools()).tools.some((t) => t.name === "run_extendscript"), "AE_MCP_DISABLE_EVAL=1 still works");
+  await legacy.close();
+  const ro = await connect({ AE_MCP_READONLY: "1" });
+  const t2 = (await ro.listTools()).tools;
+  for (const t of t2) assert.ok(/^(list_|get_|preview_)|^bridge_status$|^check_expressions$/.test(t.name) || t.annotations.readOnlyHint, `${t.name} listed in read-only mode`);
+  assert.ok(!t2.some((t) => t.name === "create_composition" || t.name === "batch" || t.name === "run_extendscript"));
+  const w = await ro.callTool({ name: "create_composition", arguments: { name: "x" } });
+  assert.equal(w.isError, true);
+  const st = JSON.parse((await ro.callTool({ name: "bridge_status", arguments: {} })).content[0].text);
+  assert.deepEqual(st.modes, { eval: "on", readOnly: true });
+  await ro.close();
+});

@@ -40,6 +40,17 @@ Every tool that runs inside After Effects accepts `timeoutSeconds`. `batch` runs
 
 The server also has 3 resources (`aftereffects://project`, `aftereffects://compositions`, `aftereffects://selection`) and 3 prompts (`lower-third`, `kinetic-title`, `analyze-comp`).
 
+## Security
+
+The server only talks to the After Effects on your own machine, but it can change projects and run code there. Choose what it exposes with environment variables:
+
+| Variable | Effect |
+|---|---|
+| `AE_MCP_EVAL=off` | Removes `run_extendscript` (arbitrary ExtendScript) from the tool list and rejects it, also inside `batch`. Default `on` in 2.x; **the default becomes `off` in 3.0**. `AE_MCP_DISABLE_EVAL=1` is the same as `off`. |
+| `AE_MCP_READONLY=1` | Only tools that read or preview (`list_*`, `get_*`, `preview_*`, `bridge_status`, `check_expressions`). |
+
+For shared or audited setups use `AE_MCP_EVAL=off`. `bridge_status` reports the active modes.
+
 ## Limitations
 
 - Roto Brush and Content-Aware Fill have no ExtendScript API, so no tool can drive them.

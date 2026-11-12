@@ -22,6 +22,7 @@ import { zodToJsonSchema } from "zod-to-json-schema";
 import { AEError, Bridge, SERVER_VERSION } from "./bridge.js";
 import { findInstalls } from "./env.js";
 import { TOOLS, NODE_ONLY, OUTPUTS, type ToolDef } from "./tools.js";
+import { disabledReason, policySummary } from "./policy.js";
 import { compose, type ImageFormat } from "./imaging.js";
 import { WIDGET_MIME, WIDGET_URI, widgetHtml } from "./widget.js";
 
@@ -82,7 +83,7 @@ function jsonSchema(d: ToolDef) {
   return js;
 }
 
-const LISTED = TOOLS.filter((d) => !(d.name === "run_extendscript" && process.env.AE_MCP_DISABLE_EVAL === "1")).map((d) => ({
+const LISTED = TOOLS.filter((d) => !disabledReason(d)).map((d) => ({
   name: d.name,
   title: d.title,
   description: d.description,
@@ -273,6 +274,7 @@ async function nodeTool(name: string, a: any, report?: Progress): Promise<CallTo
         }
       }
       status.diagnostics = bridge.diagnostics();
+      status.modes = policySummary();
       status.undoGroup = undoGroupState();
       const warn = bridge.listenerVersionWarning();
       if (warn) status.warning = warn;
@@ -504,6 +506,8 @@ async function dispatch(req: { params: { name: string; arguments?: Record<string
   const name = req.params.name;
   const def = TOOLS.find((d) => d.name === name);
   if (!def) return err(`Unknown tool '${name}'`);
+  const off = disabledReason(def);
+  if (off) return err(off, "See README > Security for AE_MCP_EVAL / AE_MCP_READONLY.");
   const parsed = schemas.get(name)!.safeParse(req.params.arguments ?? {});
   if (!parsed.success) {
     return err(`Invalid arguments for ${name}: ${parsed.error.issues.map((i) => `${i.path.join(".") || "(root)"}: ${i.message}`).join("; ")}`);
@@ -515,12 +519,13 @@ async function dispatch(req: { params: { name: string; arguments?: Record<string
   if ((name === "create_text_layer" || name === "set_text") && args.allowLargeText && !args.timeoutSeconds) args.timeoutSeconds = 120;
   try {
     if (NODE_ONLY.has(name)) return await nodeTool(name, args, report);
-    if (name === "run_extendscript" && process.env.AE_MCP_DISABLE_EVAL === "1") return err("run_extendscript is disabled (AE_MCP_DISABLE_EVAL=1)");
     if (name === "batch") {
       // validate every operation against its own schema before sending anything to AE
       for (const [i, op] of args.operations.entries()) {
         const s = schemas.get(op.tool);
         if (!s || NODE_ONLY.has(op.tool) || op.tool === "batch") return err(`batch operation ${i}: '${op.tool}' cannot run inside batch`);
+        const opOff = disabledReason(TOOLS.find((d) => d.name === op.tool)!);
+        if (opOff) return err(`batch operation ${i}: ${opOff}`);
         const p = s.safeParse(op.args ?? {});
         if (!p.success) return err(`batch operation ${i} (${op.tool}): ${p.error.issues.map((x) => `${x.path.join(".")}: ${x.message}`).join("; ")}`);
         op.args = p.data;
