@@ -1571,7 +1571,11 @@
         var res = { property: propPath(p), expression: p.expression, enabled: p.expressionEnabled };
         // Force evaluation so errors surface now
         try { p.valueAtTime(t.comp.time, false); } catch (e) { }
-        if (p.expressionError) res.expressionError = p.expressionError;
+        if (p.expressionError) {
+            res.expressionError = p.expressionError;
+            // like AE's UI: a broken expression stays on the property but disabled
+            if (a.failOnError !== false) { p.expressionEnabled = false; res.enabled = false; }
+        }
         return res;
     };
 

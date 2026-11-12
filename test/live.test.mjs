@@ -118,13 +118,24 @@ await call("animate_layer", { comp: C, layer: "Shapes", preset: "slide-in", dire
 await call("animate_layer", { comp: C, layer: "Title", preset: "bounce", property: "Scale" });
 await call("animate_layer", { comp: C, layer: "Sub", preset: "text-fade-up", startTime: 2.5 });
 await call("set_expression", { comp: C, layer: "Controller", property: "Rotation", expression: "wiggle(1, 3)" }, { check: (d) => (!d.expressionError ? true : d.expressionError) });
-await call("set_expression", { comp: C, layer: "Hex", property: "Opacity", expression: "thisIsNotDefined * 2" }, { check: (d) => (d.expressionError ? true : "expected expression error") });
+await call("set_expression", { comp: C, layer: "Hex", property: "Opacity", expression: "thisIsNotDefined * 2" }, { expectError: true });
+await call("get_property", { comp: C, layer: "Hex", property: "Opacity" }, { check: (d) => (d.expression && d.expressionEnabled === false ? true : "broken expression should stay applied and disabled: " + JSON.stringify(d)) });
+await call("set_expression", { comp: C, layer: "Hex", property: "Opacity", expression: "thisIsNotDefined * 2", failOnError: false }, { check: (d) => (d.expressionError ? true : "expected expression error") });
 await call("check_expressions", { comp: C }, { check: (d) => (d.errors.length === 1 ? true : JSON.stringify(d.errors)) });
 await call("set_expression", { comp: C, layer: "Hex", property: "Opacity", expression: "" });
 
 await call("apply_effect", { comp: C, layer: "Title", effect: "Gaussian Blur", params: { Blurriness: 4, "Repeat Edge Pixels": true } }, { check: (d) => (d.results[0].set.length === 2 ? true : JSON.stringify(d.results[0])) });
 await call("apply_effect", { comp: C, layers: ["BG"], effect: "ADBE Fractal Noise", params: { Contrast: 120, Evolution: { expression: "time*60" } } });
 await call("apply_effect", { comp: C, layer: "Title", effect: "Gausian Blurr" }, { expectError: true });
+// partial results say so in the first line; nothing imported / unknown job = isError
+const partial = await call("apply_effect", { comp: C, layer: "Title", effect: "Gaussian Blur", params: { Blurriness: 1, "No Such Param": 5 } }, {
+  check: (_d, r) => (/^1 warning\(s\): .*No Such Param/.test(r.content[0].text) ? true : r.content[0].text.slice(0, 120)),
+});
+const NL = String.fromCharCode(10);
+const partialFx = JSON.parse(partial.r.content[0].text.split(NL).slice(1).join(NL)).results[0].effect;
+await call("modify_effect", { comp: C, layer: "Title", effect: partialFx, remove: true });
+await call("import_files", { paths: ["C:/nao/existe.png"] }, { expectError: true });
+await call("get_background_render", { jobId: "nope" }, { expectError: true });
 await call("apply_effect_template", { comp: C, layer: "Grade", template: "cinematic-look" });
 await call("apply_effect_template", { comp: C, layer: "Title", template: "text-pop" });
 await call("get_layer_effects", { comp: C, layer: "Title" }, { check: (d) => (d.effects.length >= 3 ? true : "effects " + d.effects.length) });

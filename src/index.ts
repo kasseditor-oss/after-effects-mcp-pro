@@ -357,6 +357,7 @@ async function nodeTool(name: string, a: any, report?: Progress): Promise<CallTo
     }
     case "get_background_render": {
       const list = a.jobId ? [jobs.get(a.jobId)].filter(Boolean) : [...jobs.values()];
+      if (a.jobId && !list.length) return err(`No background render with id '${a.jobId}'`, jobs.size ? `Known jobs: ${[...jobs.keys()].join(", ")}` : "No background renders were started by this server.");
       if (!list.length) return ok({ jobs: [] });
       return ok({
         jobs: list.map((j) => {
@@ -398,6 +399,15 @@ function largeTextIssue(tool: string, a: any): string | null {
     return `Text has ${a.text.length} characters; the limit is ${MAX_TEXT} without allowLargeText`;
   }
   return null;
+}
+
+/** Things a tool did NOT do although the call succeeded (missing files, unknown effect params). */
+function partialWarnings(tool: string, data: any): string[] {
+  if (!data) return [];
+  if (tool === "import_files") return (data.errors ?? []).map((e: any) => `${e.path}: ${e.error}`);
+  if (tool === "apply_effect") return (data.results ?? []).flatMap((r: any) => (r.errors ?? []).map((e: string) => `${r.layer}/${r.effect}: ${e}`));
+  if (tool === "modify_effect") return (data.errors ?? []).map((e: string) => `${data.effect}: ${e}`);
+  return [];
 }
 
 let versionChecked = false;
@@ -478,6 +488,19 @@ async function dispatch(req: { params: { name: string; arguments?: Record<string
         undoGroup.steps++;
         undoGroup.lastCall = Date.now();
       } else closedGroup = null; // a new step after the group: "undo" means just this step again
+    }
+    // Partial results must not look like plain success to an agent that only reads isError.
+    if (name === "import_files" && data && !data.imported?.length && data.errors?.length) {
+      return err(`Nothing was imported: ${data.errors.map((e: any) => `${e.path}: ${e.error}`).join("; ")}`, "Check the paths (absolute, existing files).");
+    }
+    if (name === "set_expression" && data?.expressionError && args.failOnError !== false) {
+      return err(`Expression error on ${data.property}: ${data.expressionError}`, "The expression was applied but disabled (as After Effects does). Fix it and call set_expression again, or pass failOnError:false.");
+    }
+    const warnings = partialWarnings(name, data);
+    if (warnings.length) {
+      const res = ok(data);
+      (res.content[0] as any).text = `${warnings.length} warning(s): ${warnings.join("; ")}\n${(res.content[0] as any).text}`;
+      return res;
     }
     if (name === "batch" && data?.failed > 0) {
       const first = data.results.find((r: any) => !r.ok);

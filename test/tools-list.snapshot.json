@@ -4423,6 +4423,10 @@
     "enabled": {
      "type": "boolean"
     },
+    "failOnError": {
+     "type": "boolean",
+     "description": "Default true: a broken expression is kept but disabled and the call returns isError. false = success with expressionError."
+    },
     "timeoutSeconds": {
      "type": "integer",
      "minimum": 1,
