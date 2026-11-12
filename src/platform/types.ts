@@ -20,6 +20,8 @@ export interface Platform {
   aeReady(): boolean;
   /** Ask the running After Effects to execute a .jsx file (direct mode). */
   runScriptFile(file: string, install: AEInstall | undefined): Promise<void>;
+  /** Title of a modal dialog After Effects is showing (it blocks scripts), or null. */
+  modalDialog(): string | null;
   /** Start After Effects. */
   launch(install: AEInstall): void;
   /** Resize / tile / encode frames into one image. null = not supported here (caller sends frames as they are). */

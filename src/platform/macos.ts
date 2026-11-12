@@ -57,6 +57,9 @@ export const macos: Platform = {
     });
   },
 
+  // No permission-free way to inspect another app's windows on macOS.
+  modalDialog: () => null,
+
   launch(install) {
     spawn("open", ["-a", install.executable], { detached: true, stdio: "ignore" }).unref();
   },

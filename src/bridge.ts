@@ -79,6 +79,7 @@ export class Bridge {
   private pids: number[] = [];
   private readyPids = new Set<number>();
   private lastAliveCheck = 0;
+  private lastDialogCheck = 0;
   private pending: { tool: string; args: Record<string, unknown>; opts: CallOptions; resolve: (v: any) => void; reject: (e: unknown) => void }[] = [];
   private flushTimer: ReturnType<typeof setTimeout> | null = null;
   readonly stats = { calls: 0, groups: 0, timeouts: 0, ioErrors: 0, latencies: [] as number[] };
@@ -421,6 +422,22 @@ export class Bridge {
         }
         // ExtendScript cannot be interrupted once it runs: stop waiting, AE finishes on its own
         throw new AEError("Cancelled while After Effects was already running the command", "AE will finish it and apply the change; check the project state.", "CANCELLED");
+      }
+      // A modal dialog in AE (alert, missing font, "save changes?") stops the listener: if
+      // it has been silent for 3 s and this command has not started, look for a dialog.
+      if (mode === "listener" && Date.now() - start > 3000 && Date.now() - this.lastDialogCheck > 2000) {
+        const hb = this.heartbeat();
+        const qdir = path.join(this.dir, "queue");
+        const waiting = fs.readdirSync(qdir).some((f) => f.includes(id) && f.endsWith(".jsx"));
+        if (hb && hb.ageMs > 3000 && waiting) {
+          this.lastDialogCheck = Date.now();
+          const dialog = platform().modalDialog();
+          if (dialog) {
+            if (callId) fs.writeFileSync(resultPath.replace(/\.json$/, ".cancel"), "1");
+            else for (const f of fs.readdirSync(qdir)) if (f.includes(id) && f.endsWith(".jsx")) fs.rmSync(path.join(qdir, f), { force: true });
+            throw new AEError(`After Effects is showing a dialog ('${dialog}') and cannot run commands`, "Close the dialog in After Effects and try again. This command was not run.", "AE_DIALOG");
+          }
+        }
       }
       // AE closed mid-wait: fail fast. A stale heartbeat alone is NOT death: the listener
       // cannot beat while AE executes a long command (ExtendScript is single-threaded).

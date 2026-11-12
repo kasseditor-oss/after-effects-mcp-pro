@@ -14,6 +14,7 @@ const other: Platform = {
   aePids: () => [],
   aeReady: () => false,
   runScriptFile: () => Promise.reject(Object.assign(new Error("Unsupported platform: After Effects runs on Windows and macOS only"), { hint: undefined })),
+  modalDialog: () => null,
   launch: () => undefined,
   compose: () => null,
 };

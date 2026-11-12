@@ -505,6 +505,19 @@ if (job.data?.jobId) {
   console.log(`${pass ? "PASS" : "FAIL"} A2 with core toolset: ${note}`);
   await cc.close();
 }
+// a modal dialog in AE: the next call fails fast with a clear message (Windows only)
+if (process.platform === "win32") {
+  await call("run_extendscript", { code: "alert('AE MCP test dialog'); return 1;", timeoutSeconds: 2 }, { expectError: true });
+  const t0 = Date.now();
+  const r = await client.callTool({ name: "get_project_info", arguments: { timeoutSeconds: 60 } });
+  const ms = Date.now() - t0;
+  const text = r.content[0].text;
+  const closed = execFileSync("powershell", ["-NoProfile", "-ExecutionPolicy", "Bypass", "-File", path.join(root, "test", "helpers", "dismiss-dialog.ps1")], { encoding: "utf8" }).trim();
+  const pass = r.isError && /showing a dialog/.test(text) && ms < 7000;
+  results.push({ tool: "modal dialog detected", pass, ms, note: `${ms} ms: ${text.slice(0, 120)} | ${closed}` });
+  console.log(`${pass ? "PASS" : "FAIL"} modal dialog detected in ${ms} ms (${closed})`);
+  await call("get_project_info", {}, { check: () => true }); // AE answers again once the dialog is closed
+}
 // structuredContent of the read tools must validate against their own output schemas
 {
   const { OUTPUTS } = await import(new URL("../build/tools.js", import.meta.url).href);

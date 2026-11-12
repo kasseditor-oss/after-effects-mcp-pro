@@ -64,6 +64,36 @@ Write-Output "$W,$H"
 `;
 
 let psPath: string | null = null;
+let dlgScript: string | null = null;
+function writeDialogScript(): string {
+  const p = path.join(os.tmpdir(), "aemcp-dialogs-v1.ps1");
+  if (!fs.existsSync(p)) {
+    fs.writeFileSync(p, `param([int]$aePid)
+Add-Type @"
+using System; using System.Text; using System.Runtime.InteropServices;
+public class AeModal {
+  public delegate bool P(IntPtr h, IntPtr l);
+  [DllImport("user32.dll")] static extern bool EnumWindows(P f, IntPtr l);
+  [DllImport("user32.dll")] static extern int GetClassName(IntPtr h, StringBuilder s, int n);
+  [DllImport("user32.dll")] static extern int GetWindowText(IntPtr h, StringBuilder s, int n);
+  [DllImport("user32.dll")] static extern bool IsWindowVisible(IntPtr h);
+  [DllImport("user32.dll")] static extern uint GetWindowThreadProcessId(IntPtr h, out uint p);
+  public static void List(uint pid) {
+    EnumWindows((h, l) => {
+      uint p; GetWindowThreadProcessId(h, out p);
+      if (p != pid || !IsWindowVisible(h)) return true;
+      var c = new StringBuilder(256); GetClassName(h, c, 256);
+      if (c.ToString() == "#32770") { var t = new StringBuilder(256); GetWindowText(h, t, 256); Console.WriteLine(t.ToString()); }
+      return true;
+    }, IntPtr.Zero);
+  }
+}
+"@
+[AeModal]::List([uint32]$aePid)
+`, "utf8");
+  }
+  return p;
+}
 
 /** AfterFX.exe -r silently ignores paths with spaces: use the 8.3 short path. */
 export function shortPath(file: string): string {
@@ -149,6 +179,20 @@ export const windows: Platform = {
         resolve();
       });
     });
+  },
+
+  // Modal dialogs are Win32 "#32770" windows; AE's own "Executing Script..." progress box is not one we report.
+  modalDialog() {
+    const pid = windows.aePids()[0];
+    if (!pid) return null;
+    if (!dlgScript) dlgScript = writeDialogScript();
+    try {
+      const out = execFileSync("powershell", ["-NoProfile", "-NonInteractive", "-ExecutionPolicy", "Bypass", "-File", dlgScript, String(pid)], { encoding: "utf8", windowsHide: true, timeout: 15_000 }).trim();
+      const title = out.split(/\r?\n/).find((t) => t && !/^Executing Script/i.test(t));
+      return title === undefined ? null : title || "(untitled dialog)";
+    } catch {
+      return null;
+    }
   },
 
   launch(install) {
