@@ -249,7 +249,11 @@ async function nodeTool(name: string, a: any, report?: Progress): Promise<CallTo
       const fmt = a.background === "transparent" ? "png" : a.format ?? "jpeg";
       const r = await renderFrames({ comp: a.comp, times: a.time === undefined ? undefined : [a.time], maxSize: a.maxSize ?? 960, format: fmt, quality: a.quality ?? 85, keepPath: a.savePath, background: a.background });
       const f = r.info.frames[0];
-      const data = { comp: r.info.comp, time: f.time, width: r.info.width, height: r.info.height, previewWidth: r.size?.width ?? r.info.width, previewHeight: r.size?.height ?? r.info.height, savedTo: a.savePath ?? null };
+      const data: any = { comp: r.info.comp, time: f.time, width: r.info.width, height: r.info.height, previewWidth: r.size?.width ?? r.info.width, previewHeight: r.size?.height ?? r.info.height, savedTo: a.savePath ?? null };
+      if (r.info.clamped?.length) {
+        data.clampedFrom = r.info.clamped[0].requested;
+        data.warning = `Time ${r.info.clamped[0].requested}s is outside the comp; showed ${r.info.clamped[0].used}s instead.`;
+      }
       return { ...ok(data, r.images.map((im) => ({ type: "image" as const, ...im }))), _meta: { "after-effects/summary": `Frame ${f.time}s de ${r.info.comp}` } };
     }
     case "preview_contact_sheet": {

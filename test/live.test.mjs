@@ -352,6 +352,14 @@ await call("preview_contact_sheet", { comp: C, frames: 4, maxSize: 400 }, {
   results.push({ tool: "gradient colors", pass, ms: 0, note: `left ${L}, right ${R}, outside ${O}` });
   console.log(`${pass ? "PASS" : "FAIL"} gradient colors: left ${L}, right ${R}, outside ${O}`);
 }
+// out point clamped to the comp end; preview time clamped with a warning; missing glyphs warned
+{
+  const lc = await call("create_composition", { name: COMP + " long", width: 320, height: 180, duration: 10800, open: false });
+  created.push(lc.data?.id);
+  await call("create_text_layer", { comp: lc.data?.id, text: "late", startTime: 10790, name: "Late" }, { check: (d) => (d.outPoint <= 10800 ? true : "outPoint " + d.outPoint) });
+  await call("preview_frame", { comp: lc.data?.id, time: 99999 }, { check: (d) => (d.clampedFrom === 99999 && /outside the comp/.test(d.warning) ? true : JSON.stringify(d)) });
+  await call("create_text_layer", { comp: lc.data?.id, text: "\u05e9\u05dc\u05d5\u05dd", font: "BebasNeue-Regular", name: "Hebrew" }, { check: (d) => (/missing glyphs/.test(d.warning ?? "") || d.appliedFont !== "BebasNeue-Regular" ? true : "no glyph warning: " + JSON.stringify(d).slice(0, 200)) });
+}
 // text-fade-up must REVEAL the text: invisible before, fully visible after (pixel check)
 {
   const fc = await call("create_composition", { name: COMP + " fade", width: 640, height: 360, duration: 3, backgroundColor: "#000000", open: false });

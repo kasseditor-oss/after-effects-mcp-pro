@@ -1093,10 +1093,22 @@
         var res = summary(l);
         res.anchor = a.anchor;
         res.appliedFont = p.value.font;
+        var glyphWarn = glyphWarning(l, a.text, p.value.font);
+        if (glyphWarn) res.warning = (res.warning ? res.warning + " " : "") + glyphWarn;
         res.caps = capsName(p.value);
         if (has(a, "font") && !fontExists(a.font)) res.warning = "Font '" + a.font + "' is not installed (AE shows it as missing). Use list_fonts to find an installed PostScript name.";
         return res;
     };
+
+    // A font without glyphs for the text renders nothing: the text box has no width.
+    function glyphWarning(l, text, font) {
+        try {
+            if (!/\S/.test(String(text))) return null;
+            var r = l.sourceRectAtTime(l.containingComp.time, false);
+            if (r.width < 0.5) return "Font '" + font + "' renders nothing for this text (missing glyphs?). Pick a font that covers these characters (list_fonts).";
+        } catch (e) { }
+        return null;
+    }
 
     function fontExists(name) {
         try {
@@ -1121,6 +1133,8 @@
         else if (p.numKeys > 0) p.setValueAtTime(t.comp.time, td);
         else p.setValue(td);
         var out = { layer: t.layer.name, text: serText(p.value) };
+        var gw = glyphWarning(t.layer, p.value.text, p.value.font);
+        if (gw) out.warning = gw;
         if (has(a, "font") && !fontExists(a.font)) out.warning = "Font '" + a.font + "' is not installed. Use list_fonts.";
         return out;
     };
@@ -2208,6 +2222,7 @@
         var c = getComp(a.comp);
         var times = a.times && a.times.length ? a.times : [c.time];
         if (typeof c.saveFrameToPng !== "function") fail("Frame capture is not available in this After Effects version");
+        var clamped = [];
         // Render at a lower comp resolution when only a small preview is needed (2-3x faster).
         // saveFrameToPng is asynchronous, so the server restores the resolution afterwards.
         var factor = 1;
@@ -2217,12 +2232,13 @@
         var out = [];
         for (var i = 0; i < times.length; i++) {
             var t = Math.max(0, Math.min(times[i], c.duration - c.frameDuration));
+            if (Math.abs(t - times[i]) > 1e-6) clamped.push({ requested: times[i], used: round(t, 3) });
             var f = new File(a.names ? a.names[i] : a.outputDir + "/" + a.prefix + "-" + i + ".png");
             if (f.exists) f.remove();
             c.saveFrameToPng(t, f);
             out.push({ time: round(t, 3), file: f.fsName });
         }
-        return { comp: c.name, compId: c.id, width: c.width, height: c.height, bgColor: [Math.round(c.bgColor[0] * 255), Math.round(c.bgColor[1] * 255), Math.round(c.bgColor[2] * 255)], factor: factor, restoreResolution: factor > 1 ? [oldRes[0], oldRes[1]] : null, frames: out };
+        return { clamped: clamped, comp: c.name, compId: c.id, width: c.width, height: c.height, bgColor: [Math.round(c.bgColor[0] * 255), Math.round(c.bgColor[1] * 255), Math.round(c.bgColor[2] * 255)], factor: factor, restoreResolution: factor > 1 ? [oldRes[0], oldRes[1]] : null, frames: out };
     };
 
     H.restore_resolution = function (a) {
