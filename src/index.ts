@@ -15,6 +15,9 @@ import {
   type CallToolResult,
 } from "@modelcontextprotocol/sdk/types.js";
 import { z } from "zod";
+// Kept as a direct dependency on purpose: the SDK's toJsonSchemaCompat wraps this same
+// library but does not let us pass $refStrategy "none", so 12 tools would get "$ref"
+// pointers in their input schemas (some MCP clients do not resolve them).
 import { zodToJsonSchema } from "zod-to-json-schema";
 import { AEError, Bridge, SERVER_VERSION } from "./bridge.js";
 import { findInstalls } from "./env.js";

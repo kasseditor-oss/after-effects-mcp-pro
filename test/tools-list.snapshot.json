@@ -1,0 +1,6051 @@
+[
+ {
+  "name": "bridge_status",
+  "title": "Bridge status",
+  "description": "Check the connection to After Effects: install found, AE running, bridge mode (listener/direct), AE version, open project. Call this first if anything fails.",
+  "inputSchema": {
+   "type": "object",
+   "properties": {}
+  },
+  "outputSchema": {
+   "type": "object",
+   "properties": {
+    "server": {
+     "type": "string"
+    },
+    "afterEffectsRunning": {
+     "type": "boolean"
+    },
+    "bridgeDir": {
+     "type": "string"
+    }
+   },
+   "required": [
+    "server",
+    "afterEffectsRunning",
+    "bridgeDir"
+   ],
+   "additionalProperties": true
+  },
+  "annotations": {
+   "title": "Bridge status",
+   "readOnlyHint": true,
+   "destructiveHint": false,
+   "idempotentHint": true,
+   "openWorldHint": false
+  },
+  "_meta": {
+   "ui": {
+    "resourceUri": "ui://after-effects/activity.html",
+    "visibility": [
+     "model",
+     "app"
+    ]
+   },
+   "ui/resourceUri": "ui://after-effects/activity.html"
+  }
+ },
+ {
+  "name": "launch_after_effects",
+  "title": "Launch After Effects",
+  "description": "Start After Effects if it is not running and wait until it accepts commands (can take 30-120s).",
+  "inputSchema": {
+   "type": "object",
+   "properties": {
+    "waitSeconds": {
+     "type": "integer",
+     "minimum": 10,
+     "maximum": 600
+    }
+   }
+  },
+  "annotations": {
+   "title": "Launch After Effects",
+   "readOnlyHint": false,
+   "destructiveHint": false,
+   "idempotentHint": false,
+   "openWorldHint": false
+  },
+  "_meta": {
+   "ui": {
+    "resourceUri": "ui://after-effects/activity.html",
+    "visibility": [
+     "model",
+     "app"
+    ]
+   },
+   "ui/resourceUri": "ui://after-effects/activity.html"
+  }
+ },
+ {
+  "name": "get_project_info",
+  "title": "Project info",
+  "description": "Fast project overview: name, path, unsaved changes, item counts by type, composition count, the first 50 comps (id, size, duration, fps), active comp, bit depth, render queue size. detail:true lists every comp with layer count and folder.",
+  "inputSchema": {
+   "type": "object",
+   "properties": {
+    "detail": {
+     "type": "boolean"
+    },
+    "timeoutSeconds": {
+     "type": "integer",
+     "minimum": 1,
+     "maximum": 3600,
+     "description": "Max seconds to wait for After Effects (default 60, long tools 300+)."
+    }
+   }
+  },
+  "outputSchema": {
+   "type": "object",
+   "properties": {
+    "numItems": {
+     "type": "number"
+    },
+    "counts": {
+     "type": "object",
+     "additionalProperties": {
+      "type": "number"
+     }
+    },
+    "compositionCount": {
+     "type": "number"
+    },
+    "compositions": {
+     "type": "array",
+     "items": {
+      "type": "object",
+      "properties": {
+       "id": {
+        "type": "number"
+       },
+       "name": {
+        "type": "string"
+       }
+      },
+      "required": [
+       "id",
+       "name"
+      ],
+      "additionalProperties": true
+     }
+    }
+   },
+   "required": [
+    "numItems",
+    "counts",
+    "compositionCount",
+    "compositions"
+   ],
+   "additionalProperties": true
+  },
+  "annotations": {
+   "title": "Project info",
+   "readOnlyHint": true,
+   "destructiveHint": false,
+   "idempotentHint": true,
+   "openWorldHint": false
+  },
+  "_meta": {
+   "ui": {
+    "resourceUri": "ui://after-effects/activity.html",
+    "visibility": [
+     "model",
+     "app"
+    ]
+   },
+   "ui/resourceUri": "ui://after-effects/activity.html"
+  }
+ },
+ {
+  "name": "list_project_items",
+  "title": "List project items",
+  "description": "List project panel items (compositions, footage, solids, folders) with ids, folders, sizes, missing-footage flags. Paginated: limit (default 200, max 1000) and offset; the response has total and truncated.",
+  "inputSchema": {
+   "type": "object",
+   "properties": {
+    "limit": {
+     "type": "integer",
+     "minimum": 1,
+     "maximum": 1000
+    },
+    "offset": {
+     "type": "integer",
+     "minimum": 0
+    },
+    "type": {
+     "type": "string",
+     "enum": [
+      "composition",
+      "footage",
+      "folder",
+      "solid",
+      "video",
+      "still",
+      "audio"
+     ]
+    },
+    "folder": {
+     "type": "string"
+    },
+    "query": {
+     "type": "string",
+     "description": "Case-insensitive name filter."
+    },
+    "timeoutSeconds": {
+     "type": "integer",
+     "minimum": 1,
+     "maximum": 3600,
+     "description": "Max seconds to wait for After Effects (default 60, long tools 300+)."
+    }
+   }
+  },
+  "outputSchema": {
+   "type": "object",
+   "properties": {
+    "count": {
+     "type": "number"
+    },
+    "total": {
+     "type": "number"
+    },
+    "offset": {
+     "type": "number"
+    },
+    "truncated": {
+     "type": "boolean"
+    },
+    "items": {
+     "type": "array",
+     "items": {
+      "type": "object",
+      "properties": {
+       "id": {
+        "type": "number"
+       },
+       "name": {
+        "type": "string"
+       },
+       "type": {
+        "type": "string"
+       }
+      },
+      "required": [
+       "id",
+       "name",
+       "type"
+      ],
+      "additionalProperties": true
+     }
+    }
+   },
+   "required": [
+    "count",
+    "total",
+    "offset",
+    "truncated",
+    "items"
+   ],
+   "additionalProperties": true
+  },
+  "annotations": {
+   "title": "List project items",
+   "readOnlyHint": true,
+   "destructiveHint": false,
+   "idempotentHint": true,
+   "openWorldHint": false
+  },
+  "_meta": {
+   "ui": {
+    "resourceUri": "ui://after-effects/activity.html",
+    "visibility": [
+     "model",
+     "app"
+    ]
+   },
+   "ui/resourceUri": "ui://after-effects/activity.html"
+  }
+ },
+ {
+  "name": "save_project",
+  "title": "Save project",
+  "description": "Save the project, or 'Save As' when path is given.",
+  "inputSchema": {
+   "type": "object",
+   "properties": {
+    "path": {
+     "type": "string",
+     "description": "Absolute .aep path for Save As."
+    },
+    "overwrite": {
+     "type": "boolean"
+    },
+    "timeoutSeconds": {
+     "type": "integer",
+     "minimum": 1,
+     "maximum": 3600,
+     "description": "Max seconds to wait for After Effects (default 60, long tools 300+)."
+    }
+   }
+  },
+  "annotations": {
+   "title": "Save project",
+   "readOnlyHint": false,
+   "destructiveHint": false,
+   "idempotentHint": false,
+   "openWorldHint": false
+  },
+  "_meta": {
+   "ui": {
+    "resourceUri": "ui://after-effects/activity.html",
+    "visibility": [
+     "model",
+     "app"
+    ]
+   },
+   "ui/resourceUri": "ui://after-effects/activity.html"
+  }
+ },
+ {
+  "name": "open_project",
+  "title": "Open project",
+  "description": "Open an .aep file. Refuses if the current project has unsaved changes unless discardChanges is true.",
+  "inputSchema": {
+   "type": "object",
+   "properties": {
+    "path": {
+     "type": "string"
+    },
+    "discardChanges": {
+     "type": "boolean"
+    },
+    "timeoutSeconds": {
+     "type": "integer",
+     "minimum": 1,
+     "maximum": 3600,
+     "description": "Max seconds to wait for After Effects (default 60, long tools 300+)."
+    }
+   },
+   "required": [
+    "path"
+   ]
+  },
+  "annotations": {
+   "title": "Open project",
+   "readOnlyHint": false,
+   "destructiveHint": true,
+   "idempotentHint": false,
+   "openWorldHint": false
+  },
+  "_meta": {
+   "ui": {
+    "resourceUri": "ui://after-effects/activity.html",
+    "visibility": [
+     "model",
+     "app"
+    ]
+   },
+   "ui/resourceUri": "ui://after-effects/activity.html"
+  }
+ },
+ {
+  "name": "new_project",
+  "title": "New project",
+  "description": "Close the current project and create an empty one. Refuses on unsaved changes unless discardChanges is true.",
+  "inputSchema": {
+   "type": "object",
+   "properties": {
+    "discardChanges": {
+     "type": "boolean"
+    },
+    "timeoutSeconds": {
+     "type": "integer",
+     "minimum": 1,
+     "maximum": 3600,
+     "description": "Max seconds to wait for After Effects (default 60, long tools 300+)."
+    }
+   }
+  },
+  "annotations": {
+   "title": "New project",
+   "readOnlyHint": false,
+   "destructiveHint": true,
+   "idempotentHint": false,
+   "openWorldHint": false
+  },
+  "_meta": {
+   "ui": {
+    "resourceUri": "ui://after-effects/activity.html",
+    "visibility": [
+     "model",
+     "app"
+    ]
+   },
+   "ui/resourceUri": "ui://after-effects/activity.html"
+  }
+ },
+ {
+  "name": "import_files",
+  "title": "Import files",
+  "description": "Import footage/images/audio/PSD/AI files (optionally as image sequence) into the project, into a folder, and optionally straight into a comp.",
+  "inputSchema": {
+   "type": "object",
+   "properties": {
+    "paths": {
+     "type": "array",
+     "items": {
+      "type": "string"
+     },
+     "minItems": 1
+    },
+    "folder": {
+     "type": "string",
+     "description": "Project folder (created if missing)."
+    },
+    "sequence": {
+     "type": "boolean"
+    },
+    "forceAlphabetical": {
+     "type": "boolean"
+    },
+    "importAs": {
+     "type": "string",
+     "enum": [
+      "footage",
+      "composition",
+      "comp_cropped_layers",
+      "project"
+     ]
+    },
+    "addToComp": {
+     "type": [
+      "string",
+      "number"
+     ]
+    },
+    "startTime": {
+     "type": "number"
+    },
+    "timeoutSeconds": {
+     "type": "integer",
+     "minimum": 1,
+     "maximum": 3600,
+     "description": "Max seconds to wait for After Effects (default 60, long tools 300+)."
+    }
+   },
+   "required": [
+    "paths"
+   ]
+  },
+  "annotations": {
+   "title": "Import files",
+   "readOnlyHint": false,
+   "destructiveHint": false,
+   "idempotentHint": false,
+   "openWorldHint": false
+  },
+  "_meta": {
+   "ui": {
+    "resourceUri": "ui://after-effects/activity.html",
+    "visibility": [
+     "model",
+     "app"
+    ]
+   },
+   "ui/resourceUri": "ui://after-effects/activity.html"
+  }
+ },
+ {
+  "name": "remove_unused_footage",
+  "title": "Remove unused footage",
+  "description": "Delete footage no layer uses (like File > Dependencies > Remove Unused Footage). type:'solid' only removes unused solid/null sources (the Solids folder clutter left after deleting layers); keep lists item ids to preserve. Empty folders left behind are removed.",
+  "inputSchema": {
+   "type": "object",
+   "properties": {
+    "type": {
+     "type": "string",
+     "enum": [
+      "all",
+      "solid"
+     ]
+    },
+    "keep": {
+     "type": "array",
+     "items": {
+      "type": "integer"
+     }
+    },
+    "removeEmptyFolders": {
+     "type": "boolean"
+    },
+    "timeoutSeconds": {
+     "type": "integer",
+     "minimum": 1,
+     "maximum": 3600,
+     "description": "Max seconds to wait for After Effects (default 60, long tools 300+)."
+    }
+   }
+  },
+  "annotations": {
+   "title": "Remove unused footage",
+   "readOnlyHint": false,
+   "destructiveHint": true,
+   "idempotentHint": false,
+   "openWorldHint": false
+  },
+  "_meta": {
+   "ui": {
+    "resourceUri": "ui://after-effects/activity.html",
+    "visibility": [
+     "model",
+     "app"
+    ]
+   },
+   "ui/resourceUri": "ui://after-effects/activity.html"
+  }
+ },
+ {
+  "name": "create_folder",
+  "title": "Create folder",
+  "description": "Create a folder in the project panel.",
+  "inputSchema": {
+   "type": "object",
+   "properties": {
+    "name": {
+     "type": "string"
+    },
+    "parent": {
+     "type": "string"
+    },
+    "timeoutSeconds": {
+     "type": "integer",
+     "minimum": 1,
+     "maximum": 3600,
+     "description": "Max seconds to wait for After Effects (default 60, long tools 300+)."
+    }
+   },
+   "required": [
+    "name"
+   ]
+  },
+  "annotations": {
+   "title": "Create folder",
+   "readOnlyHint": false,
+   "destructiveHint": false,
+   "idempotentHint": false,
+   "openWorldHint": false
+  },
+  "_meta": {
+   "ui": {
+    "resourceUri": "ui://after-effects/activity.html",
+    "visibility": [
+     "model",
+     "app"
+    ]
+   },
+   "ui/resourceUri": "ui://after-effects/activity.html"
+  }
+ },
+ {
+  "name": "organize_items",
+  "title": "Move items to folder",
+  "description": "Move project items into a folder (created if missing).",
+  "inputSchema": {
+   "type": "object",
+   "properties": {
+    "items": {
+     "type": "array",
+     "items": {
+      "type": [
+       "string",
+       "number"
+      ]
+     },
+     "minItems": 1
+    },
+    "folder": {
+     "type": "string"
+    },
+    "createFolder": {
+     "type": "boolean"
+    },
+    "timeoutSeconds": {
+     "type": "integer",
+     "minimum": 1,
+     "maximum": 3600,
+     "description": "Max seconds to wait for After Effects (default 60, long tools 300+)."
+    }
+   },
+   "required": [
+    "items",
+    "folder"
+   ]
+  },
+  "annotations": {
+   "title": "Move items to folder",
+   "readOnlyHint": false,
+   "destructiveHint": false,
+   "idempotentHint": false,
+   "openWorldHint": false
+  },
+  "_meta": {
+   "ui": {
+    "resourceUri": "ui://after-effects/activity.html",
+    "visibility": [
+     "model",
+     "app"
+    ]
+   },
+   "ui/resourceUri": "ui://after-effects/activity.html"
+  }
+ },
+ {
+  "name": "modify_item",
+  "title": "Modify project item",
+  "description": "Rename, relabel, comment, replace footage source, conform frame rate, set loop count, or delete a project item.",
+  "inputSchema": {
+   "type": "object",
+   "properties": {
+    "item": {
+     "type": [
+      "string",
+      "number"
+     ]
+    },
+    "name": {
+     "type": "string"
+    },
+    "label": {
+     "type": "integer",
+     "minimum": 0,
+     "maximum": 16
+    },
+    "comment": {
+     "type": "string"
+    },
+    "replaceWithFile": {
+     "type": "string"
+    },
+    "frameRate": {
+     "type": "number"
+    },
+    "loop": {
+     "type": "integer"
+    },
+    "delete": {
+     "type": "boolean"
+    },
+    "timeoutSeconds": {
+     "type": "integer",
+     "minimum": 1,
+     "maximum": 3600,
+     "description": "Max seconds to wait for After Effects (default 60, long tools 300+)."
+    }
+   },
+   "required": [
+    "item"
+   ]
+  },
+  "annotations": {
+   "title": "Modify project item",
+   "readOnlyHint": false,
+   "destructiveHint": false,
+   "idempotentHint": false,
+   "openWorldHint": false
+  },
+  "_meta": {
+   "ui": {
+    "resourceUri": "ui://after-effects/activity.html",
+    "visibility": [
+     "model",
+     "app"
+    ]
+   },
+   "ui/resourceUri": "ui://after-effects/activity.html"
+  }
+ },
+ {
+  "name": "list_compositions",
+  "title": "List compositions",
+  "description": "All compositions with id, size, duration, fps, layer count, work area.",
+  "inputSchema": {
+   "type": "object",
+   "properties": {
+    "timeoutSeconds": {
+     "type": "integer",
+     "minimum": 1,
+     "maximum": 3600,
+     "description": "Max seconds to wait for After Effects (default 60, long tools 300+)."
+    }
+   }
+  },
+  "outputSchema": {
+   "type": "object",
+   "properties": {
+    "count": {
+     "type": "number"
+    },
+    "compositions": {
+     "type": "array",
+     "items": {
+      "type": "object",
+      "properties": {
+       "id": {
+        "type": "number"
+       },
+       "name": {
+        "type": "string"
+       },
+       "width": {
+        "type": "number"
+       },
+       "height": {
+        "type": "number"
+       },
+       "duration": {
+        "type": "number"
+       },
+       "frameRate": {
+        "type": "number"
+       }
+      },
+      "required": [
+       "id",
+       "name",
+       "width",
+       "height",
+       "duration",
+       "frameRate"
+      ],
+      "additionalProperties": true
+     }
+    }
+   },
+   "required": [
+    "count",
+    "compositions"
+   ],
+   "additionalProperties": true
+  },
+  "annotations": {
+   "title": "List compositions",
+   "readOnlyHint": true,
+   "destructiveHint": false,
+   "idempotentHint": true,
+   "openWorldHint": false
+  },
+  "_meta": {
+   "ui": {
+    "resourceUri": "ui://after-effects/activity.html",
+    "visibility": [
+     "model",
+     "app"
+    ]
+   },
+   "ui/resourceUri": "ui://after-effects/activity.html"
+  }
+ },
+ {
+  "name": "get_composition",
+  "title": "Composition details",
+  "description": "Full composition details: settings, markers, selection and a summary of each layer (type, timing, transform, effects, parent, matte). At most layerLimit (default 200) layers; use list_layers to page through more.",
+  "inputSchema": {
+   "type": "object",
+   "properties": {
+    "comp": {
+     "anyOf": [
+      {
+       "type": "string"
+      },
+      {
+       "type": "integer"
+      }
+     ],
+     "description": "Composition name or numeric item id. Omit to use the active composition."
+    },
+    "layerLimit": {
+     "type": "integer",
+     "minimum": 0,
+     "maximum": 1000
+    },
+    "timeoutSeconds": {
+     "type": "integer",
+     "minimum": 1,
+     "maximum": 3600,
+     "description": "Max seconds to wait for After Effects (default 60, long tools 300+)."
+    }
+   }
+  },
+  "outputSchema": {
+   "type": "object",
+   "properties": {
+    "id": {
+     "type": "number"
+    },
+    "name": {
+     "type": "string"
+    },
+    "width": {
+     "type": "number"
+    },
+    "height": {
+     "type": "number"
+    },
+    "duration": {
+     "type": "number"
+    },
+    "frameRate": {
+     "type": "number"
+    },
+    "numLayers": {
+     "type": "number"
+    },
+    "layers": {
+     "type": "array",
+     "items": {
+      "type": "object",
+      "properties": {
+       "index": {
+        "type": "number"
+       },
+       "id": {
+        "type": "number"
+       },
+       "name": {
+        "type": "string"
+       },
+       "type": {
+        "type": "string"
+       }
+      },
+      "required": [
+       "index",
+       "id",
+       "name",
+       "type"
+      ],
+      "additionalProperties": true
+     }
+    }
+   },
+   "required": [
+    "id",
+    "name",
+    "width",
+    "height",
+    "duration",
+    "frameRate",
+    "numLayers",
+    "layers"
+   ],
+   "additionalProperties": true
+  },
+  "annotations": {
+   "title": "Composition details",
+   "readOnlyHint": true,
+   "destructiveHint": false,
+   "idempotentHint": true,
+   "openWorldHint": false
+  },
+  "_meta": {
+   "ui": {
+    "resourceUri": "ui://after-effects/activity.html",
+    "visibility": [
+     "model",
+     "app"
+    ]
+   },
+   "ui/resourceUri": "ui://after-effects/activity.html"
+  }
+ },
+ {
+  "name": "create_composition",
+  "title": "Create composition",
+  "description": "Create a composition. Use preset for common sizes (1080p, 4k, vertical/reels/tiktok, square, portrait-4x5...). Opens it in the viewer unless open:false - use open:false when you will add many layers before looking (much faster).",
+  "inputSchema": {
+   "type": "object",
+   "properties": {
+    "name": {
+     "type": "string"
+    },
+    "preset": {
+     "type": "string",
+     "enum": [
+      "hd",
+      "1080p",
+      "720p",
+      "4k",
+      "uhd",
+      "2k",
+      "vertical",
+      "story",
+      "reels",
+      "tiktok",
+      "shorts",
+      "square",
+      "instagram",
+      "portrait-4x5",
+      "youtube-thumbnail",
+      "twitter"
+     ]
+    },
+    "width": {
+     "type": "integer",
+     "minimum": 4,
+     "maximum": 30000
+    },
+    "height": {
+     "type": "integer",
+     "minimum": 4,
+     "maximum": 30000
+    },
+    "duration": {
+     "type": "number",
+     "exclusiveMinimum": 0,
+     "description": "Seconds, default 10."
+    },
+    "frameRate": {
+     "type": "number",
+     "exclusiveMinimum": 0,
+     "maximum": 999,
+     "description": "Default 30."
+    },
+    "pixelAspect": {
+     "type": "number",
+     "exclusiveMinimum": 0
+    },
+    "backgroundColor": {
+     "anyOf": [
+      {
+       "type": "string"
+      },
+      {
+       "type": "array",
+       "items": {
+        "type": "number"
+       },
+       "minItems": 3,
+       "maxItems": 4
+      }
+     ],
+     "description": "Color as '#RRGGBB' or [r,g,b] (0-1 or 0-255)."
+    },
+    "folder": {
+     "type": "string"
+    },
+    "open": {
+     "type": "boolean"
+    },
+    "timeoutSeconds": {
+     "type": "integer",
+     "minimum": 1,
+     "maximum": 3600,
+     "description": "Max seconds to wait for After Effects (default 60, long tools 300+)."
+    }
+   },
+   "required": [
+    "name"
+   ]
+  },
+  "annotations": {
+   "title": "Create composition",
+   "readOnlyHint": false,
+   "destructiveHint": false,
+   "idempotentHint": false,
+   "openWorldHint": false
+  },
+  "_meta": {
+   "ui": {
+    "resourceUri": "ui://after-effects/activity.html",
+    "visibility": [
+     "model",
+     "app"
+    ]
+   },
+   "ui/resourceUri": "ui://after-effects/activity.html"
+  }
+ },
+ {
+  "name": "set_composition_settings",
+  "title": "Composition settings",
+  "description": "Change composition name, size, duration, fps, background, work area, motion blur, shutter, renderer, current time, resolution.",
+  "inputSchema": {
+   "type": "object",
+   "properties": {
+    "comp": {
+     "anyOf": [
+      {
+       "type": "string"
+      },
+      {
+       "type": "integer"
+      }
+     ],
+     "description": "Composition name or numeric item id. Omit to use the active composition."
+    },
+    "name": {
+     "type": "string"
+    },
+    "width": {
+     "type": "integer"
+    },
+    "height": {
+     "type": "integer"
+    },
+    "duration": {
+     "type": "number",
+     "exclusiveMinimum": 0
+    },
+    "frameRate": {
+     "type": "number",
+     "exclusiveMinimum": 0
+    },
+    "pixelAspect": {
+     "type": "number"
+    },
+    "backgroundColor": {
+     "anyOf": [
+      {
+       "type": "string"
+      },
+      {
+       "type": "array",
+       "items": {
+        "type": "number"
+       },
+       "minItems": 3,
+       "maxItems": 4
+      }
+     ],
+     "description": "Color as '#RRGGBB' or [r,g,b] (0-1 or 0-255)."
+    },
+    "workAreaStart": {
+     "type": "number"
+    },
+    "workAreaDuration": {
+     "type": "number"
+    },
+    "motionBlur": {
+     "type": "boolean"
+    },
+    "shutterAngle": {
+     "type": "number"
+    },
+    "shutterPhase": {
+     "type": "number"
+    },
+    "currentTime": {
+     "type": "number"
+    },
+    "renderer": {
+     "type": "string"
+    },
+    "hideShyLayers": {
+     "type": "boolean"
+    },
+    "resolutionFactor": {
+     "type": "array",
+     "items": {
+      "type": "integer"
+     },
+     "minItems": 2,
+     "maxItems": 2
+    },
+    "open": {
+     "type": "boolean"
+    },
+    "timeoutSeconds": {
+     "type": "integer",
+     "minimum": 1,
+     "maximum": 3600,
+     "description": "Max seconds to wait for After Effects (default 60, long tools 300+)."
+    }
+   }
+  },
+  "annotations": {
+   "title": "Composition settings",
+   "readOnlyHint": false,
+   "destructiveHint": false,
+   "idempotentHint": false,
+   "openWorldHint": false
+  },
+  "_meta": {
+   "ui": {
+    "resourceUri": "ui://after-effects/activity.html",
+    "visibility": [
+     "model",
+     "app"
+    ]
+   },
+   "ui/resourceUri": "ui://after-effects/activity.html"
+  }
+ },
+ {
+  "name": "duplicate_composition",
+  "title": "Duplicate composition",
+  "description": "Duplicate a composition.",
+  "inputSchema": {
+   "type": "object",
+   "properties": {
+    "parkViewer": {
+     "type": "boolean",
+     "description": "Show a tiny empty comp in the viewer while this runs (much faster for heavy changes to an open comp); the viewer is restored afterwards, also on error."
+    },
+    "comp": {
+     "anyOf": [
+      {
+       "type": "string"
+      },
+      {
+       "type": "integer"
+      }
+     ],
+     "description": "Composition name or numeric item id. Omit to use the active composition."
+    },
+    "newName": {
+     "type": "string"
+    },
+    "timeoutSeconds": {
+     "type": "integer",
+     "minimum": 1,
+     "maximum": 3600,
+     "description": "Max seconds to wait for After Effects (default 60, long tools 300+)."
+    }
+   }
+  },
+  "annotations": {
+   "title": "Duplicate composition",
+   "readOnlyHint": false,
+   "destructiveHint": false,
+   "idempotentHint": false,
+   "openWorldHint": false
+  },
+  "_meta": {
+   "ui": {
+    "resourceUri": "ui://after-effects/activity.html",
+    "visibility": [
+     "model",
+     "app"
+    ]
+   },
+   "ui/resourceUri": "ui://after-effects/activity.html"
+  }
+ },
+ {
+  "name": "open_composition",
+  "title": "Open composition",
+  "description": "Open a composition in the viewer/timeline and optionally move the playhead.",
+  "inputSchema": {
+   "type": "object",
+   "properties": {
+    "comp": {
+     "anyOf": [
+      {
+       "type": "string"
+      },
+      {
+       "type": "integer"
+      }
+     ],
+     "description": "Composition name or numeric item id. Omit to use the active composition."
+    },
+    "time": {
+     "type": "number"
+    },
+    "timeoutSeconds": {
+     "type": "integer",
+     "minimum": 1,
+     "maximum": 3600,
+     "description": "Max seconds to wait for After Effects (default 60, long tools 300+)."
+    }
+   }
+  },
+  "annotations": {
+   "title": "Open composition",
+   "readOnlyHint": false,
+   "destructiveHint": false,
+   "idempotentHint": false,
+   "openWorldHint": false
+  },
+  "_meta": {
+   "ui": {
+    "resourceUri": "ui://after-effects/activity.html",
+    "visibility": [
+     "model",
+     "app"
+    ]
+   },
+   "ui/resourceUri": "ui://after-effects/activity.html"
+  }
+ },
+ {
+  "name": "precompose_layers",
+  "title": "Pre-compose",
+  "description": "Pre-compose layers into a new composition.",
+  "inputSchema": {
+   "type": "object",
+   "properties": {
+    "parkViewer": {
+     "type": "boolean",
+     "description": "Show a tiny empty comp in the viewer while this runs (much faster for heavy changes to an open comp); the viewer is restored afterwards, also on error."
+    },
+    "comp": {
+     "anyOf": [
+      {
+       "type": "string"
+      },
+      {
+       "type": "integer"
+      }
+     ],
+     "description": "Composition name or numeric item id. Omit to use the active composition."
+    },
+    "layers": {
+     "type": "array",
+     "items": {
+      "anyOf": [
+       {
+        "type": "integer",
+        "exclusiveMinimum": 0
+       },
+       {
+        "type": "string"
+       }
+      ],
+      "description": "Layer: 1-based index, exact name, or 'id:<layerId>' (stable across reordering)."
+     },
+     "description": "List of layers (index, name or 'id:<id>')."
+    },
+    "name": {
+     "type": "string"
+    },
+    "moveAllAttributes": {
+     "type": "boolean"
+    },
+    "timeoutSeconds": {
+     "type": "integer",
+     "minimum": 1,
+     "maximum": 3600,
+     "description": "Max seconds to wait for After Effects (default 60, long tools 300+)."
+    }
+   },
+   "required": [
+    "layers"
+   ]
+  },
+  "annotations": {
+   "title": "Pre-compose",
+   "readOnlyHint": false,
+   "destructiveHint": false,
+   "idempotentHint": false,
+   "openWorldHint": false
+  },
+  "_meta": {
+   "ui": {
+    "resourceUri": "ui://after-effects/activity.html",
+    "visibility": [
+     "model",
+     "app"
+    ]
+   },
+   "ui/resourceUri": "ui://after-effects/activity.html"
+  }
+ },
+ {
+  "name": "create_text_layer",
+  "title": "Create text layer",
+  "description": "Create a text layer with full styling (font, size, color, stroke, tracking, leading, alignment, caps). Anchor is centered on the text. Returns the font AE actually used.",
+  "inputSchema": {
+   "type": "object",
+   "properties": {
+    "comp": {
+     "anyOf": [
+      {
+       "type": "string"
+      },
+      {
+       "type": "integer"
+      }
+     ],
+     "description": "Composition name or numeric item id. Omit to use the active composition."
+    },
+    "text": {
+     "type": "string"
+    },
+    "allowLargeText": {
+     "type": "boolean",
+     "description": "Allow more than 20,000 characters (AE freezes while laying out huge text)."
+    },
+    "font": {
+     "type": "string",
+     "description": "PostScript name, e.g. 'Arial-BoldMT' (see list_fonts)."
+    },
+    "fontSize": {
+     "type": "number"
+    },
+    "color": {
+     "anyOf": [
+      {
+       "type": "string"
+      },
+      {
+       "type": "array",
+       "items": {
+        "type": "number"
+       },
+       "minItems": 3,
+       "maxItems": 4
+      }
+     ],
+     "description": "Color as '#RRGGBB' or [r,g,b] (0-1 or 0-255)."
+    },
+    "strokeColor": {
+     "anyOf": [
+      {
+       "type": "string"
+      },
+      {
+       "type": "array",
+       "items": {
+        "type": "number"
+       },
+       "minItems": 3,
+       "maxItems": 4
+      }
+     ],
+     "description": "Color as '#RRGGBB' or [r,g,b] (0-1 or 0-255)."
+    },
+    "strokeWidth": {
+     "type": "number"
+    },
+    "tracking": {
+     "type": "number"
+    },
+    "leading": {
+     "type": "number"
+    },
+    "justification": {
+     "type": "string",
+     "enum": [
+      "left",
+      "center",
+      "right",
+      "justify"
+     ]
+    },
+    "allCaps": {
+     "type": "boolean"
+    },
+    "fauxBold": {
+     "type": "boolean"
+    },
+    "fauxItalic": {
+     "type": "boolean"
+    },
+    "boxSize": {
+     "type": "array",
+     "items": {
+      "type": "number"
+     },
+     "minItems": 2,
+     "maxItems": 2,
+     "description": "Paragraph text box [w,h]."
+    },
+    "centerAnchor": {
+     "type": "boolean"
+    },
+    "name": {
+     "type": "string",
+     "description": "Layer name."
+    },
+    "position": {
+     "type": "array",
+     "items": {
+      "type": "number"
+     },
+     "minItems": 1,
+     "maxItems": 3,
+     "description": "[x,y] or [x,y,z] in comp pixels. Default: comp center."
+    },
+    "anchorPoint": {
+     "type": "array",
+     "items": {
+      "type": "number"
+     },
+     "minItems": 1,
+     "maxItems": 3
+    },
+    "scale": {
+     "anyOf": [
+      {
+       "type": "number"
+      },
+      {
+       "type": "array",
+       "items": {
+        "type": "number"
+       },
+       "minItems": 1,
+       "maxItems": 3
+      }
+     ],
+     "description": "Percent. A number scales uniformly."
+    },
+    "rotation": {
+     "type": "number",
+     "description": "Degrees."
+    },
+    "opacity": {
+     "type": "number",
+     "minimum": 0,
+     "maximum": 100
+    },
+    "startTime": {
+     "type": "number"
+    },
+    "inPoint": {
+     "type": "number"
+    },
+    "outPoint": {
+     "type": "number"
+    },
+    "duration": {
+     "type": "number",
+     "exclusiveMinimum": 0,
+     "description": "Layer duration in seconds from its in point."
+    },
+    "threeD": {
+     "type": "boolean"
+    },
+    "blendMode": {
+     "type": "string",
+     "description": "normal, multiply, screen, add, overlay, soft light, ... "
+    },
+    "label": {
+     "type": "integer",
+     "minimum": 0,
+     "maximum": 16
+    },
+    "parent": {
+     "type": [
+      "number",
+      "string"
+     ],
+     "description": "Parent layer, or '' for none."
+    },
+    "timeoutSeconds": {
+     "type": "integer",
+     "minimum": 1,
+     "maximum": 3600,
+     "description": "Max seconds to wait for After Effects (default 60, long tools 300+)."
+    }
+   },
+   "required": [
+    "text"
+   ]
+  },
+  "annotations": {
+   "title": "Create text layer",
+   "readOnlyHint": false,
+   "destructiveHint": false,
+   "idempotentHint": false,
+   "openWorldHint": false
+  },
+  "_meta": {
+   "ui": {
+    "resourceUri": "ui://after-effects/activity.html",
+    "visibility": [
+     "model",
+     "app"
+    ]
+   },
+   "ui/resourceUri": "ui://after-effects/activity.html"
+  }
+ },
+ {
+  "name": "create_shape_layer",
+  "title": "Create shape layer",
+  "description": "Create a shape layer with one or many shapes (rectangle, ellipse, polygon, star, custom path), fill/stroke, rounded corners, Trim Paths and Repeater.",
+  "inputSchema": {
+   "type": "object",
+   "properties": {
+    "comp": {
+     "anyOf": [
+      {
+       "type": "string"
+      },
+      {
+       "type": "integer"
+      }
+     ],
+     "description": "Composition name or numeric item id. Omit to use the active composition."
+    },
+    "shapes": {
+     "type": "array",
+     "items": {
+      "type": "object",
+      "properties": {
+       "type": {
+        "type": "string",
+        "enum": [
+         "rectangle",
+         "ellipse",
+         "polygon",
+         "star",
+         "path"
+        ],
+        "default": "rectangle"
+       },
+       "name": {
+        "type": "string"
+       },
+       "size": {
+        "anyOf": [
+         {
+          "type": "number"
+         },
+         {
+          "type": "array",
+          "items": {
+           "type": "number"
+          },
+          "minItems": 2,
+          "maxItems": 2
+         }
+        ],
+        "description": "[w,h] or a single number. Default 200."
+       },
+       "roundness": {
+        "type": "number"
+       },
+       "points": {
+        "type": "integer",
+        "description": "Polygon/star points."
+       },
+       "outerRadius": {
+        "type": "number"
+       },
+       "innerRadius": {
+        "type": "number"
+       },
+       "vertices": {
+        "type": "array",
+        "items": {
+         "type": "array",
+         "items": {
+          "type": "number"
+         },
+         "minItems": 2,
+         "maxItems": 2
+        },
+        "description": "For type 'path': [[x,y],...] relative to the layer."
+       },
+       "inTangents": {
+        "type": "array",
+        "items": {
+         "type": "array",
+         "items": {
+          "type": "number"
+         },
+         "minItems": 2,
+         "maxItems": 2
+        }
+       },
+       "outTangents": {
+        "type": "array",
+        "items": {
+         "type": "array",
+         "items": {
+          "type": "number"
+         },
+         "minItems": 2,
+         "maxItems": 2
+        }
+       },
+       "closed": {
+        "type": "boolean"
+       },
+       "fill": {
+        "anyOf": [
+         {
+          "anyOf": [
+           {
+            "type": "string"
+           },
+           {
+            "type": "array",
+            "items": {
+             "type": "number"
+            },
+            "minItems": 3,
+            "maxItems": 4
+           }
+          ],
+          "description": "Color as '#RRGGBB' or [r,g,b] (0-1 or 0-255)."
+         },
+         {
+          "type": "boolean",
+          "const": false
+         }
+        ],
+        "description": "Fill color, or false for no fill. Default white."
+       },
+       "fillOpacity": {
+        "type": "number"
+       },
+       "stroke": {
+        "anyOf": [
+         {
+          "type": "string"
+         },
+         {
+          "type": "array",
+          "items": {
+           "type": "number"
+          },
+          "minItems": 3,
+          "maxItems": 4
+         }
+        ],
+        "description": "Color as '#RRGGBB' or [r,g,b] (0-1 or 0-255)."
+       },
+       "strokeWidth": {
+        "type": "number"
+       },
+       "strokeOpacity": {
+        "type": "number"
+       },
+       "lineCap": {
+        "type": "string",
+        "enum": [
+         "butt",
+         "round",
+         "projecting"
+        ]
+       },
+       "gradient": {
+        "type": "object",
+        "properties": {
+         "type": {
+          "type": "string",
+          "enum": [
+           "linear",
+           "radial"
+          ]
+         },
+         "start": {
+          "type": "array",
+          "items": {
+           "type": "number"
+          }
+         },
+         "end": {
+          "type": "array",
+          "items": {
+           "type": "number"
+          }
+         }
+        },
+        "additionalProperties": false
+       },
+       "trimPaths": {
+        "type": "object",
+        "properties": {
+         "start": {
+          "type": "number"
+         },
+         "end": {
+          "type": "number"
+         },
+         "offset": {
+          "type": "number"
+         }
+        },
+        "additionalProperties": false,
+        "description": "Adds Trim Paths (great for line/stroke reveal animations)."
+       },
+       "repeater": {
+        "type": "object",
+        "properties": {
+         "copies": {
+          "type": "number"
+         },
+         "offsetPosition": {
+          "type": "array",
+          "items": {
+           "type": "number"
+          }
+         },
+         "offsetRotation": {
+          "type": "number"
+         }
+        },
+        "additionalProperties": false
+       },
+       "offset": {
+        "type": "array",
+        "items": {
+         "type": "number"
+        },
+        "description": "Position of this shape group inside the layer."
+       },
+       "rotation": {
+        "type": "number"
+       }
+      },
+      "additionalProperties": false
+     },
+     "description": "Several shapes in one layer. If omitted, the top-level shape fields are used."
+    },
+    "type": {
+     "type": "string",
+     "enum": [
+      "rectangle",
+      "ellipse",
+      "polygon",
+      "star",
+      "path"
+     ],
+     "default": "rectangle"
+    },
+    "name": {
+     "type": "string",
+     "description": "Layer name."
+    },
+    "size": {
+     "anyOf": [
+      {
+       "type": "number"
+      },
+      {
+       "type": "array",
+       "items": {
+        "type": "number"
+       },
+       "minItems": 2,
+       "maxItems": 2
+      }
+     ],
+     "description": "[w,h] or a single number. Default 200."
+    },
+    "roundness": {
+     "type": "number"
+    },
+    "points": {
+     "type": "integer",
+     "description": "Polygon/star points."
+    },
+    "outerRadius": {
+     "type": "number"
+    },
+    "innerRadius": {
+     "type": "number"
+    },
+    "vertices": {
+     "type": "array",
+     "items": {
+      "type": "array",
+      "items": {
+       "type": "number"
+      },
+      "minItems": 2,
+      "maxItems": 2
+     },
+     "description": "For type 'path': [[x,y],...] relative to the layer."
+    },
+    "inTangents": {
+     "type": "array",
+     "items": {
+      "type": "array",
+      "items": {
+       "type": "number"
+      },
+      "minItems": 2,
+      "maxItems": 2
+     }
+    },
+    "outTangents": {
+     "type": "array",
+     "items": {
+      "type": "array",
+      "items": {
+       "type": "number"
+      },
+      "minItems": 2,
+      "maxItems": 2
+     }
+    },
+    "closed": {
+     "type": "boolean"
+    },
+    "fill": {
+     "anyOf": [
+      {
+       "anyOf": [
+        {
+         "type": "string"
+        },
+        {
+         "type": "array",
+         "items": {
+          "type": "number"
+         },
+         "minItems": 3,
+         "maxItems": 4
+        }
+       ],
+       "description": "Color as '#RRGGBB' or [r,g,b] (0-1 or 0-255)."
+      },
+      {
+       "type": "boolean",
+       "const": false
+      }
+     ],
+     "description": "Fill color, or false for no fill. Default white."
+    },
+    "fillOpacity": {
+     "type": "number"
+    },
+    "stroke": {
+     "anyOf": [
+      {
+       "type": "string"
+      },
+      {
+       "type": "array",
+       "items": {
+        "type": "number"
+       },
+       "minItems": 3,
+       "maxItems": 4
+      }
+     ],
+     "description": "Color as '#RRGGBB' or [r,g,b] (0-1 or 0-255)."
+    },
+    "strokeWidth": {
+     "type": "number"
+    },
+    "strokeOpacity": {
+     "type": "number"
+    },
+    "lineCap": {
+     "type": "string",
+     "enum": [
+      "butt",
+      "round",
+      "projecting"
+     ]
+    },
+    "gradient": {
+     "type": "object",
+     "properties": {
+      "type": {
+       "type": "string",
+       "enum": [
+        "linear",
+        "radial"
+       ]
+      },
+      "start": {
+       "type": "array",
+       "items": {
+        "type": "number"
+       }
+      },
+      "end": {
+       "type": "array",
+       "items": {
+        "type": "number"
+       }
+      }
+     },
+     "additionalProperties": false
+    },
+    "trimPaths": {
+     "type": "object",
+     "properties": {
+      "start": {
+       "type": "number"
+      },
+      "end": {
+       "type": "number"
+      },
+      "offset": {
+       "type": "number"
+      }
+     },
+     "additionalProperties": false,
+     "description": "Adds Trim Paths (great for line/stroke reveal animations)."
+    },
+    "repeater": {
+     "type": "object",
+     "properties": {
+      "copies": {
+       "type": "number"
+      },
+      "offsetPosition": {
+       "type": "array",
+       "items": {
+        "type": "number"
+       }
+      },
+      "offsetRotation": {
+       "type": "number"
+      }
+     },
+     "additionalProperties": false
+    },
+    "offset": {
+     "type": "array",
+     "items": {
+      "type": "number"
+     },
+     "description": "Position of this shape group inside the layer."
+    },
+    "rotation": {
+     "type": "number",
+     "description": "Degrees."
+    },
+    "position": {
+     "type": "array",
+     "items": {
+      "type": "number"
+     },
+     "minItems": 1,
+     "maxItems": 3,
+     "description": "[x,y] or [x,y,z] in comp pixels. Default: comp center."
+    },
+    "anchorPoint": {
+     "type": "array",
+     "items": {
+      "type": "number"
+     },
+     "minItems": 1,
+     "maxItems": 3
+    },
+    "scale": {
+     "anyOf": [
+      {
+       "type": "number"
+      },
+      {
+       "type": "array",
+       "items": {
+        "type": "number"
+       },
+       "minItems": 1,
+       "maxItems": 3
+      }
+     ],
+     "description": "Percent. A number scales uniformly."
+    },
+    "opacity": {
+     "type": "number",
+     "minimum": 0,
+     "maximum": 100
+    },
+    "startTime": {
+     "type": "number"
+    },
+    "inPoint": {
+     "type": "number"
+    },
+    "outPoint": {
+     "type": "number"
+    },
+    "duration": {
+     "type": "number",
+     "exclusiveMinimum": 0,
+     "description": "Layer duration in seconds from its in point."
+    },
+    "threeD": {
+     "type": "boolean"
+    },
+    "blendMode": {
+     "type": "string",
+     "description": "normal, multiply, screen, add, overlay, soft light, ... "
+    },
+    "label": {
+     "type": "integer",
+     "minimum": 0,
+     "maximum": 16
+    },
+    "parent": {
+     "type": [
+      "number",
+      "string"
+     ],
+     "description": "Parent layer, or '' for none."
+    },
+    "timeoutSeconds": {
+     "type": "integer",
+     "minimum": 1,
+     "maximum": 3600,
+     "description": "Max seconds to wait for After Effects (default 60, long tools 300+)."
+    }
+   }
+  },
+  "annotations": {
+   "title": "Create shape layer",
+   "readOnlyHint": false,
+   "destructiveHint": false,
+   "idempotentHint": false,
+   "openWorldHint": false
+  },
+  "_meta": {
+   "ui": {
+    "resourceUri": "ui://after-effects/activity.html",
+    "visibility": [
+     "model",
+     "app"
+    ]
+   },
+   "ui/resourceUri": "ui://after-effects/activity.html"
+  }
+ },
+ {
+  "name": "create_solid_layer",
+  "title": "Create solid / adjustment layer",
+  "description": "Create a solid color layer, or an adjustment layer (adjustment: true).",
+  "inputSchema": {
+   "type": "object",
+   "properties": {
+    "comp": {
+     "anyOf": [
+      {
+       "type": "string"
+      },
+      {
+       "type": "integer"
+      }
+     ],
+     "description": "Composition name or numeric item id. Omit to use the active composition."
+    },
+    "color": {
+     "anyOf": [
+      {
+       "type": "string"
+      },
+      {
+       "type": "array",
+       "items": {
+        "type": "number"
+       },
+       "minItems": 3,
+       "maxItems": 4
+      }
+     ],
+     "description": "Color as '#RRGGBB' or [r,g,b] (0-1 or 0-255)."
+    },
+    "width": {
+     "type": "integer"
+    },
+    "height": {
+     "type": "integer"
+    },
+    "adjustment": {
+     "type": "boolean"
+    },
+    "name": {
+     "type": "string",
+     "description": "Layer name."
+    },
+    "position": {
+     "type": "array",
+     "items": {
+      "type": "number"
+     },
+     "minItems": 1,
+     "maxItems": 3,
+     "description": "[x,y] or [x,y,z] in comp pixels. Default: comp center."
+    },
+    "anchorPoint": {
+     "type": "array",
+     "items": {
+      "type": "number"
+     },
+     "minItems": 1,
+     "maxItems": 3
+    },
+    "scale": {
+     "anyOf": [
+      {
+       "type": "number"
+      },
+      {
+       "type": "array",
+       "items": {
+        "type": "number"
+       },
+       "minItems": 1,
+       "maxItems": 3
+      }
+     ],
+     "description": "Percent. A number scales uniformly."
+    },
+    "rotation": {
+     "type": "number",
+     "description": "Degrees."
+    },
+    "opacity": {
+     "type": "number",
+     "minimum": 0,
+     "maximum": 100
+    },
+    "startTime": {
+     "type": "number"
+    },
+    "inPoint": {
+     "type": "number"
+    },
+    "outPoint": {
+     "type": "number"
+    },
+    "duration": {
+     "type": "number",
+     "exclusiveMinimum": 0,
+     "description": "Layer duration in seconds from its in point."
+    },
+    "threeD": {
+     "type": "boolean"
+    },
+    "blendMode": {
+     "type": "string",
+     "description": "normal, multiply, screen, add, overlay, soft light, ... "
+    },
+    "label": {
+     "type": "integer",
+     "minimum": 0,
+     "maximum": 16
+    },
+    "parent": {
+     "type": [
+      "number",
+      "string"
+     ],
+     "description": "Parent layer, or '' for none."
+    },
+    "timeoutSeconds": {
+     "type": "integer",
+     "minimum": 1,
+     "maximum": 3600,
+     "description": "Max seconds to wait for After Effects (default 60, long tools 300+)."
+    }
+   }
+  },
+  "annotations": {
+   "title": "Create solid / adjustment layer",
+   "readOnlyHint": false,
+   "destructiveHint": false,
+   "idempotentHint": false,
+   "openWorldHint": false
+  },
+  "_meta": {
+   "ui": {
+    "resourceUri": "ui://after-effects/activity.html",
+    "visibility": [
+     "model",
+     "app"
+    ]
+   },
+   "ui/resourceUri": "ui://after-effects/activity.html"
+  }
+ },
+ {
+  "name": "create_null_layer",
+  "title": "Create null",
+  "description": "Create a null object, optionally parenting layers to it.",
+  "inputSchema": {
+   "type": "object",
+   "properties": {
+    "comp": {
+     "anyOf": [
+      {
+       "type": "string"
+      },
+      {
+       "type": "integer"
+      }
+     ],
+     "description": "Composition name or numeric item id. Omit to use the active composition."
+    },
+    "childLayers": {
+     "type": "array",
+     "items": {
+      "anyOf": [
+       {
+        "type": "integer",
+        "exclusiveMinimum": 0
+       },
+       {
+        "type": "string"
+       }
+      ],
+      "description": "Layer: 1-based index, exact name, or 'id:<layerId>' (stable across reordering)."
+     },
+     "description": "List of layers (index, name or 'id:<id>')."
+    },
+    "name": {
+     "type": "string",
+     "description": "Layer name."
+    },
+    "position": {
+     "type": "array",
+     "items": {
+      "type": "number"
+     },
+     "minItems": 1,
+     "maxItems": 3,
+     "description": "[x,y] or [x,y,z] in comp pixels. Default: comp center."
+    },
+    "anchorPoint": {
+     "type": "array",
+     "items": {
+      "type": "number"
+     },
+     "minItems": 1,
+     "maxItems": 3
+    },
+    "scale": {
+     "anyOf": [
+      {
+       "type": "number"
+      },
+      {
+       "type": "array",
+       "items": {
+        "type": "number"
+       },
+       "minItems": 1,
+       "maxItems": 3
+      }
+     ],
+     "description": "Percent. A number scales uniformly."
+    },
+    "rotation": {
+     "type": "number",
+     "description": "Degrees."
+    },
+    "opacity": {
+     "type": "number",
+     "minimum": 0,
+     "maximum": 100
+    },
+    "startTime": {
+     "type": "number"
+    },
+    "inPoint": {
+     "type": "number"
+    },
+    "outPoint": {
+     "type": "number"
+    },
+    "duration": {
+     "type": "number",
+     "exclusiveMinimum": 0,
+     "description": "Layer duration in seconds from its in point."
+    },
+    "threeD": {
+     "type": "boolean"
+    },
+    "blendMode": {
+     "type": "string",
+     "description": "normal, multiply, screen, add, overlay, soft light, ... "
+    },
+    "label": {
+     "type": "integer",
+     "minimum": 0,
+     "maximum": 16
+    },
+    "parent": {
+     "type": [
+      "number",
+      "string"
+     ],
+     "description": "Parent layer, or '' for none."
+    },
+    "timeoutSeconds": {
+     "type": "integer",
+     "minimum": 1,
+     "maximum": 3600,
+     "description": "Max seconds to wait for After Effects (default 60, long tools 300+)."
+    }
+   }
+  },
+  "annotations": {
+   "title": "Create null",
+   "readOnlyHint": false,
+   "destructiveHint": false,
+   "idempotentHint": false,
+   "openWorldHint": false
+  },
+  "_meta": {
+   "ui": {
+    "resourceUri": "ui://after-effects/activity.html",
+    "visibility": [
+     "model",
+     "app"
+    ]
+   },
+   "ui/resourceUri": "ui://after-effects/activity.html"
+  }
+ },
+ {
+  "name": "create_camera",
+  "title": "Create camera",
+  "description": "Create a 3D camera (two-node). Set zoom or focal length (mm), depth of field, focus distance, aperture.",
+  "inputSchema": {
+   "type": "object",
+   "properties": {
+    "comp": {
+     "anyOf": [
+      {
+       "type": "string"
+      },
+      {
+       "type": "integer"
+      }
+     ],
+     "description": "Composition name or numeric item id. Omit to use the active composition."
+    },
+    "name": {
+     "type": "string"
+    },
+    "position": {
+     "type": "array",
+     "items": {
+      "type": "number"
+     },
+     "minItems": 3,
+     "maxItems": 3
+    },
+    "pointOfInterest": {
+     "type": "array",
+     "items": {
+      "type": "number"
+     },
+     "minItems": 3,
+     "maxItems": 3
+    },
+    "zoom": {
+     "type": "number"
+    },
+    "focalLength": {
+     "type": "number"
+    },
+    "depthOfField": {
+     "type": "boolean"
+    },
+    "focusDistance": {
+     "type": "number"
+    },
+    "aperture": {
+     "type": "number"
+    },
+    "blurLevel": {
+     "type": "number"
+    },
+    "timeoutSeconds": {
+     "type": "integer",
+     "minimum": 1,
+     "maximum": 3600,
+     "description": "Max seconds to wait for After Effects (default 60, long tools 300+)."
+    }
+   }
+  },
+  "annotations": {
+   "title": "Create camera",
+   "readOnlyHint": false,
+   "destructiveHint": false,
+   "idempotentHint": false,
+   "openWorldHint": false
+  },
+  "_meta": {
+   "ui": {
+    "resourceUri": "ui://after-effects/activity.html",
+    "visibility": [
+     "model",
+     "app"
+    ]
+   },
+   "ui/resourceUri": "ui://after-effects/activity.html"
+  }
+ },
+ {
+  "name": "create_light",
+  "title": "Create light",
+  "description": "Create a light (point, spot, parallel, ambient) with color, intensity, cone and shadows.",
+  "inputSchema": {
+   "type": "object",
+   "properties": {
+    "comp": {
+     "anyOf": [
+      {
+       "type": "string"
+      },
+      {
+       "type": "integer"
+      }
+     ],
+     "description": "Composition name or numeric item id. Omit to use the active composition."
+    },
+    "name": {
+     "type": "string"
+    },
+    "lightType": {
+     "type": "string",
+     "enum": [
+      "point",
+      "spot",
+      "parallel",
+      "ambient"
+     ]
+    },
+    "color": {
+     "anyOf": [
+      {
+       "type": "string"
+      },
+      {
+       "type": "array",
+       "items": {
+        "type": "number"
+       },
+       "minItems": 3,
+       "maxItems": 4
+      }
+     ],
+     "description": "Color as '#RRGGBB' or [r,g,b] (0-1 or 0-255)."
+    },
+    "intensity": {
+     "type": "number"
+    },
+    "coneAngle": {
+     "type": "number"
+    },
+    "coneFeather": {
+     "type": "number"
+    },
+    "castsShadows": {
+     "type": "boolean"
+    },
+    "position": {
+     "type": "array",
+     "items": {
+      "type": "number"
+     },
+     "minItems": 3,
+     "maxItems": 3
+    },
+    "pointOfInterest": {
+     "type": "array",
+     "items": {
+      "type": "number"
+     },
+     "minItems": 3,
+     "maxItems": 3
+    },
+    "timeoutSeconds": {
+     "type": "integer",
+     "minimum": 1,
+     "maximum": 3600,
+     "description": "Max seconds to wait for After Effects (default 60, long tools 300+)."
+    }
+   }
+  },
+  "annotations": {
+   "title": "Create light",
+   "readOnlyHint": false,
+   "destructiveHint": false,
+   "idempotentHint": false,
+   "openWorldHint": false
+  },
+  "_meta": {
+   "ui": {
+    "resourceUri": "ui://after-effects/activity.html",
+    "visibility": [
+     "model",
+     "app"
+    ]
+   },
+   "ui/resourceUri": "ui://after-effects/activity.html"
+  }
+ },
+ {
+  "name": "add_item_to_comp",
+  "title": "Add footage/comp to comp",
+  "description": "Add a project item (footage, image, audio, or another comp) as a layer. fitToComp scales it to fit or fill the frame.",
+  "inputSchema": {
+   "type": "object",
+   "properties": {
+    "comp": {
+     "anyOf": [
+      {
+       "type": "string"
+      },
+      {
+       "type": "integer"
+      }
+     ],
+     "description": "Composition name or numeric item id. Omit to use the active composition."
+    },
+    "item": {
+     "type": [
+      "string",
+      "number"
+     ],
+     "description": "Item name or id."
+    },
+    "fitToComp": {
+     "type": "string",
+     "enum": [
+      "fit",
+      "fill"
+     ]
+    },
+    "name": {
+     "type": "string",
+     "description": "Layer name."
+    },
+    "position": {
+     "type": "array",
+     "items": {
+      "type": "number"
+     },
+     "minItems": 1,
+     "maxItems": 3,
+     "description": "[x,y] or [x,y,z] in comp pixels. Default: comp center."
+    },
+    "anchorPoint": {
+     "type": "array",
+     "items": {
+      "type": "number"
+     },
+     "minItems": 1,
+     "maxItems": 3
+    },
+    "scale": {
+     "anyOf": [
+      {
+       "type": "number"
+      },
+      {
+       "type": "array",
+       "items": {
+        "type": "number"
+       },
+       "minItems": 1,
+       "maxItems": 3
+      }
+     ],
+     "description": "Percent. A number scales uniformly."
+    },
+    "rotation": {
+     "type": "number",
+     "description": "Degrees."
+    },
+    "opacity": {
+     "type": "number",
+     "minimum": 0,
+     "maximum": 100
+    },
+    "startTime": {
+     "type": "number"
+    },
+    "inPoint": {
+     "type": "number"
+    },
+    "outPoint": {
+     "type": "number"
+    },
+    "duration": {
+     "type": "number",
+     "exclusiveMinimum": 0,
+     "description": "Layer duration in seconds from its in point."
+    },
+    "threeD": {
+     "type": "boolean"
+    },
+    "blendMode": {
+     "type": "string",
+     "description": "normal, multiply, screen, add, overlay, soft light, ... "
+    },
+    "label": {
+     "type": "integer",
+     "minimum": 0,
+     "maximum": 16
+    },
+    "parent": {
+     "type": [
+      "number",
+      "string"
+     ],
+     "description": "Parent layer, or '' for none."
+    },
+    "timeoutSeconds": {
+     "type": "integer",
+     "minimum": 1,
+     "maximum": 3600,
+     "description": "Max seconds to wait for After Effects (default 60, long tools 300+)."
+    }
+   },
+   "required": [
+    "item"
+   ]
+  },
+  "annotations": {
+   "title": "Add footage/comp to comp",
+   "readOnlyHint": false,
+   "destructiveHint": false,
+   "idempotentHint": false,
+   "openWorldHint": false
+  },
+  "_meta": {
+   "ui": {
+    "resourceUri": "ui://after-effects/activity.html",
+    "visibility": [
+     "model",
+     "app"
+    ]
+   },
+   "ui/resourceUri": "ui://after-effects/activity.html"
+  }
+ },
+ {
+  "name": "list_layers",
+  "title": "List layers",
+  "description": "List layers of a comp with type, timing, transform, parent, matte and effects (text cut to 200 chars). Paginated: limit (default 200, max 1000) and offset; the response has total and truncated.",
+  "inputSchema": {
+   "type": "object",
+   "properties": {
+    "comp": {
+     "anyOf": [
+      {
+       "type": "string"
+      },
+      {
+       "type": "integer"
+      }
+     ],
+     "description": "Composition name or numeric item id. Omit to use the active composition."
+    },
+    "limit": {
+     "type": "integer",
+     "minimum": 1,
+     "maximum": 1000
+    },
+    "offset": {
+     "type": "integer",
+     "minimum": 0
+    },
+    "type": {
+     "type": "string",
+     "enum": [
+      "text",
+      "shape",
+      "solid",
+      "adjustment",
+      "null",
+      "camera",
+      "light",
+      "precomp",
+      "image",
+      "video",
+      "audio"
+     ]
+    },
+    "query": {
+     "type": "string"
+    },
+    "timeoutSeconds": {
+     "type": "integer",
+     "minimum": 1,
+     "maximum": 3600,
+     "description": "Max seconds to wait for After Effects (default 60, long tools 300+)."
+    }
+   }
+  },
+  "outputSchema": {
+   "type": "object",
+   "properties": {
+    "comp": {
+     "type": "string"
+    },
+    "count": {
+     "type": "number"
+    },
+    "total": {
+     "type": "number"
+    },
+    "offset": {
+     "type": "number"
+    },
+    "truncated": {
+     "type": "boolean"
+    },
+    "layers": {
+     "type": "array",
+     "items": {
+      "type": "object",
+      "properties": {
+       "index": {
+        "type": "number"
+       },
+       "id": {
+        "type": "number"
+       },
+       "name": {
+        "type": "string"
+       },
+       "type": {
+        "type": "string"
+       }
+      },
+      "required": [
+       "index",
+       "id",
+       "name",
+       "type"
+      ],
+      "additionalProperties": true
+     }
+    }
+   },
+   "required": [
+    "comp",
+    "count",
+    "total",
+    "offset",
+    "truncated",
+    "layers"
+   ],
+   "additionalProperties": true
+  },
+  "annotations": {
+   "title": "List layers",
+   "readOnlyHint": true,
+   "destructiveHint": false,
+   "idempotentHint": true,
+   "openWorldHint": false
+  },
+  "_meta": {
+   "ui": {
+    "resourceUri": "ui://after-effects/activity.html",
+    "visibility": [
+     "model",
+     "app"
+    ]
+   },
+   "ui/resourceUri": "ui://after-effects/activity.html"
+  }
+ },
+ {
+  "name": "get_layer_details",
+  "title": "Layer details",
+  "description": "Deep inspection of a layer: modified/animated property tree with keyframes and expressions, markers, bounding box.",
+  "inputSchema": {
+   "type": "object",
+   "properties": {
+    "comp": {
+     "anyOf": [
+      {
+       "type": "string"
+      },
+      {
+       "type": "integer"
+      }
+     ],
+     "description": "Composition name or numeric item id. Omit to use the active composition."
+    },
+    "layer": {
+     "anyOf": [
+      {
+       "type": "integer",
+       "exclusiveMinimum": 0
+      },
+      {
+       "type": "string"
+      }
+     ],
+     "description": "Layer: 1-based index, exact name, or 'id:<layerId>' (stable across reordering)."
+    },
+    "depth": {
+     "type": "integer",
+     "minimum": 1,
+     "maximum": 8
+    },
+    "includeKeyframes": {
+     "type": "boolean"
+    },
+    "onlyAnimated": {
+     "type": "boolean"
+    },
+    "timeoutSeconds": {
+     "type": "integer",
+     "minimum": 1,
+     "maximum": 3600,
+     "description": "Max seconds to wait for After Effects (default 60, long tools 300+)."
+    }
+   },
+   "required": [
+    "layer"
+   ]
+  },
+  "outputSchema": {
+   "type": "object",
+   "properties": {
+    "index": {
+     "type": "number"
+    },
+    "id": {
+     "type": "number"
+    },
+    "name": {
+     "type": "string"
+    },
+    "type": {
+     "type": "string"
+    },
+    "properties": {
+     "type": "array"
+    }
+   },
+   "required": [
+    "index",
+    "id",
+    "name",
+    "type",
+    "properties"
+   ],
+   "additionalProperties": true
+  },
+  "annotations": {
+   "title": "Layer details",
+   "readOnlyHint": true,
+   "destructiveHint": false,
+   "idempotentHint": true,
+   "openWorldHint": false
+  },
+  "_meta": {
+   "ui": {
+    "resourceUri": "ui://after-effects/activity.html",
+    "visibility": [
+     "model",
+     "app"
+    ]
+   },
+   "ui/resourceUri": "ui://after-effects/activity.html"
+  }
+ },
+ {
+  "name": "set_layer_properties",
+  "title": "Set layer properties",
+  "description": "Change transform, timing, switches (enabled, solo, shy, lock, 3D, motion blur, adjustment, collapse), blend mode, quality, parent, label or name on one or many layers.",
+  "inputSchema": {
+   "type": "object",
+   "properties": {
+    "comp": {
+     "anyOf": [
+      {
+       "type": "string"
+      },
+      {
+       "type": "integer"
+      }
+     ],
+     "description": "Composition name or numeric item id. Omit to use the active composition."
+    },
+    "layer": {
+     "anyOf": [
+      {
+       "type": "integer",
+       "exclusiveMinimum": 0
+      },
+      {
+       "type": "string"
+      }
+     ],
+     "description": "Layer: 1-based index, name or 'id:<id>'. Omit to use the single selected layer."
+    },
+    "layers": {
+     "type": "array",
+     "items": {
+      "anyOf": [
+       {
+        "type": "integer",
+        "exclusiveMinimum": 0
+       },
+       {
+        "type": "string"
+       }
+      ],
+      "description": "Layer: 1-based index, exact name, or 'id:<layerId>' (stable across reordering)."
+     },
+     "description": "Apply the same change to several layers."
+    },
+    "newName": {
+     "type": "string"
+    },
+    "enabled": {
+     "type": "boolean"
+    },
+    "locked": {
+     "type": "boolean"
+    },
+    "shy": {
+     "type": "boolean"
+    },
+    "solo": {
+     "type": "boolean"
+    },
+    "motionBlur": {
+     "type": "boolean"
+    },
+    "adjustmentLayer": {
+     "type": "boolean"
+    },
+    "collapseTransformation": {
+     "type": "boolean"
+    },
+    "quality": {
+     "type": "string",
+     "enum": [
+      "best",
+      "draft",
+      "wireframe"
+     ]
+    },
+    "audioEnabled": {
+     "type": "boolean"
+    },
+    "timeRemapEnabled": {
+     "type": "boolean"
+    },
+    "stretch": {
+     "type": "number",
+     "description": "Time stretch percent."
+    },
+    "autoOrient": {
+     "type": "boolean"
+    },
+    "centerAnchor": {
+     "type": "boolean"
+    },
+    "name": {
+     "type": "string",
+     "description": "Layer name."
+    },
+    "position": {
+     "type": "array",
+     "items": {
+      "type": "number"
+     },
+     "minItems": 1,
+     "maxItems": 3,
+     "description": "[x,y] or [x,y,z] in comp pixels. Default: comp center."
+    },
+    "anchorPoint": {
+     "type": "array",
+     "items": {
+      "type": "number"
+     },
+     "minItems": 1,
+     "maxItems": 3
+    },
+    "scale": {
+     "anyOf": [
+      {
+       "type": "number"
+      },
+      {
+       "type": "array",
+       "items": {
+        "type": "number"
+       },
+       "minItems": 1,
+       "maxItems": 3
+      }
+     ],
+     "description": "Percent. A number scales uniformly."
+    },
+    "rotation": {
+     "type": "number",
+     "description": "Degrees."
+    },
+    "opacity": {
+     "type": "number",
+     "minimum": 0,
+     "maximum": 100
+    },
+    "startTime": {
+     "type": "number"
+    },
+    "inPoint": {
+     "type": "number"
+    },
+    "outPoint": {
+     "type": "number"
+    },
+    "duration": {
+     "type": "number",
+     "exclusiveMinimum": 0,
+     "description": "Layer duration in seconds from its in point."
+    },
+    "threeD": {
+     "type": "boolean"
+    },
+    "blendMode": {
+     "type": "string",
+     "description": "normal, multiply, screen, add, overlay, soft light, ... "
+    },
+    "label": {
+     "type": "integer",
+     "minimum": 0,
+     "maximum": 16
+    },
+    "parent": {
+     "type": [
+      "number",
+      "string"
+     ],
+     "description": "Parent layer, or '' for none."
+    },
+    "timeoutSeconds": {
+     "type": "integer",
+     "minimum": 1,
+     "maximum": 3600,
+     "description": "Max seconds to wait for After Effects (default 60, long tools 300+)."
+    }
+   }
+  },
+  "annotations": {
+   "title": "Set layer properties",
+   "readOnlyHint": false,
+   "destructiveHint": false,
+   "idempotentHint": false,
+   "openWorldHint": false
+  },
+  "_meta": {
+   "ui": {
+    "resourceUri": "ui://after-effects/activity.html",
+    "visibility": [
+     "model",
+     "app"
+    ]
+   },
+   "ui/resourceUri": "ui://after-effects/activity.html"
+  }
+ },
+ {
+  "name": "duplicate_layer",
+  "title": "Duplicate layer",
+  "description": "Duplicate a layer one or more times, optionally offsetting position and time for each copy.",
+  "inputSchema": {
+   "type": "object",
+   "properties": {
+    "comp": {
+     "anyOf": [
+      {
+       "type": "string"
+      },
+      {
+       "type": "integer"
+      }
+     ],
+     "description": "Composition name or numeric item id. Omit to use the active composition."
+    },
+    "layer": {
+     "anyOf": [
+      {
+       "type": "integer",
+       "exclusiveMinimum": 0
+      },
+      {
+       "type": "string"
+      }
+     ],
+     "description": "Layer: 1-based index, exact name, or 'id:<layerId>' (stable across reordering)."
+    },
+    "count": {
+     "type": "integer",
+     "minimum": 1,
+     "maximum": 200
+    },
+    "newName": {
+     "type": "string"
+    },
+    "offset": {
+     "type": "array",
+     "items": {
+      "type": "number"
+     },
+     "minItems": 2,
+     "maxItems": 2
+    },
+    "timeOffset": {
+     "type": "number"
+    },
+    "timeoutSeconds": {
+     "type": "integer",
+     "minimum": 1,
+     "maximum": 3600,
+     "description": "Max seconds to wait for After Effects (default 60, long tools 300+)."
+    }
+   },
+   "required": [
+    "layer"
+   ]
+  },
+  "annotations": {
+   "title": "Duplicate layer",
+   "readOnlyHint": false,
+   "destructiveHint": false,
+   "idempotentHint": false,
+   "openWorldHint": false
+  },
+  "_meta": {
+   "ui": {
+    "resourceUri": "ui://after-effects/activity.html",
+    "visibility": [
+     "model",
+     "app"
+    ]
+   },
+   "ui/resourceUri": "ui://after-effects/activity.html"
+  }
+ },
+ {
+  "name": "delete_layers",
+  "title": "Delete layers",
+  "description": "Delete one or more layers. removeSources:true also deletes the Solids-folder item of deleted nulls/solids when nothing else uses it.",
+  "inputSchema": {
+   "type": "object",
+   "properties": {
+    "comp": {
+     "anyOf": [
+      {
+       "type": "string"
+      },
+      {
+       "type": "integer"
+      }
+     ],
+     "description": "Composition name or numeric item id. Omit to use the active composition."
+    },
+    "layers": {
+     "type": "array",
+     "items": {
+      "anyOf": [
+       {
+        "type": "integer",
+        "exclusiveMinimum": 0
+       },
+       {
+        "type": "string"
+       }
+      ],
+      "description": "Layer: 1-based index, exact name, or 'id:<layerId>' (stable across reordering)."
+     },
+     "description": "List of layers (index, name or 'id:<id>')."
+    },
+    "removeSources": {
+     "type": "boolean"
+    },
+    "timeoutSeconds": {
+     "type": "integer",
+     "minimum": 1,
+     "maximum": 3600,
+     "description": "Max seconds to wait for After Effects (default 60, long tools 300+)."
+    }
+   },
+   "required": [
+    "layers"
+   ]
+  },
+  "annotations": {
+   "title": "Delete layers",
+   "readOnlyHint": false,
+   "destructiveHint": true,
+   "idempotentHint": false,
+   "openWorldHint": false
+  },
+  "_meta": {
+   "ui": {
+    "resourceUri": "ui://after-effects/activity.html",
+    "visibility": [
+     "model",
+     "app"
+    ]
+   },
+   "ui/resourceUri": "ui://after-effects/activity.html"
+  }
+ },
+ {
+  "name": "reorder_layer",
+  "title": "Reorder layer",
+  "description": "Move a layer to top/bottom, to an index, or before/after another layer.",
+  "inputSchema": {
+   "type": "object",
+   "properties": {
+    "comp": {
+     "anyOf": [
+      {
+       "type": "string"
+      },
+      {
+       "type": "integer"
+      }
+     ],
+     "description": "Composition name or numeric item id. Omit to use the active composition."
+    },
+    "layer": {
+     "anyOf": [
+      {
+       "type": "integer",
+       "exclusiveMinimum": 0
+      },
+      {
+       "type": "string"
+      }
+     ],
+     "description": "Layer: 1-based index, exact name, or 'id:<layerId>' (stable across reordering)."
+    },
+    "position": {
+     "type": "string",
+     "enum": [
+      "top",
+      "bottom",
+      "before",
+      "after",
+      "index"
+     ]
+    },
+    "relativeTo": {
+     "anyOf": [
+      {
+       "type": "integer",
+       "exclusiveMinimum": 0
+      },
+      {
+       "type": "string"
+      }
+     ],
+     "description": "Layer: 1-based index, exact name, or 'id:<layerId>' (stable across reordering)."
+    },
+    "index": {
+     "type": "integer"
+    },
+    "timeoutSeconds": {
+     "type": "integer",
+     "minimum": 1,
+     "maximum": 3600,
+     "description": "Max seconds to wait for After Effects (default 60, long tools 300+)."
+    }
+   },
+   "required": [
+    "layer",
+    "position"
+   ]
+  },
+  "annotations": {
+   "title": "Reorder layer",
+   "readOnlyHint": false,
+   "destructiveHint": false,
+   "idempotentHint": false,
+   "openWorldHint": false
+  },
+  "_meta": {
+   "ui": {
+    "resourceUri": "ui://after-effects/activity.html",
+    "visibility": [
+     "model",
+     "app"
+    ]
+   },
+   "ui/resourceUri": "ui://after-effects/activity.html"
+  }
+ },
+ {
+  "name": "set_parent",
+  "title": "Parent layers",
+  "description": "Parent layers to another layer (or unparent with parent: null).",
+  "inputSchema": {
+   "type": "object",
+   "properties": {
+    "comp": {
+     "anyOf": [
+      {
+       "type": "string"
+      },
+      {
+       "type": "integer"
+      }
+     ],
+     "description": "Composition name or numeric item id. Omit to use the active composition."
+    },
+    "layers": {
+     "type": "array",
+     "items": {
+      "anyOf": [
+       {
+        "type": "integer",
+        "exclusiveMinimum": 0
+       },
+       {
+        "type": "string"
+       }
+      ],
+      "description": "Layer: 1-based index, exact name, or 'id:<layerId>' (stable across reordering)."
+     },
+     "description": "List of layers (index, name or 'id:<id>')."
+    },
+    "parent": {
+     "type": [
+      "number",
+      "string",
+      "null"
+     ]
+    },
+    "timeoutSeconds": {
+     "type": "integer",
+     "minimum": 1,
+     "maximum": 3600,
+     "description": "Max seconds to wait for After Effects (default 60, long tools 300+)."
+    }
+   },
+   "required": [
+    "layers",
+    "parent"
+   ]
+  },
+  "annotations": {
+   "title": "Parent layers",
+   "readOnlyHint": false,
+   "destructiveHint": false,
+   "idempotentHint": false,
+   "openWorldHint": false
+  },
+  "_meta": {
+   "ui": {
+    "resourceUri": "ui://after-effects/activity.html",
+    "visibility": [
+     "model",
+     "app"
+    ]
+   },
+   "ui/resourceUri": "ui://after-effects/activity.html"
+  }
+ },
+ {
+  "name": "set_track_matte",
+  "title": "Track matte",
+  "description": "Use another layer as alpha/luma (inverted) matte. Uses the AE 2023+ API so any layer can be the matte.",
+  "inputSchema": {
+   "type": "object",
+   "properties": {
+    "comp": {
+     "anyOf": [
+      {
+       "type": "string"
+      },
+      {
+       "type": "integer"
+      }
+     ],
+     "description": "Composition name or numeric item id. Omit to use the active composition."
+    },
+    "layer": {
+     "anyOf": [
+      {
+       "type": "integer",
+       "exclusiveMinimum": 0
+      },
+      {
+       "type": "string"
+      }
+     ],
+     "description": "Layer: 1-based index, exact name, or 'id:<layerId>' (stable across reordering)."
+    },
+    "matteLayer": {
+     "anyOf": [
+      {
+       "type": "integer",
+       "exclusiveMinimum": 0
+      },
+      {
+       "type": "string"
+      }
+     ],
+     "description": "Default: the layer above."
+    },
+    "type": {
+     "type": "string",
+     "enum": [
+      "alpha",
+      "alpha-inverted",
+      "luma",
+      "luma-inverted",
+      "none"
+     ]
+    },
+    "timeoutSeconds": {
+     "type": "integer",
+     "minimum": 1,
+     "maximum": 3600,
+     "description": "Max seconds to wait for After Effects (default 60, long tools 300+)."
+    }
+   },
+   "required": [
+    "layer"
+   ]
+  },
+  "annotations": {
+   "title": "Track matte",
+   "readOnlyHint": false,
+   "destructiveHint": false,
+   "idempotentHint": false,
+   "openWorldHint": false
+  },
+  "_meta": {
+   "ui": {
+    "resourceUri": "ui://after-effects/activity.html",
+    "visibility": [
+     "model",
+     "app"
+    ]
+   },
+   "ui/resourceUri": "ui://after-effects/activity.html"
+  }
+ },
+ {
+  "name": "split_layer",
+  "title": "Split layer",
+  "description": "Split a layer at a time (default: playhead).",
+  "inputSchema": {
+   "type": "object",
+   "properties": {
+    "comp": {
+     "anyOf": [
+      {
+       "type": "string"
+      },
+      {
+       "type": "integer"
+      }
+     ],
+     "description": "Composition name or numeric item id. Omit to use the active composition."
+    },
+    "layer": {
+     "anyOf": [
+      {
+       "type": "integer",
+       "exclusiveMinimum": 0
+      },
+      {
+       "type": "string"
+      }
+     ],
+     "description": "Layer: 1-based index, exact name, or 'id:<layerId>' (stable across reordering)."
+    },
+    "time": {
+     "type": "number"
+    },
+    "timeoutSeconds": {
+     "type": "integer",
+     "minimum": 1,
+     "maximum": 3600,
+     "description": "Max seconds to wait for After Effects (default 60, long tools 300+)."
+    }
+   },
+   "required": [
+    "layer"
+   ]
+  },
+  "annotations": {
+   "title": "Split layer",
+   "readOnlyHint": false,
+   "destructiveHint": false,
+   "idempotentHint": false,
+   "openWorldHint": false
+  },
+  "_meta": {
+   "ui": {
+    "resourceUri": "ui://after-effects/activity.html",
+    "visibility": [
+     "model",
+     "app"
+    ]
+   },
+   "ui/resourceUri": "ui://after-effects/activity.html"
+  }
+ },
+ {
+  "name": "sequence_layers",
+  "title": "Sequence layers",
+  "description": "Place layers one after another (with optional overlap) or stagger their start times.",
+  "inputSchema": {
+   "type": "object",
+   "properties": {
+    "parkViewer": {
+     "type": "boolean",
+     "description": "Show a tiny empty comp in the viewer while this runs (much faster for heavy changes to an open comp); the viewer is restored afterwards, also on error."
+    },
+    "comp": {
+     "anyOf": [
+      {
+       "type": "string"
+      },
+      {
+       "type": "integer"
+      }
+     ],
+     "description": "Composition name or numeric item id. Omit to use the active composition."
+    },
+    "layers": {
+     "type": "array",
+     "items": {
+      "anyOf": [
+       {
+        "type": "integer",
+        "exclusiveMinimum": 0
+       },
+       {
+        "type": "string"
+       }
+      ],
+      "description": "Layer: 1-based index, exact name, or 'id:<layerId>' (stable across reordering)."
+     },
+     "description": "List of layers (index, name or 'id:<id>')."
+    },
+    "startTime": {
+     "type": "number"
+    },
+    "overlap": {
+     "type": "number"
+    },
+    "stagger": {
+     "type": "number",
+     "description": "Seconds between starts (instead of end-to-end)."
+    },
+    "order": {
+     "type": "string",
+     "enum": [
+      "given",
+      "reverse"
+     ]
+    },
+    "timeoutSeconds": {
+     "type": "integer",
+     "minimum": 1,
+     "maximum": 3600,
+     "description": "Max seconds to wait for After Effects (default 60, long tools 300+)."
+    }
+   },
+   "required": [
+    "layers"
+   ]
+  },
+  "annotations": {
+   "title": "Sequence layers",
+   "readOnlyHint": false,
+   "destructiveHint": false,
+   "idempotentHint": false,
+   "openWorldHint": false
+  },
+  "_meta": {
+   "ui": {
+    "resourceUri": "ui://after-effects/activity.html",
+    "visibility": [
+     "model",
+     "app"
+    ]
+   },
+   "ui/resourceUri": "ui://after-effects/activity.html"
+  }
+ },
+ {
+  "name": "align_layers",
+  "title": "Align layers",
+  "description": "Align layers to the composition (left/center/right, top/center/bottom) using their real visual bounds, with an optional margin.",
+  "inputSchema": {
+   "type": "object",
+   "properties": {
+    "comp": {
+     "anyOf": [
+      {
+       "type": "string"
+      },
+      {
+       "type": "integer"
+      }
+     ],
+     "description": "Composition name or numeric item id. Omit to use the active composition."
+    },
+    "layers": {
+     "type": "array",
+     "items": {
+      "anyOf": [
+       {
+        "type": "integer",
+        "exclusiveMinimum": 0
+       },
+       {
+        "type": "string"
+       }
+      ],
+      "description": "Layer: 1-based index, exact name, or 'id:<layerId>' (stable across reordering)."
+     },
+     "description": "List of layers (index, name or 'id:<id>')."
+    },
+    "horizontal": {
+     "type": "string",
+     "enum": [
+      "none",
+      "left",
+      "center",
+      "right"
+     ]
+    },
+    "vertical": {
+     "type": "string",
+     "enum": [
+      "none",
+      "top",
+      "center",
+      "bottom"
+     ]
+    },
+    "margin": {
+     "type": "number"
+    },
+    "timeoutSeconds": {
+     "type": "integer",
+     "minimum": 1,
+     "maximum": 3600,
+     "description": "Max seconds to wait for After Effects (default 60, long tools 300+)."
+    }
+   },
+   "required": [
+    "layers"
+   ]
+  },
+  "annotations": {
+   "title": "Align layers",
+   "readOnlyHint": false,
+   "destructiveHint": false,
+   "idempotentHint": false,
+   "openWorldHint": false
+  },
+  "_meta": {
+   "ui": {
+    "resourceUri": "ui://after-effects/activity.html",
+    "visibility": [
+     "model",
+     "app"
+    ]
+   },
+   "ui/resourceUri": "ui://after-effects/activity.html"
+  }
+ },
+ {
+  "name": "set_text",
+  "title": "Edit text",
+  "description": "Change the text and/or style of a text layer (font, size, color, stroke, tracking, leading, justification).",
+  "inputSchema": {
+   "type": "object",
+   "properties": {
+    "comp": {
+     "anyOf": [
+      {
+       "type": "string"
+      },
+      {
+       "type": "integer"
+      }
+     ],
+     "description": "Composition name or numeric item id. Omit to use the active composition."
+    },
+    "layer": {
+     "anyOf": [
+      {
+       "type": "integer",
+       "exclusiveMinimum": 0
+      },
+      {
+       "type": "string"
+      }
+     ],
+     "description": "Layer: 1-based index, exact name, or 'id:<layerId>' (stable across reordering)."
+    },
+    "text": {
+     "type": "string"
+    },
+    "allowLargeText": {
+     "type": "boolean"
+    },
+    "font": {
+     "type": "string"
+    },
+    "fontSize": {
+     "type": "number"
+    },
+    "fillColor": {
+     "anyOf": [
+      {
+       "type": "string"
+      },
+      {
+       "type": "array",
+       "items": {
+        "type": "number"
+       },
+       "minItems": 3,
+       "maxItems": 4
+      }
+     ],
+     "description": "Color as '#RRGGBB' or [r,g,b] (0-1 or 0-255)."
+    },
+    "strokeColor": {
+     "anyOf": [
+      {
+       "type": "string"
+      },
+      {
+       "type": "array",
+       "items": {
+        "type": "number"
+       },
+       "minItems": 3,
+       "maxItems": 4
+      }
+     ],
+     "description": "Color as '#RRGGBB' or [r,g,b] (0-1 or 0-255)."
+    },
+    "strokeWidth": {
+     "type": "number"
+    },
+    "tracking": {
+     "type": "number"
+    },
+    "leading": {
+     "type": "number"
+    },
+    "justification": {
+     "type": "string",
+     "enum": [
+      "left",
+      "center",
+      "right",
+      "justify"
+     ]
+    },
+    "allCaps": {
+     "type": "boolean"
+    },
+    "fauxBold": {
+     "type": "boolean"
+    },
+    "fauxItalic": {
+     "type": "boolean"
+    },
+    "baselineShift": {
+     "type": "number"
+    },
+    "time": {
+     "type": "number",
+     "description": "Set as a Source Text keyframe at this time."
+    },
+    "timeoutSeconds": {
+     "type": "integer",
+     "minimum": 1,
+     "maximum": 3600,
+     "description": "Max seconds to wait for After Effects (default 60, long tools 300+)."
+    }
+   },
+   "required": [
+    "layer"
+   ]
+  },
+  "annotations": {
+   "title": "Edit text",
+   "readOnlyHint": false,
+   "destructiveHint": false,
+   "idempotentHint": false,
+   "openWorldHint": false
+  },
+  "_meta": {
+   "ui": {
+    "resourceUri": "ui://after-effects/activity.html",
+    "visibility": [
+     "model",
+     "app"
+    ]
+   },
+   "ui/resourceUri": "ui://after-effects/activity.html"
+  }
+ },
+ {
+  "name": "get_property",
+  "title": "Read property",
+  "description": "Read any property by path, e.g. 'Position', 'Transform/Opacity', 'Effects/Gaussian Blur/Blurriness', 'Contents/Rectangle 1/Fill 1/Color', or match names. Returns value, keyframes, expression; for groups, lists children.",
+  "inputSchema": {
+   "type": "object",
+   "properties": {
+    "comp": {
+     "anyOf": [
+      {
+       "type": "string"
+      },
+      {
+       "type": "integer"
+      }
+     ],
+     "description": "Composition name or numeric item id. Omit to use the active composition."
+    },
+    "layer": {
+     "anyOf": [
+      {
+       "type": "integer",
+       "exclusiveMinimum": 0
+      },
+      {
+       "type": "string"
+      }
+     ],
+     "description": "Layer: 1-based index, exact name, or 'id:<layerId>' (stable across reordering)."
+    },
+    "property": {
+     "type": "string"
+    },
+    "time": {
+     "type": "number"
+    },
+    "timeoutSeconds": {
+     "type": "integer",
+     "minimum": 1,
+     "maximum": 3600,
+     "description": "Max seconds to wait for After Effects (default 60, long tools 300+)."
+    }
+   },
+   "required": [
+    "layer",
+    "property"
+   ]
+  },
+  "annotations": {
+   "title": "Read property",
+   "readOnlyHint": true,
+   "destructiveHint": false,
+   "idempotentHint": true,
+   "openWorldHint": false
+  },
+  "_meta": {
+   "ui": {
+    "resourceUri": "ui://after-effects/activity.html",
+    "visibility": [
+     "model",
+     "app"
+    ]
+   },
+   "ui/resourceUri": "ui://after-effects/activity.html"
+  }
+ },
+ {
+  "name": "set_property",
+  "title": "Set property",
+  "description": "Set any property's value by path. If the property is animated, sets a keyframe at 'time' (or the playhead).",
+  "inputSchema": {
+   "type": "object",
+   "properties": {
+    "comp": {
+     "anyOf": [
+      {
+       "type": "string"
+      },
+      {
+       "type": "integer"
+      }
+     ],
+     "description": "Composition name or numeric item id. Omit to use the active composition."
+    },
+    "layer": {
+     "anyOf": [
+      {
+       "type": "integer",
+       "exclusiveMinimum": 0
+      },
+      {
+       "type": "string"
+      }
+     ],
+     "description": "Layer: 1-based index, exact name, or 'id:<layerId>' (stable across reordering)."
+    },
+    "property": {
+     "type": "string"
+    },
+    "value": {
+     "description": "Value: number, array ([x,y] / [x,y,z]), color, string (Source Text) or object (shape path / text style)."
+    },
+    "time": {
+     "type": "number"
+    },
+    "timeoutSeconds": {
+     "type": "integer",
+     "minimum": 1,
+     "maximum": 3600,
+     "description": "Max seconds to wait for After Effects (default 60, long tools 300+)."
+    }
+   },
+   "required": [
+    "layer",
+    "property"
+   ]
+  },
+  "annotations": {
+   "title": "Set property",
+   "readOnlyHint": false,
+   "destructiveHint": false,
+   "idempotentHint": false,
+   "openWorldHint": false
+  },
+  "_meta": {
+   "ui": {
+    "resourceUri": "ui://after-effects/activity.html",
+    "visibility": [
+     "model",
+     "app"
+    ]
+   },
+   "ui/resourceUri": "ui://after-effects/activity.html"
+  }
+ },
+ {
+  "name": "set_keyframes",
+  "title": "Set keyframes",
+  "description": "Add many keyframes to any property in one call, with easing presets or custom ease per key. Use replace:true to clear existing keys first.",
+  "inputSchema": {
+   "type": "object",
+   "properties": {
+    "comp": {
+     "anyOf": [
+      {
+       "type": "string"
+      },
+      {
+       "type": "integer"
+      }
+     ],
+     "description": "Composition name or numeric item id. Omit to use the active composition."
+    },
+    "layer": {
+     "anyOf": [
+      {
+       "type": "integer",
+       "exclusiveMinimum": 0
+      },
+      {
+       "type": "string"
+      }
+     ],
+     "description": "Layer: 1-based index, exact name, or 'id:<layerId>' (stable across reordering)."
+    },
+    "property": {
+     "type": "string"
+    },
+    "keyframes": {
+     "type": "array",
+     "items": {
+      "type": "object",
+      "properties": {
+       "time": {
+        "type": "number",
+        "description": "Time in seconds (comp time)."
+       },
+       "value": {
+        "description": "Value: number, array ([x,y] / [x,y,z]), color, string (Source Text) or object (shape path / text style)."
+       },
+       "easing": {
+        "type": "string",
+        "enum": [
+         "linear",
+         "hold",
+         "easy-ease",
+         "ease-in",
+         "ease-out",
+         "ease-in-out",
+         "smooth",
+         "strong-ease",
+         "expo",
+         "snap",
+         "anticipate"
+        ],
+        "description": "Keyframe easing preset."
+       },
+       "easeIn": {
+        "type": "object",
+        "properties": {
+         "speed": {
+          "type": "number"
+         },
+         "influence": {
+          "type": "number",
+          "minimum": 0.1,
+          "maximum": 100
+         }
+        },
+        "additionalProperties": false,
+        "description": "Custom incoming ease."
+       },
+       "easeOut": {
+        "type": "object",
+        "properties": {
+         "speed": {
+          "type": "number"
+         },
+         "influence": {
+          "type": "number",
+          "minimum": 0.1,
+          "maximum": 100
+         }
+        },
+        "additionalProperties": false,
+        "description": "Custom outgoing ease."
+       },
+       "roving": {
+        "type": "boolean"
+       }
+      },
+      "required": [
+       "time"
+      ],
+      "additionalProperties": false
+     },
+     "minItems": 1
+    },
+    "easing": {
+     "type": "string",
+     "enum": [
+      "linear",
+      "hold",
+      "easy-ease",
+      "ease-in",
+      "ease-out",
+      "ease-in-out",
+      "smooth",
+      "strong-ease",
+      "expo",
+      "snap",
+      "anticipate"
+     ],
+     "description": "Default easing for all keys."
+    },
+    "replace": {
+     "type": "boolean"
+    },
+    "separateDimensions": {
+     "type": "boolean"
+    },
+    "timeoutSeconds": {
+     "type": "integer",
+     "minimum": 1,
+     "maximum": 3600,
+     "description": "Max seconds to wait for After Effects (default 60, long tools 300+)."
+    }
+   },
+   "required": [
+    "layer",
+    "property",
+    "keyframes"
+   ]
+  },
+  "annotations": {
+   "title": "Set keyframes",
+   "readOnlyHint": false,
+   "destructiveHint": false,
+   "idempotentHint": false,
+   "openWorldHint": false
+  },
+  "_meta": {
+   "ui": {
+    "resourceUri": "ui://after-effects/activity.html",
+    "visibility": [
+     "model",
+     "app"
+    ]
+   },
+   "ui/resourceUri": "ui://after-effects/activity.html"
+  }
+ },
+ {
+  "name": "remove_keyframes",
+  "title": "Remove keyframes",
+  "description": "Remove keyframes from a property (all, or within a from/to time range).",
+  "inputSchema": {
+   "type": "object",
+   "properties": {
+    "comp": {
+     "anyOf": [
+      {
+       "type": "string"
+      },
+      {
+       "type": "integer"
+      }
+     ],
+     "description": "Composition name or numeric item id. Omit to use the active composition."
+    },
+    "layer": {
+     "anyOf": [
+      {
+       "type": "integer",
+       "exclusiveMinimum": 0
+      },
+      {
+       "type": "string"
+      }
+     ],
+     "description": "Layer: 1-based index, exact name, or 'id:<layerId>' (stable across reordering)."
+    },
+    "property": {
+     "type": "string"
+    },
+    "from": {
+     "type": "number"
+    },
+    "to": {
+     "type": "number"
+    },
+    "timeoutSeconds": {
+     "type": "integer",
+     "minimum": 1,
+     "maximum": 3600,
+     "description": "Max seconds to wait for After Effects (default 60, long tools 300+)."
+    }
+   },
+   "required": [
+    "layer",
+    "property"
+   ]
+  },
+  "annotations": {
+   "title": "Remove keyframes",
+   "readOnlyHint": false,
+   "destructiveHint": true,
+   "idempotentHint": false,
+   "openWorldHint": false
+  },
+  "_meta": {
+   "ui": {
+    "resourceUri": "ui://after-effects/activity.html",
+    "visibility": [
+     "model",
+     "app"
+    ]
+   },
+   "ui/resourceUri": "ui://after-effects/activity.html"
+  }
+ },
+ {
+  "name": "set_expression",
+  "title": "Set expression",
+  "description": "Set or clear (empty string) an expression on any property. Returns the expression error right away if AE reports one.",
+  "inputSchema": {
+   "type": "object",
+   "properties": {
+    "comp": {
+     "anyOf": [
+      {
+       "type": "string"
+      },
+      {
+       "type": "integer"
+      }
+     ],
+     "description": "Composition name or numeric item id. Omit to use the active composition."
+    },
+    "layer": {
+     "anyOf": [
+      {
+       "type": "integer",
+       "exclusiveMinimum": 0
+      },
+      {
+       "type": "string"
+      }
+     ],
+     "description": "Layer: 1-based index, exact name, or 'id:<layerId>' (stable across reordering)."
+    },
+    "property": {
+     "type": "string"
+    },
+    "expression": {
+     "type": "string"
+    },
+    "enabled": {
+     "type": "boolean"
+    },
+    "timeoutSeconds": {
+     "type": "integer",
+     "minimum": 1,
+     "maximum": 3600,
+     "description": "Max seconds to wait for After Effects (default 60, long tools 300+)."
+    }
+   },
+   "required": [
+    "layer",
+    "property",
+    "expression"
+   ]
+  },
+  "annotations": {
+   "title": "Set expression",
+   "readOnlyHint": false,
+   "destructiveHint": false,
+   "idempotentHint": false,
+   "openWorldHint": false
+  },
+  "_meta": {
+   "ui": {
+    "resourceUri": "ui://after-effects/activity.html",
+    "visibility": [
+     "model",
+     "app"
+    ]
+   },
+   "ui/resourceUri": "ui://after-effects/activity.html"
+  }
+ },
+ {
+  "name": "check_expressions",
+  "title": "Check expressions",
+  "description": "Find every expression in a comp and report the ones that error.",
+  "inputSchema": {
+   "type": "object",
+   "properties": {
+    "comp": {
+     "anyOf": [
+      {
+       "type": "string"
+      },
+      {
+       "type": "integer"
+      }
+     ],
+     "description": "Composition name or numeric item id. Omit to use the active composition."
+    },
+    "timeoutSeconds": {
+     "type": "integer",
+     "minimum": 1,
+     "maximum": 3600,
+     "description": "Max seconds to wait for After Effects (default 60, long tools 300+)."
+    }
+   }
+  },
+  "annotations": {
+   "title": "Check expressions",
+   "readOnlyHint": true,
+   "destructiveHint": false,
+   "idempotentHint": true,
+   "openWorldHint": false
+  },
+  "_meta": {
+   "ui": {
+    "resourceUri": "ui://after-effects/activity.html",
+    "visibility": [
+     "model",
+     "app"
+    ]
+   },
+   "ui/resourceUri": "ui://after-effects/activity.html"
+  }
+ },
+ {
+  "name": "animate_layer",
+  "title": "Animation preset",
+  "description": "One-call motion design presets: fade-in/out, slide-in/out (direction), slide-up-fade, scale-in/out, pop (overshoot), rotate-in, spin, blur-in, typewriter, text-fade-up (per-character), wiggle, wiggle-rotation, pulse, float, rotate-continuous, blink, bounce (inertial overshoot after keys), loop (loopOut).",
+  "inputSchema": {
+   "type": "object",
+   "properties": {
+    "comp": {
+     "anyOf": [
+      {
+       "type": "string"
+      },
+      {
+       "type": "integer"
+      }
+     ],
+     "description": "Composition name or numeric item id. Omit to use the active composition."
+    },
+    "layer": {
+     "anyOf": [
+      {
+       "type": "integer",
+       "exclusiveMinimum": 0
+      },
+      {
+       "type": "string"
+      }
+     ],
+     "description": "Layer: 1-based index, exact name, or 'id:<layerId>' (stable across reordering)."
+    },
+    "preset": {
+     "type": "string",
+     "enum": [
+      "fade-in",
+      "fade-out",
+      "slide-in",
+      "slide-out",
+      "slide-up-fade",
+      "scale-in",
+      "scale-out",
+      "pop",
+      "rotate-in",
+      "spin",
+      "blur-in",
+      "typewriter",
+      "text-fade-up",
+      "wiggle",
+      "wiggle-rotation",
+      "pulse",
+      "float",
+      "rotate-continuous",
+      "blink",
+      "bounce",
+      "loop"
+     ]
+    },
+    "startTime": {
+     "type": "number",
+     "description": "Default: layer in point (out-animations: end of layer)."
+    },
+    "duration": {
+     "type": "number",
+     "exclusiveMinimum": 0
+    },
+    "easing": {
+     "type": "string",
+     "enum": [
+      "linear",
+      "hold",
+      "easy-ease",
+      "ease-in",
+      "ease-out",
+      "ease-in-out",
+      "smooth",
+      "strong-ease",
+      "expo",
+      "snap",
+      "anticipate"
+     ],
+     "description": "Keyframe easing preset."
+    },
+    "direction": {
+     "type": "string",
+     "enum": [
+      "left",
+      "right",
+      "top",
+      "bottom"
+     ]
+    },
+    "amount": {
+     "type": "number",
+     "description": "Preset strength: distance px, degrees, %, wiggle amplitude..."
+    },
+    "frequency": {
+     "type": "number"
+    },
+    "decay": {
+     "type": "number"
+    },
+    "property": {
+     "type": "string",
+     "description": "Target property for bounce/loop."
+    },
+    "loopType": {
+     "type": "string",
+     "enum": [
+      "cycle",
+      "pingpong",
+      "offset",
+      "continue"
+     ]
+    },
+    "targetValue": {
+     "type": "number"
+    },
+    "timeoutSeconds": {
+     "type": "integer",
+     "minimum": 1,
+     "maximum": 3600,
+     "description": "Max seconds to wait for After Effects (default 60, long tools 300+)."
+    }
+   },
+   "required": [
+    "layer",
+    "preset"
+   ]
+  },
+  "annotations": {
+   "title": "Animation preset",
+   "readOnlyHint": false,
+   "destructiveHint": false,
+   "idempotentHint": false,
+   "openWorldHint": false
+  },
+  "_meta": {
+   "ui": {
+    "resourceUri": "ui://after-effects/activity.html",
+    "visibility": [
+     "model",
+     "app"
+    ]
+   },
+   "ui/resourceUri": "ui://after-effects/activity.html"
+  }
+ },
+ {
+  "name": "list_available_effects",
+  "title": "Search effects",
+  "description": "Search all installed effects (incl. third-party plugins) by name, match name or category.",
+  "inputSchema": {
+   "type": "object",
+   "properties": {
+    "query": {
+     "type": "string"
+    },
+    "category": {
+     "type": "string"
+    },
+    "limit": {
+     "type": "integer"
+    },
+    "timeoutSeconds": {
+     "type": "integer",
+     "minimum": 1,
+     "maximum": 3600,
+     "description": "Max seconds to wait for After Effects (default 60, long tools 300+)."
+    }
+   }
+  },
+  "annotations": {
+   "title": "Search effects",
+   "readOnlyHint": true,
+   "destructiveHint": false,
+   "idempotentHint": true,
+   "openWorldHint": false
+  },
+  "_meta": {
+   "ui": {
+    "resourceUri": "ui://after-effects/activity.html",
+    "visibility": [
+     "model",
+     "app"
+    ]
+   },
+   "ui/resourceUri": "ui://after-effects/activity.html"
+  }
+ },
+ {
+  "name": "apply_effect",
+  "title": "Apply effect",
+  "description": "Apply any effect by display name or match name to one or many layers and set parameters by name/match name/index. Param value can be {keyframes:[...]} or {expression:'...'}. Returns all parameters with their values.",
+  "inputSchema": {
+   "type": "object",
+   "properties": {
+    "comp": {
+     "anyOf": [
+      {
+       "type": "string"
+      },
+      {
+       "type": "integer"
+      }
+     ],
+     "description": "Composition name or numeric item id. Omit to use the active composition."
+    },
+    "layer": {
+     "anyOf": [
+      {
+       "type": "integer",
+       "exclusiveMinimum": 0
+      },
+      {
+       "type": "string"
+      }
+     ],
+     "description": "Layer: 1-based index, name or 'id:<id>'. Omit to use the single selected layer."
+    },
+    "layers": {
+     "type": "array",
+     "items": {
+      "anyOf": [
+       {
+        "type": "integer",
+        "exclusiveMinimum": 0
+       },
+       {
+        "type": "string"
+       }
+      ],
+      "description": "Layer: 1-based index, exact name, or 'id:<layerId>' (stable across reordering)."
+     },
+     "description": "List of layers (index, name or 'id:<id>')."
+    },
+    "effect": {
+     "type": "string",
+     "description": "e.g. 'Gaussian Blur', 'ADBE Glo2', 'Fill', 'CC Particle World'"
+    },
+    "name": {
+     "type": "string"
+    },
+    "params": {
+     "type": "object",
+     "additionalProperties": {}
+    },
+    "returnParams": {
+     "type": "boolean"
+    },
+    "timeoutSeconds": {
+     "type": "integer",
+     "minimum": 1,
+     "maximum": 3600,
+     "description": "Max seconds to wait for After Effects (default 60, long tools 300+)."
+    }
+   },
+   "required": [
+    "effect"
+   ]
+  },
+  "annotations": {
+   "title": "Apply effect",
+   "readOnlyHint": false,
+   "destructiveHint": false,
+   "idempotentHint": false,
+   "openWorldHint": false
+  },
+  "_meta": {
+   "ui": {
+    "resourceUri": "ui://after-effects/activity.html",
+    "visibility": [
+     "model",
+     "app"
+    ]
+   },
+   "ui/resourceUri": "ui://after-effects/activity.html"
+  }
+ },
+ {
+  "name": "get_layer_effects",
+  "title": "Layer effects",
+  "description": "List effects on a layer with every parameter value.",
+  "inputSchema": {
+   "type": "object",
+   "properties": {
+    "comp": {
+     "anyOf": [
+      {
+       "type": "string"
+      },
+      {
+       "type": "integer"
+      }
+     ],
+     "description": "Composition name or numeric item id. Omit to use the active composition."
+    },
+    "layer": {
+     "anyOf": [
+      {
+       "type": "integer",
+       "exclusiveMinimum": 0
+      },
+      {
+       "type": "string"
+      }
+     ],
+     "description": "Layer: 1-based index, exact name, or 'id:<layerId>' (stable across reordering)."
+    },
+    "timeoutSeconds": {
+     "type": "integer",
+     "minimum": 1,
+     "maximum": 3600,
+     "description": "Max seconds to wait for After Effects (default 60, long tools 300+)."
+    }
+   },
+   "required": [
+    "layer"
+   ]
+  },
+  "annotations": {
+   "title": "Layer effects",
+   "readOnlyHint": true,
+   "destructiveHint": false,
+   "idempotentHint": true,
+   "openWorldHint": false
+  },
+  "_meta": {
+   "ui": {
+    "resourceUri": "ui://after-effects/activity.html",
+    "visibility": [
+     "model",
+     "app"
+    ]
+   },
+   "ui/resourceUri": "ui://after-effects/activity.html"
+  }
+ },
+ {
+  "name": "modify_effect",
+  "title": "Modify effect",
+  "description": "Change parameters of an effect already on a layer, rename, enable/disable, reorder, duplicate or remove it.",
+  "inputSchema": {
+   "type": "object",
+   "properties": {
+    "comp": {
+     "anyOf": [
+      {
+       "type": "string"
+      },
+      {
+       "type": "integer"
+      }
+     ],
+     "description": "Composition name or numeric item id. Omit to use the active composition."
+    },
+    "layer": {
+     "anyOf": [
+      {
+       "type": "integer",
+       "exclusiveMinimum": 0
+      },
+      {
+       "type": "string"
+      }
+     ],
+     "description": "Layer: 1-based index, exact name, or 'id:<layerId>' (stable across reordering)."
+    },
+    "effect": {
+     "type": [
+      "string",
+      "number"
+     ],
+     "description": "Effect name or 1-based index in the layer's stack."
+    },
+    "params": {
+     "type": "object",
+     "additionalProperties": {}
+    },
+    "enabled": {
+     "type": "boolean"
+    },
+    "newName": {
+     "type": "string"
+    },
+    "moveTo": {
+     "type": "integer"
+    },
+    "duplicate": {
+     "type": "boolean"
+    },
+    "remove": {
+     "type": "boolean"
+    },
+    "timeoutSeconds": {
+     "type": "integer",
+     "minimum": 1,
+     "maximum": 3600,
+     "description": "Max seconds to wait for After Effects (default 60, long tools 300+)."
+    }
+   },
+   "required": [
+    "layer",
+    "effect"
+   ]
+  },
+  "annotations": {
+   "title": "Modify effect",
+   "readOnlyHint": false,
+   "destructiveHint": false,
+   "idempotentHint": false,
+   "openWorldHint": false
+  },
+  "_meta": {
+   "ui": {
+    "resourceUri": "ui://after-effects/activity.html",
+    "visibility": [
+     "model",
+     "app"
+    ]
+   },
+   "ui/resourceUri": "ui://after-effects/activity.html"
+  }
+ },
+ {
+  "name": "apply_effect_template",
+  "title": "Effect look template",
+  "description": "Apply a ready-made look: gaussian-blur, directional-blur, glow, soft-glow, neon, drop-shadow, long-shadow, brightness-contrast, vibrance, black-and-white, sepia, vignette, cinematic-look, text-pop, film-grain, chromatic-aberration, sharpen, posterize-time.",
+  "inputSchema": {
+   "type": "object",
+   "properties": {
+    "comp": {
+     "anyOf": [
+      {
+       "type": "string"
+      },
+      {
+       "type": "integer"
+      }
+     ],
+     "description": "Composition name or numeric item id. Omit to use the active composition."
+    },
+    "layer": {
+     "anyOf": [
+      {
+       "type": "integer",
+       "exclusiveMinimum": 0
+      },
+      {
+       "type": "string"
+      }
+     ],
+     "description": "Layer: 1-based index, name or 'id:<id>'. Omit to use the single selected layer."
+    },
+    "layers": {
+     "type": "array",
+     "items": {
+      "anyOf": [
+       {
+        "type": "integer",
+        "exclusiveMinimum": 0
+       },
+       {
+        "type": "string"
+       }
+      ],
+      "description": "Layer: 1-based index, exact name, or 'id:<layerId>' (stable across reordering)."
+     },
+     "description": "List of layers (index, name or 'id:<id>')."
+    },
+    "template": {
+     "type": "string",
+     "enum": [
+      "gaussian-blur",
+      "directional-blur",
+      "glow",
+      "soft-glow",
+      "neon",
+      "drop-shadow",
+      "long-shadow",
+      "brightness-contrast",
+      "vibrance",
+      "black-and-white",
+      "sepia",
+      "vignette",
+      "cinematic-look",
+      "text-pop",
+      "film-grain",
+      "chromatic-aberration",
+      "sharpen",
+      "posterize-time"
+     ]
+    },
+    "params": {
+     "type": "object",
+     "additionalProperties": {}
+    },
+    "timeoutSeconds": {
+     "type": "integer",
+     "minimum": 1,
+     "maximum": 3600,
+     "description": "Max seconds to wait for After Effects (default 60, long tools 300+)."
+    }
+   },
+   "required": [
+    "template"
+   ]
+  },
+  "annotations": {
+   "title": "Effect look template",
+   "readOnlyHint": false,
+   "destructiveHint": false,
+   "idempotentHint": false,
+   "openWorldHint": false
+  },
+  "_meta": {
+   "ui": {
+    "resourceUri": "ui://after-effects/activity.html",
+    "visibility": [
+     "model",
+     "app"
+    ]
+   },
+   "ui/resourceUri": "ui://after-effects/activity.html"
+  }
+ },
+ {
+  "name": "apply_preset_file",
+  "title": "Apply .ffx preset",
+  "description": "Apply an Animation Preset (.ffx) file to a layer.",
+  "inputSchema": {
+   "type": "object",
+   "properties": {
+    "comp": {
+     "anyOf": [
+      {
+       "type": "string"
+      },
+      {
+       "type": "integer"
+      }
+     ],
+     "description": "Composition name or numeric item id. Omit to use the active composition."
+    },
+    "layer": {
+     "anyOf": [
+      {
+       "type": "integer",
+       "exclusiveMinimum": 0
+      },
+      {
+       "type": "string"
+      }
+     ],
+     "description": "Layer: 1-based index, exact name, or 'id:<layerId>' (stable across reordering)."
+    },
+    "presetPath": {
+     "type": "string"
+    },
+    "time": {
+     "type": "number"
+    },
+    "timeoutSeconds": {
+     "type": "integer",
+     "minimum": 1,
+     "maximum": 3600,
+     "description": "Max seconds to wait for After Effects (default 60, long tools 300+)."
+    }
+   },
+   "required": [
+    "layer",
+    "presetPath"
+   ]
+  },
+  "annotations": {
+   "title": "Apply .ffx preset",
+   "readOnlyHint": false,
+   "destructiveHint": false,
+   "idempotentHint": false,
+   "openWorldHint": false
+  },
+  "_meta": {
+   "ui": {
+    "resourceUri": "ui://after-effects/activity.html",
+    "visibility": [
+     "model",
+     "app"
+    ]
+   },
+   "ui/resourceUri": "ui://after-effects/activity.html"
+  }
+ },
+ {
+  "name": "add_mask",
+  "title": "Add mask",
+  "description": "Add a rectangle, ellipse or custom path mask with mode, feather, opacity, expansion and inversion. rect is [x,y,w,h] in layer space (default: layer bounds).",
+  "inputSchema": {
+   "type": "object",
+   "properties": {
+    "comp": {
+     "anyOf": [
+      {
+       "type": "string"
+      },
+      {
+       "type": "integer"
+      }
+     ],
+     "description": "Composition name or numeric item id. Omit to use the active composition."
+    },
+    "layer": {
+     "anyOf": [
+      {
+       "type": "integer",
+       "exclusiveMinimum": 0
+      },
+      {
+       "type": "string"
+      }
+     ],
+     "description": "Layer: 1-based index, exact name, or 'id:<layerId>' (stable across reordering)."
+    },
+    "shape": {
+     "type": "string",
+     "enum": [
+      "rectangle",
+      "ellipse",
+      "path"
+     ]
+    },
+    "rect": {
+     "type": "array",
+     "items": {
+      "type": "number"
+     },
+     "minItems": 4,
+     "maxItems": 4
+    },
+    "vertices": {
+     "type": "array",
+     "items": {
+      "type": "array",
+      "items": {
+       "type": "number"
+      },
+      "minItems": 2,
+      "maxItems": 2
+     }
+    },
+    "inTangents": {
+     "type": "array",
+     "items": {
+      "type": "array",
+      "items": {
+       "type": "number"
+      },
+      "minItems": 2,
+      "maxItems": 2
+     }
+    },
+    "outTangents": {
+     "type": "array",
+     "items": {
+      "type": "array",
+      "items": {
+       "type": "number"
+      },
+      "minItems": 2,
+      "maxItems": 2
+     }
+    },
+    "closed": {
+     "type": "boolean"
+    },
+    "mode": {
+     "type": "string",
+     "enum": [
+      "add",
+      "subtract",
+      "intersect",
+      "lighten",
+      "darken",
+      "difference",
+      "none"
+     ]
+    },
+    "inverted": {
+     "type": "boolean"
+    },
+    "feather": {
+     "anyOf": [
+      {
+       "type": "number"
+      },
+      {
+       "type": "array",
+       "items": {
+        "type": "number"
+       },
+       "minItems": 2,
+       "maxItems": 2
+      }
+     ]
+    },
+    "opacity": {
+     "type": "number"
+    },
+    "expansion": {
+     "type": "number"
+    },
+    "name": {
+     "type": "string"
+    },
+    "timeoutSeconds": {
+     "type": "integer",
+     "minimum": 1,
+     "maximum": 3600,
+     "description": "Max seconds to wait for After Effects (default 60, long tools 300+)."
+    }
+   },
+   "required": [
+    "layer"
+   ]
+  },
+  "annotations": {
+   "title": "Add mask",
+   "readOnlyHint": false,
+   "destructiveHint": false,
+   "idempotentHint": false,
+   "openWorldHint": false
+  },
+  "_meta": {
+   "ui": {
+    "resourceUri": "ui://after-effects/activity.html",
+    "visibility": [
+     "model",
+     "app"
+    ]
+   },
+   "ui/resourceUri": "ui://after-effects/activity.html"
+  }
+ },
+ {
+  "name": "remove_masks",
+  "title": "Remove masks",
+  "description": "Remove one mask (by name or index) or all masks from a layer.",
+  "inputSchema": {
+   "type": "object",
+   "properties": {
+    "comp": {
+     "anyOf": [
+      {
+       "type": "string"
+      },
+      {
+       "type": "integer"
+      }
+     ],
+     "description": "Composition name or numeric item id. Omit to use the active composition."
+    },
+    "layer": {
+     "anyOf": [
+      {
+       "type": "integer",
+       "exclusiveMinimum": 0
+      },
+      {
+       "type": "string"
+      }
+     ],
+     "description": "Layer: 1-based index, exact name, or 'id:<layerId>' (stable across reordering)."
+    },
+    "mask": {
+     "type": [
+      "string",
+      "number"
+     ]
+    },
+    "timeoutSeconds": {
+     "type": "integer",
+     "minimum": 1,
+     "maximum": 3600,
+     "description": "Max seconds to wait for After Effects (default 60, long tools 300+)."
+    }
+   },
+   "required": [
+    "layer"
+   ]
+  },
+  "annotations": {
+   "title": "Remove masks",
+   "readOnlyHint": false,
+   "destructiveHint": true,
+   "idempotentHint": false,
+   "openWorldHint": false
+  },
+  "_meta": {
+   "ui": {
+    "resourceUri": "ui://after-effects/activity.html",
+    "visibility": [
+     "model",
+     "app"
+    ]
+   },
+   "ui/resourceUri": "ui://after-effects/activity.html"
+  }
+ },
+ {
+  "name": "add_marker",
+  "title": "Add marker",
+  "description": "Add a comp marker (or a layer marker when layer is given) with comment, duration, chapter, URL and label.",
+  "inputSchema": {
+   "type": "object",
+   "properties": {
+    "comp": {
+     "anyOf": [
+      {
+       "type": "string"
+      },
+      {
+       "type": "integer"
+      }
+     ],
+     "description": "Composition name or numeric item id. Omit to use the active composition."
+    },
+    "layer": {
+     "anyOf": [
+      {
+       "type": "integer",
+       "exclusiveMinimum": 0
+      },
+      {
+       "type": "string"
+      }
+     ],
+     "description": "Layer: 1-based index, exact name, or 'id:<layerId>' (stable across reordering)."
+    },
+    "time": {
+     "type": "number"
+    },
+    "comment": {
+     "type": "string"
+    },
+    "duration": {
+     "type": "number"
+    },
+    "chapter": {
+     "type": "string"
+    },
+    "url": {
+     "type": "string"
+    },
+    "label": {
+     "type": "integer"
+    },
+    "timeoutSeconds": {
+     "type": "integer",
+     "minimum": 1,
+     "maximum": 3600,
+     "description": "Max seconds to wait for After Effects (default 60, long tools 300+)."
+    }
+   }
+  },
+  "annotations": {
+   "title": "Add marker",
+   "readOnlyHint": false,
+   "destructiveHint": false,
+   "idempotentHint": false,
+   "openWorldHint": false
+  },
+  "_meta": {
+   "ui": {
+    "resourceUri": "ui://after-effects/activity.html",
+    "visibility": [
+     "model",
+     "app"
+    ]
+   },
+   "ui/resourceUri": "ui://after-effects/activity.html"
+  }
+ },
+ {
+  "name": "list_markers",
+  "title": "List markers",
+  "description": "List comp markers (and layer markers with includeLayers).",
+  "inputSchema": {
+   "type": "object",
+   "properties": {
+    "comp": {
+     "anyOf": [
+      {
+       "type": "string"
+      },
+      {
+       "type": "integer"
+      }
+     ],
+     "description": "Composition name or numeric item id. Omit to use the active composition."
+    },
+    "includeLayers": {
+     "type": "boolean"
+    },
+    "timeoutSeconds": {
+     "type": "integer",
+     "minimum": 1,
+     "maximum": 3600,
+     "description": "Max seconds to wait for After Effects (default 60, long tools 300+)."
+    }
+   }
+  },
+  "annotations": {
+   "title": "List markers",
+   "readOnlyHint": true,
+   "destructiveHint": false,
+   "idempotentHint": true,
+   "openWorldHint": false
+  },
+  "_meta": {
+   "ui": {
+    "resourceUri": "ui://after-effects/activity.html",
+    "visibility": [
+     "model",
+     "app"
+    ]
+   },
+   "ui/resourceUri": "ui://after-effects/activity.html"
+  }
+ },
+ {
+  "name": "remove_markers",
+  "title": "Remove markers",
+  "description": "Remove markers from a comp or layer, all or filtered by time/comment.",
+  "inputSchema": {
+   "type": "object",
+   "properties": {
+    "comp": {
+     "anyOf": [
+      {
+       "type": "string"
+      },
+      {
+       "type": "integer"
+      }
+     ],
+     "description": "Composition name or numeric item id. Omit to use the active composition."
+    },
+    "layer": {
+     "anyOf": [
+      {
+       "type": "integer",
+       "exclusiveMinimum": 0
+      },
+      {
+       "type": "string"
+      }
+     ],
+     "description": "Layer: 1-based index, exact name, or 'id:<layerId>' (stable across reordering)."
+    },
+    "time": {
+     "type": "number"
+    },
+    "comment": {
+     "type": "string"
+    },
+    "timeoutSeconds": {
+     "type": "integer",
+     "minimum": 1,
+     "maximum": 3600,
+     "description": "Max seconds to wait for After Effects (default 60, long tools 300+)."
+    }
+   }
+  },
+  "annotations": {
+   "title": "Remove markers",
+   "readOnlyHint": false,
+   "destructiveHint": true,
+   "idempotentHint": false,
+   "openWorldHint": false
+  },
+  "_meta": {
+   "ui": {
+    "resourceUri": "ui://after-effects/activity.html",
+    "visibility": [
+     "model",
+     "app"
+    ]
+   },
+   "ui/resourceUri": "ui://after-effects/activity.html"
+  }
+ },
+ {
+  "name": "preview_frame",
+  "title": "Preview frame (image)",
+  "description": "Render one frame of a composition and return it as an image, so you can SEE the result and check your work. maxSize downscales (default 960px). JPEG by default (3-5x smaller than PNG).",
+  "inputSchema": {
+   "type": "object",
+   "properties": {
+    "comp": {
+     "anyOf": [
+      {
+       "type": "string"
+      },
+      {
+       "type": "integer"
+      }
+     ],
+     "description": "Composition name or numeric item id. Omit to use the active composition."
+    },
+    "time": {
+     "type": "number",
+     "description": "Seconds. Default: playhead."
+    },
+    "maxSize": {
+     "type": "integer",
+     "minimum": 64,
+     "maximum": 4096
+    },
+    "background": {
+     "type": "string",
+     "enum": [
+      "comp",
+      "transparent",
+      "checker"
+     ],
+     "description": "What shows through transparent areas: the comp background color (default), a checkerboard, or real transparency (forces PNG)."
+    },
+    "format": {
+     "type": "string",
+     "enum": [
+      "jpeg",
+      "png"
+     ]
+    },
+    "quality": {
+     "type": "integer",
+     "minimum": 30,
+     "maximum": 100,
+     "description": "JPEG quality, default 85."
+    },
+    "savePath": {
+     "type": "string",
+     "description": "Also keep the full-size PNG at this path."
+    },
+    "timeoutSeconds": {
+     "type": "integer",
+     "minimum": 1,
+     "maximum": 3600,
+     "description": "Max seconds to wait for After Effects (default 60, long tools 300+)."
+    }
+   }
+  },
+  "annotations": {
+   "title": "Preview frame (image)",
+   "readOnlyHint": true,
+   "destructiveHint": false,
+   "idempotentHint": true,
+   "openWorldHint": false
+  },
+  "_meta": {
+   "ui": {
+    "resourceUri": "ui://after-effects/activity.html",
+    "visibility": [
+     "model",
+     "app"
+    ]
+   },
+   "ui/resourceUri": "ui://after-effects/activity.html"
+  }
+ },
+ {
+  "name": "preview_contact_sheet",
+  "title": "Preview several frames",
+  "description": "Render N evenly spaced frames (or given times) of a comp and return ONE grid image (up to 4 columns, time written on each cell): a quick way to check an animation over time. layout:'separate' returns one image per frame.",
+  "inputSchema": {
+   "type": "object",
+   "properties": {
+    "comp": {
+     "anyOf": [
+      {
+       "type": "string"
+      },
+      {
+       "type": "integer"
+      }
+     ],
+     "description": "Composition name or numeric item id. Omit to use the active composition."
+    },
+    "frames": {
+     "type": "integer",
+     "minimum": 2,
+     "maximum": 12
+    },
+    "times": {
+     "type": "array",
+     "items": {
+      "type": "number"
+     },
+     "maxItems": 12
+    },
+    "maxSize": {
+     "type": "integer",
+     "minimum": 64,
+     "maximum": 2048,
+     "description": "Longest side of each cell, default 480 (360 above 6 frames)."
+    },
+    "background": {
+     "type": "string",
+     "enum": [
+      "comp",
+      "transparent",
+      "checker"
+     ],
+     "description": "What shows through transparent areas: the comp background color (default), a checkerboard, or real transparency (forces PNG)."
+    },
+    "layout": {
+     "type": "string",
+     "enum": [
+      "grid",
+      "separate"
+     ]
+    },
+    "format": {
+     "type": "string",
+     "enum": [
+      "jpeg",
+      "png"
+     ]
+    },
+    "quality": {
+     "type": "integer",
+     "minimum": 30,
+     "maximum": 100
+    },
+    "timeoutSeconds": {
+     "type": "integer",
+     "minimum": 1,
+     "maximum": 3600,
+     "description": "Max seconds to wait for After Effects (default 60, long tools 300+)."
+    }
+   }
+  },
+  "annotations": {
+   "title": "Preview several frames",
+   "readOnlyHint": true,
+   "destructiveHint": false,
+   "idempotentHint": true,
+   "openWorldHint": false
+  },
+  "_meta": {
+   "ui": {
+    "resourceUri": "ui://after-effects/activity.html",
+    "visibility": [
+     "model",
+     "app"
+    ]
+   },
+   "ui/resourceUri": "ui://after-effects/activity.html"
+  }
+ },
+ {
+  "name": "add_to_render_queue",
+  "title": "Add to render queue",
+  "description": "Queue a comp for rendering with an output path and format (h264/mp4, mov/prores, png sequence, lossless) or explicit templates. Returns available output templates.",
+  "inputSchema": {
+   "type": "object",
+   "properties": {
+    "comp": {
+     "anyOf": [
+      {
+       "type": "string"
+      },
+      {
+       "type": "integer"
+      }
+     ],
+     "description": "Composition name or numeric item id. Omit to use the active composition."
+    },
+    "outputPath": {
+     "type": "string"
+    },
+    "format": {
+     "type": "string",
+     "enum": [
+      "h264",
+      "mp4",
+      "mov",
+      "prores",
+      "png",
+      "lossless"
+     ]
+    },
+    "outputModuleTemplate": {
+     "type": "string"
+    },
+    "renderSettingsTemplate": {
+     "type": "string"
+    },
+    "start": {
+     "type": "number"
+    },
+    "duration": {
+     "type": "number"
+    },
+    "workAreaOnly": {
+     "type": "boolean"
+    },
+    "timeoutSeconds": {
+     "type": "integer",
+     "minimum": 1,
+     "maximum": 3600,
+     "description": "Max seconds to wait for After Effects (default 60, long tools 300+)."
+    }
+   }
+  },
+  "annotations": {
+   "title": "Add to render queue",
+   "readOnlyHint": false,
+   "destructiveHint": false,
+   "idempotentHint": false,
+   "openWorldHint": false
+  },
+  "_meta": {
+   "ui": {
+    "resourceUri": "ui://after-effects/activity.html",
+    "visibility": [
+     "model",
+     "app"
+    ]
+   },
+   "ui/resourceUri": "ui://after-effects/activity.html"
+  }
+ },
+ {
+  "name": "get_render_queue",
+  "title": "Render queue",
+  "description": "List render queue items, status and output files.",
+  "inputSchema": {
+   "type": "object",
+   "properties": {
+    "timeoutSeconds": {
+     "type": "integer",
+     "minimum": 1,
+     "maximum": 3600,
+     "description": "Max seconds to wait for After Effects (default 60, long tools 300+)."
+    }
+   }
+  },
+  "outputSchema": {
+   "type": "object",
+   "properties": {
+    "rendering": {
+     "type": "boolean"
+    },
+    "items": {
+     "type": "array",
+     "items": {
+      "type": "object",
+      "properties": {
+       "index": {
+        "type": "number"
+       },
+       "comp": {
+        "type": "string"
+       },
+       "status": {
+        "type": "string"
+       }
+      },
+      "required": [
+       "index",
+       "comp",
+       "status"
+      ],
+      "additionalProperties": true
+     }
+    }
+   },
+   "required": [
+    "rendering",
+    "items"
+   ],
+   "additionalProperties": true
+  },
+  "annotations": {
+   "title": "Render queue",
+   "readOnlyHint": true,
+   "destructiveHint": false,
+   "idempotentHint": true,
+   "openWorldHint": false
+  },
+  "_meta": {
+   "ui": {
+    "resourceUri": "ui://after-effects/activity.html",
+    "visibility": [
+     "model",
+     "app"
+    ]
+   },
+   "ui/resourceUri": "ui://after-effects/activity.html"
+  }
+ },
+ {
+  "name": "clear_render_queue",
+  "title": "Clear render queue",
+  "description": "Remove render queue items (all, or only finished ones).",
+  "inputSchema": {
+   "type": "object",
+   "properties": {
+    "onlyDone": {
+     "type": "boolean"
+    },
+    "timeoutSeconds": {
+     "type": "integer",
+     "minimum": 1,
+     "maximum": 3600,
+     "description": "Max seconds to wait for After Effects (default 60, long tools 300+)."
+    }
+   }
+  },
+  "annotations": {
+   "title": "Clear render queue",
+   "readOnlyHint": false,
+   "destructiveHint": true,
+   "idempotentHint": false,
+   "openWorldHint": false
+  },
+  "_meta": {
+   "ui": {
+    "resourceUri": "ui://after-effects/activity.html",
+    "visibility": [
+     "model",
+     "app"
+    ]
+   },
+   "ui/resourceUri": "ui://after-effects/activity.html"
+  }
+ },
+ {
+  "name": "render_queue",
+  "title": "Render (blocking)",
+  "description": "Render the queue inside After Effects. AE is blocked until done; prefer render_in_background for long renders.",
+  "inputSchema": {
+   "type": "object",
+   "properties": {
+    "timeoutSeconds": {
+     "type": "integer",
+     "minimum": 1,
+     "maximum": 3600,
+     "description": "Max seconds to wait for After Effects (default 60, long tools 300+)."
+    }
+   }
+  },
+  "annotations": {
+   "title": "Render (blocking)",
+   "readOnlyHint": false,
+   "destructiveHint": false,
+   "idempotentHint": false,
+   "openWorldHint": false
+  },
+  "_meta": {
+   "ui": {
+    "resourceUri": "ui://after-effects/activity.html",
+    "visibility": [
+     "model",
+     "app"
+    ]
+   },
+   "ui/resourceUri": "ui://after-effects/activity.html"
+  }
+ },
+ {
+  "name": "render_in_background",
+  "title": "Render in background (aerender)",
+  "description": "Render a comp with aerender in a separate process while you keep working in AE. Saves the project first. Returns at once (track with get_background_render), or with wait:true waits until done and reports progress per frame.",
+  "inputSchema": {
+   "type": "object",
+   "properties": {
+    "wait": {
+     "type": "boolean"
+    },
+    "waitSeconds": {
+     "type": "integer",
+     "minimum": 10,
+     "maximum": 86400
+    },
+    "comp": {
+     "type": "string",
+     "description": "Composition name."
+    },
+    "outputPath": {
+     "type": "string"
+    },
+    "outputModuleTemplate": {
+     "type": "string"
+    },
+    "renderSettingsTemplate": {
+     "type": "string"
+    },
+    "startFrame": {
+     "type": "integer"
+    },
+    "endFrame": {
+     "type": "integer"
+    }
+   },
+   "required": [
+    "comp",
+    "outputPath"
+   ]
+  },
+  "annotations": {
+   "title": "Render in background (aerender)",
+   "readOnlyHint": false,
+   "destructiveHint": false,
+   "idempotentHint": false,
+   "openWorldHint": false
+  },
+  "_meta": {
+   "ui": {
+    "resourceUri": "ui://after-effects/activity.html",
+    "visibility": [
+     "model",
+     "app"
+    ]
+   },
+   "ui/resourceUri": "ui://after-effects/activity.html"
+  }
+ },
+ {
+  "name": "get_background_render",
+  "title": "Background render status",
+  "description": "Status, progress and log tail of background renders.",
+  "inputSchema": {
+   "type": "object",
+   "properties": {
+    "jobId": {
+     "type": "string"
+    }
+   }
+  },
+  "annotations": {
+   "title": "Background render status",
+   "readOnlyHint": true,
+   "destructiveHint": false,
+   "idempotentHint": true,
+   "openWorldHint": false
+  },
+  "_meta": {
+   "ui": {
+    "resourceUri": "ui://after-effects/activity.html",
+    "visibility": [
+     "model",
+     "app"
+    ]
+   },
+   "ui/resourceUri": "ui://after-effects/activity.html"
+  }
+ },
+ {
+  "name": "list_fonts",
+  "title": "List fonts",
+  "description": "Search installed fonts; returns PostScript names to use in text tools (AE 2024+).",
+  "inputSchema": {
+   "type": "object",
+   "properties": {
+    "query": {
+     "type": "string"
+    },
+    "limit": {
+     "type": "integer"
+    },
+    "timeoutSeconds": {
+     "type": "integer",
+     "minimum": 1,
+     "maximum": 3600,
+     "description": "Max seconds to wait for After Effects (default 60, long tools 300+)."
+    }
+   }
+  },
+  "annotations": {
+   "title": "List fonts",
+   "readOnlyHint": true,
+   "destructiveHint": false,
+   "idempotentHint": true,
+   "openWorldHint": false
+  },
+  "_meta": {
+   "ui": {
+    "resourceUri": "ui://after-effects/activity.html",
+    "visibility": [
+     "model",
+     "app"
+    ]
+   },
+   "ui/resourceUri": "ui://after-effects/activity.html"
+  }
+ },
+ {
+  "name": "get_selection",
+  "title": "Get selection",
+  "description": "What the user has selected in AE right now: active comp, playhead, selected layers and properties. Great for 'animate this layer' requests.",
+  "inputSchema": {
+   "type": "object",
+   "properties": {
+    "timeoutSeconds": {
+     "type": "integer",
+     "minimum": 1,
+     "maximum": 3600,
+     "description": "Max seconds to wait for After Effects (default 60, long tools 300+)."
+    }
+   }
+  },
+  "annotations": {
+   "title": "Get selection",
+   "readOnlyHint": true,
+   "destructiveHint": false,
+   "idempotentHint": true,
+   "openWorldHint": false
+  },
+  "_meta": {
+   "ui": {
+    "resourceUri": "ui://after-effects/activity.html",
+    "visibility": [
+     "model",
+     "app"
+    ]
+   },
+   "ui/resourceUri": "ui://after-effects/activity.html"
+  }
+ },
+ {
+  "name": "select_layers",
+  "title": "Select layers",
+  "description": "Select layers in the timeline (empty list clears the selection).",
+  "inputSchema": {
+   "type": "object",
+   "properties": {
+    "comp": {
+     "anyOf": [
+      {
+       "type": "string"
+      },
+      {
+       "type": "integer"
+      }
+     ],
+     "description": "Composition name or numeric item id. Omit to use the active composition."
+    },
+    "layers": {
+     "type": "array",
+     "items": {
+      "anyOf": [
+       {
+        "type": "integer",
+        "exclusiveMinimum": 0
+       },
+       {
+        "type": "string"
+       }
+      ],
+      "description": "Layer: 1-based index, exact name, or 'id:<layerId>' (stable across reordering)."
+     },
+     "description": "List of layers (index, name or 'id:<id>')."
+    },
+    "timeoutSeconds": {
+     "type": "integer",
+     "minimum": 1,
+     "maximum": 3600,
+     "description": "Max seconds to wait for After Effects (default 60, long tools 300+)."
+    }
+   }
+  },
+  "annotations": {
+   "title": "Select layers",
+   "readOnlyHint": false,
+   "destructiveHint": false,
+   "idempotentHint": false,
+   "openWorldHint": false
+  },
+  "_meta": {
+   "ui": {
+    "resourceUri": "ui://after-effects/activity.html",
+    "visibility": [
+     "model",
+     "app"
+    ]
+   },
+   "ui/resourceUri": "ui://after-effects/activity.html"
+  }
+ },
+ {
+  "name": "undo",
+  "title": "Undo / redo",
+  "description": "Undo or redo the last After Effects steps. Every MCP call is a single undo step.",
+  "inputSchema": {
+   "type": "object",
+   "properties": {
+    "action": {
+     "type": "string",
+     "enum": [
+      "undo",
+      "redo"
+     ]
+    },
+    "steps": {
+     "type": "integer",
+     "minimum": 1,
+     "maximum": 50
+    },
+    "timeoutSeconds": {
+     "type": "integer",
+     "minimum": 1,
+     "maximum": 3600,
+     "description": "Max seconds to wait for After Effects (default 60, long tools 300+)."
+    }
+   }
+  },
+  "annotations": {
+   "title": "Undo / redo",
+   "readOnlyHint": false,
+   "destructiveHint": false,
+   "idempotentHint": false,
+   "openWorldHint": false
+  },
+  "_meta": {
+   "ui": {
+    "resourceUri": "ui://after-effects/activity.html",
+    "visibility": [
+     "model",
+     "app"
+    ]
+   },
+   "ui/resourceUri": "ui://after-effects/activity.html"
+  }
+ },
+ {
+  "name": "execute_menu_command",
+  "title": "Run menu command",
+  "description": "Execute an AE menu command by id or (English) menu name, e.g. 'Fit to Comp', 'Center Anchor Point in Layer Content'.",
+  "inputSchema": {
+   "type": "object",
+   "properties": {
+    "commandId": {
+     "type": "integer"
+    },
+    "menuName": {
+     "type": "string"
+    },
+    "timeoutSeconds": {
+     "type": "integer",
+     "minimum": 1,
+     "maximum": 3600,
+     "description": "Max seconds to wait for After Effects (default 60, long tools 300+)."
+    }
+   }
+  },
+  "annotations": {
+   "title": "Run menu command",
+   "readOnlyHint": false,
+   "destructiveHint": false,
+   "idempotentHint": false,
+   "openWorldHint": false
+  },
+  "_meta": {
+   "ui": {
+    "resourceUri": "ui://after-effects/activity.html",
+    "visibility": [
+     "model",
+     "app"
+    ]
+   },
+   "ui/resourceUri": "ui://after-effects/activity.html"
+  }
+ },
+ {
+  "name": "run_extendscript",
+  "title": "Run ExtendScript",
+  "description": "Escape hatch: run custom ExtendScript in After Effects. Code is a function body; use `return` to send back a value (comps/layers/properties are serialized). `AEMCP` helpers (getComp, getLayer, resolveProp, color...) and `args` are available. Disabled when AE_MCP_DISABLE_EVAL=1.",
+  "inputSchema": {
+   "type": "object",
+   "properties": {
+    "parkViewer": {
+     "type": "boolean",
+     "description": "Show a tiny empty comp in the viewer while this runs (much faster for heavy changes to an open comp); the viewer is restored afterwards, also on error."
+    },
+    "code": {
+     "type": "string"
+    },
+    "args": {
+     "type": "object",
+     "additionalProperties": {}
+    },
+    "undoable": {
+     "type": "boolean"
+    },
+    "timeoutSeconds": {
+     "type": "integer",
+     "minimum": 1,
+     "maximum": 3600,
+     "description": "Max seconds to wait for After Effects (default 60, long tools 300+)."
+    }
+   },
+   "required": [
+    "code"
+   ]
+  },
+  "annotations": {
+   "title": "Run ExtendScript",
+   "readOnlyHint": false,
+   "destructiveHint": false,
+   "idempotentHint": false,
+   "openWorldHint": false
+  },
+  "_meta": {
+   "ui": {
+    "resourceUri": "ui://after-effects/activity.html",
+    "visibility": [
+     "model",
+     "app"
+    ]
+   },
+   "ui/resourceUri": "ui://after-effects/activity.html"
+  }
+ },
+ {
+  "name": "batch",
+  "title": "Batch operations",
+  "description": "Run several tools in ONE round trip and ONE undo step, e.g. create 10 layers and animate them. Each operation is {tool, args} using the same names/args as the individual tools (AE-side tools only). If an operation fails the call returns isError with failed/stoppedAt; operations before the failure STAY applied (one undo step: call undo to revert all) unless atomic:true, which reverts the whole batch automatically. Batches over 20 operations temporarily move the viewer off the comp (2-3x faster); in big comps prefer chunks of ~100 operations.",
+  "inputSchema": {
+   "type": "object",
+   "properties": {
+    "operations": {
+     "type": "array",
+     "items": {
+      "type": "object",
+      "properties": {
+       "tool": {
+        "type": "string"
+       },
+       "args": {
+        "type": "object",
+        "additionalProperties": {}
+       }
+      },
+      "required": [
+       "tool"
+      ],
+      "additionalProperties": false
+     },
+     "minItems": 1,
+     "maxItems": 200
+    },
+    "continueOnError": {
+     "type": "boolean"
+    },
+    "atomic": {
+     "type": "boolean",
+     "description": "Revert every operation if any fails."
+    },
+    "parkViewer": {
+     "type": "boolean",
+     "description": "Default true: hide the comp from the viewer while a 20+ operation batch runs."
+    },
+    "timeoutSeconds": {
+     "type": "integer",
+     "minimum": 1,
+     "maximum": 3600,
+     "description": "Max seconds to wait for After Effects (default 60, long tools 300+)."
+    }
+   },
+   "required": [
+    "operations"
+   ]
+  },
+  "annotations": {
+   "title": "Batch operations",
+   "readOnlyHint": false,
+   "destructiveHint": false,
+   "idempotentHint": false,
+   "openWorldHint": false
+  },
+  "_meta": {
+   "ui": {
+    "resourceUri": "ui://after-effects/activity.html",
+    "visibility": [
+     "model",
+     "app"
+    ]
+   },
+   "ui/resourceUri": "ui://after-effects/activity.html"
+  }
+ }
+]

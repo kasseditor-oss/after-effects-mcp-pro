@@ -281,3 +281,17 @@ test("parallel calls share one queue file and each gets its own answer", async (
   assert.ok(files.length <= 3, `20 calls used ${files.length} queue files`);
   await client.close();
 });
+
+// Interface guard: any change to tool names, input/output schemas or annotations
+// must be deliberate. Regenerate with: UPDATE_SNAPSHOT=1 npm test
+test("tools/list matches the committed snapshot", async () => {
+  const client = await connect();
+  const { tools } = await client.listTools();
+  await client.close();
+  // icons come from local files (PNG only after npm run icon): leave them out
+  const current = tools.map(({ icons, ...t }) => t);
+  const file = path.join(root, "test", "tools-list.snapshot.json");
+  if (process.env.UPDATE_SNAPSHOT === "1" || !fs.existsSync(file)) fs.writeFileSync(file, JSON.stringify(current, null, 1) + String.fromCharCode(10));
+  const saved = JSON.parse(fs.readFileSync(file, "utf8"));
+  assert.deepEqual(current, saved, "tools/list changed: run UPDATE_SNAPSHOT=1 npm test if intended");
+});
