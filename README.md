@@ -79,7 +79,7 @@ The server learns the AE version from the listener heartbeat (or the first `brid
 - Roto Brush and Content-Aware Fill have no ExtendScript API, so no tool can drive them.
 - A script that After Effects is already running cannot be interrupted (cancel and timeouts only stop waiting).
 - After Effects closes an undo group at the end of each script run, so `begin_undo_group` / `end_undo_group` are tracked by the server: the `undo` tool reverts the whole group in one call, but Ctrl+Z inside After Effects still undoes one call at a time.
-- macOS: implemented in `src/platform/macos.ts` (After Effects in `/Applications`, direct mode through AppleScript `DoScriptFile`, bridge folder `~/Library/Application Support/ae-mcp-pro`, previews resized with `sips`) and unit-tested in CI, but never run against a real After Effects on a Mac. On macOS, contact sheets come back as separate frames and the preview background fill is not applied. AppleScript needs Automation permission for After Effects.
+- macOS: implemented in `src/platform/macos.ts` (After Effects in `/Applications`, direct mode through AppleScript `DoScriptFile`, bridge folder `~/Library/Application Support/ae-mcp-pro`, previews resized with `sips`) and unit-tested in CI, but never run against a real After Effects on a Mac. On macOS, contact sheets come back as separate frames and the preview background fill is not applied. AppleScript needs Automation permission for After Effects. To validate on a Mac, follow [docs/macos-checklist.md](docs/macos-checklist.md).
 
 ## Install
 

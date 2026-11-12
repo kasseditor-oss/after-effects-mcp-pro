@@ -37,7 +37,8 @@ export const macos: Platform = {
   aePids() {
     try {
       // exact process name: "-f After Effects" also matched aerender and anything mentioning it
-      const out = execFileSync("pgrep", ["-x", "After Effects"], { encoding: "utf8" });
+      // the Beta's process is "After Effects (Beta)"
+      const out = execFileSync("pgrep", ["-x", "After Effects|After Effects \\(Beta\\)"], { encoding: "utf8" });
       return out.split(/\s+/).map(Number).filter((n) => n > 0);
     } catch {
       return [];

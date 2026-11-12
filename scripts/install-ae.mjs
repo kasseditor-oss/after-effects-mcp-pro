@@ -19,7 +19,9 @@ const uninstall = process.argv.includes("--uninstall");
 
 const userData = isWin ? process.env.APPDATA : path.join(os.homedir(), "Library", "Application Support");
 const bridge = process.env.AE_MCP_BRIDGE_DIR || path.join(userData, "ae-mcp-pro");
-const prefsRoot = isWin ? path.join(process.env.APPDATA, "Adobe", "After Effects") : path.join(os.homedir(), "Library", "Preferences", "Adobe", "After Effects");
+// "After Effects" and, for the Creative Cloud Beta, "After Effects (Beta)" (any sibling named After Effects*)
+const adobePrefs = isWin ? path.join(process.env.APPDATA, "Adobe") : path.join(os.homedir(), "Library", "Preferences", "Adobe");
+const prefsRoots = fs.existsSync(adobePrefs) ? fs.readdirSync(adobePrefs).filter((d) => /^After Effects/i.test(d)).map((d) => path.join(adobePrefs, d)) : [];
 
 const STARTUP_NAME = "ae-mcp-pro-startup.jsx";
 const PANEL_NAME = "AE MCP Pro.jsx";
@@ -28,15 +30,17 @@ const listenerDst = path.join(bridge, "ae-mcp-pro-listener.jsx");
 function aeRunning() {
   try {
     if (isWin) return /AfterFX\.exe/i.test(execFileSync("tasklist", ["/FI", "IMAGENAME eq AfterFX.exe", "/NH"], { encoding: "utf8" }));
-    return execFileSync("pgrep", ["-x", "After Effects"], { encoding: "utf8" }).trim().length > 0;
+    return execFileSync("pgrep", ["-x", "After Effects|After Effects \\(Beta\\)"], { encoding: "utf8" }).trim().length > 0;
   } catch {
     return false;
   }
 }
 
-const versions = fs.existsSync(prefsRoot) ? fs.readdirSync(prefsRoot).filter((d) => /^\d+\.\d+$/.test(d)) : [];
+// one entry per AE version folder: { label, dir }
+const versions = [];
+for (const r of prefsRoots) for (const d of fs.readdirSync(r)) if (/^\d+\.\d+$/.test(d)) versions.push({ label: path.basename(r) === "After Effects" ? d : `${d} (${path.basename(r)})`, dir: path.join(r, d) });
 if (!versions.length) {
-  console.error(`No After Effects preference folders found in ${prefsRoot}. Open After Effects once, then run this again.`);
+  console.error(`No After Effects preference folders found in ${adobePrefs}. Open After Effects once, then run this again.`);
   process.exit(1);
 }
 
@@ -45,7 +49,7 @@ const report = [];
 
 if (uninstall) {
   for (const v of versions) {
-    for (const f of [path.join(prefsRoot, v, "Scripts", "Startup", STARTUP_NAME), path.join(prefsRoot, v, "Scripts", "ScriptUI Panels", PANEL_NAME)]) {
+    for (const f of [path.join(v.dir, "Scripts", "Startup", STARTUP_NAME), path.join(v.dir, "Scripts", "ScriptUI Panels", PANEL_NAME)]) {
       if (fs.existsSync(f)) {
         fs.rmSync(f);
         report.push(`removed ${f}`);
@@ -63,28 +67,28 @@ report.push(`listener   -> ${listenerDst}`);
 const stub = `// AE MCP Pro: starts the MCP bridge listener with After Effects.\n(function(){ var f = new File(Folder.userData.fsName + "/ae-mcp-pro/ae-mcp-pro-listener.jsx"); if (f.exists) { try { $.evalFile(f); } catch (e) {} } })();\n`;
 
 for (const v of versions) {
-  const scripts = path.join(prefsRoot, v, "Scripts");
+  const scripts = path.join(v.dir, "Scripts");
   const startup = path.join(scripts, "Startup");
   const panels = path.join(scripts, "ScriptUI Panels");
   fs.mkdirSync(startup, { recursive: true });
   fs.mkdirSync(panels, { recursive: true });
   fs.writeFileSync(path.join(startup, STARTUP_NAME), stub, "utf8");
   fs.copyFileSync(path.join(root, "bridge", PANEL_NAME), path.join(panels, PANEL_NAME));
-  report.push(`AE ${v}: startup + panel installed in ${scripts}`);
+  report.push(`AE ${v.label}: startup + panel installed in ${scripts}`);
 
   // Scripting permission. AE rewrites its prefs on quit, so only edit while closed.
-  for (const pf of fs.readdirSync(path.join(prefsRoot, v)).filter((f) => /Prefs\.txt$/.test(f) && !/-/.test(f))) {
-    const p = path.join(prefsRoot, v, pf);
+  for (const pf of fs.readdirSync(v.dir).filter((f) => /Prefs\.txt$/.test(f) && !/-/.test(f))) {
+    const p = path.join(v.dir, pf);
     let txt = fs.readFileSync(p, "utf8");
     const m = txt.match(/"Pref_SCRIPTING_FILE_NETWORK_SECURITY" = "(\d)"/);
-    if (m && m[1] === "1") report.push(`AE ${v}: scripting file/network access already enabled`);
-    else if (running) report.push(`AE ${v}: enable Edit > Preferences > Scripting & Expressions > "Allow Scripts to Write Files and Access Network"`);
+    if (m && m[1] === "1") report.push(`AE ${v.label}: scripting file/network access already enabled`);
+    else if (running) report.push(`AE ${v.label}: enable Edit > Preferences > Scripting & Expressions > "Allow Scripts to Write Files and Access Network"`);
     else if (m) {
       fs.writeFileSync(p + ".bak-aemcp", txt);
       txt = txt.replace(/"Pref_SCRIPTING_FILE_NETWORK_SECURITY" = "\d"/, '"Pref_SCRIPTING_FILE_NETWORK_SECURITY" = "1"');
       fs.writeFileSync(p, txt);
-      report.push(`AE ${v}: enabled scripting file/network access (backup: ${pf}.bak-aemcp)`);
-    } else report.push(`AE ${v}: enable "Allow Scripts to Write Files and Access Network" in Preferences > Scripting & Expressions`);
+      report.push(`AE ${v.label}: enabled scripting file/network access (backup: ${pf}.bak-aemcp)`);
+    } else report.push(`AE ${v.label}: enable "Allow Scripts to Write Files and Access Network" in Preferences > Scripting & Expressions`);
   }
 }
 

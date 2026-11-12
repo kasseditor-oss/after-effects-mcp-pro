@@ -11,7 +11,7 @@
  */
 (function () {
     var G = $.global;
-    var VERSION = "2.0.3";
+    var VERSION = "2.0.4";
     if (G.AEMCP_LISTENER && G.AEMCP_LISTENER.version === VERSION && G.AEMCP_LISTENER.taskId) return;
     if (G.AEMCP_LISTENER && G.AEMCP_LISTENER.taskId) { try { app.cancelTask(G.AEMCP_LISTENER.taskId); } catch (e) { } }
 
@@ -65,7 +65,12 @@
     L.startupFile = function (enabled) {
         var ver = String(parseFloat(app.version));
         if (ver.indexOf(".") < 0) ver = ver + ".0";
-        var dir = Folder.userData.fsName + "/Adobe/After Effects/" + ver + "/Scripts/Startup/";
+        // After Effects (Beta) keeps its scripts under "After Effects (Beta)" when that folder exists
+        var root = Folder.userData.fsName + "/Adobe/After Effects";
+        var isBeta = false;
+        try { isBeta = /beta/i.test(Folder.appPackage.fsName); } catch (e) { }
+        if (isBeta && new Folder(root + " (Beta)/" + ver).exists) root = root + " (Beta)";
+        var dir = root + "/" + ver + "/Scripts/Startup/";
         return new File(dir + "ae-mcp-pro-startup.jsx" + (enabled ? "" : ".disabled"));
     };
     L.startsWithAE = function () { return L.startupFile(true).exists; };
