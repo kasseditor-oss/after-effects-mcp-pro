@@ -230,11 +230,18 @@
     }
     A.getComp = getComp;
 
+    // "a, b, c ... and 12 more": hints stay short even in huge projects
+    function shortList(names, total) {
+        var more = total - names.length;
+        return names.join(", ") + (more > 0 ? " ... and " + more + " more" : "");
+    }
+
     function compNames(list) {
         var names = [];
         var items = list || allItems();
-        for (var i = 0; i < items.length && names.length < 30; i++) if (items[i] instanceof CompItem) names.push(items[i].name + " (id " + items[i].id + ")");
-        return names.length ? names.join(", ") : "(none)";
+        var total = 0;
+        for (var i = 0; i < items.length; i++) if (items[i] instanceof CompItem) { total++; if (names.length < 10) names.push(items[i].name + " (id " + items[i].id + ")"); }
+        return names.length ? shortList(names, total) : "(none)";
     }
 
     function getLayer(comp, ref) {
@@ -258,8 +265,8 @@
         for (i = 1; i <= comp.numLayers; i++) if (comp.layer(i).name === s) return comp.layer(i);
         for (i = 1; i <= comp.numLayers; i++) if (lower(comp.layer(i).name) === lower(s)) return comp.layer(i);
         var names = [];
-        for (i = 1; i <= Math.min(comp.numLayers, 40); i++) names.push(i + ":" + comp.layer(i).name);
-        fail("Layer '" + s + "' not found in '" + comp.name + "'", "Layers: " + (names.join(", ") || "(none)"));
+        for (i = 1; i <= Math.min(comp.numLayers, 10); i++) names.push(i + ":" + comp.layer(i).name);
+        fail("Layer '" + s + "' not found in '" + comp.name + "'", "Layers: " + (names.length ? shortList(names, comp.numLayers) : "(none)"));
     }
     A.getLayer = getLayer;
 
@@ -349,8 +356,9 @@
             }
             if (!next) {
                 var avail = [];
-                try { for (var k = 1; k <= Math.min(cur.numProperties, 40); k++) avail.push(cur.property(k).name + " [" + cur.property(k).matchName + "]"); } catch (e3) { }
-                fail("Property '" + seg + "' not found under '" + (cur === layer ? layer.name : cur.name) + "'", avail.length ? "Children: " + avail.join(", ") : undefined);
+                var nKids = 0;
+                try { nKids = cur.numProperties; for (var k = 1; k <= Math.min(nKids, 10); k++) avail.push(cur.property(k).name + " [" + cur.property(k).matchName + "]"); } catch (e3) { }
+                fail("Property '" + seg + "' not found under '" + (cur === layer ? layer.name : cur.name) + "'", avail.length ? "Children: " + shortList(avail, nKids) : undefined);
             }
             cur = next;
         }
@@ -1980,7 +1988,7 @@
     }
 
     H.batch = function (a) {
-        var out = [], failed = 0, stoppedAt = null;
+        var out = [], failed = 0, stoppedAt = null, firstHint = null;
         var parked = a.operations.length > 20 && a.parkViewer !== false ? parkViewer() : null;
         try {
         for (var i = 0; i < a.operations.length; i++) {
@@ -1990,12 +1998,14 @@
             try { out.push({ index: i, tool: op.tool, ok: true, result: h(def(op.args, {})) }); }
             catch (e) {
                 failed++;
-                out.push({ index: i, tool: op.tool, ok: false, error: e.toString().replace(/^Error: /, ""), hint: e.aeHint });
+                out.push({ index: i, tool: op.tool, ok: false, error: e.toString().replace(/^Error: /, "") });
+                if (!firstHint && e.aeHint) firstHint = e.aeHint;
                 if (!a.continueOnError) { stoppedAt = i; break; }
             }
         }
         } finally { unparkViewer(parked); }
         var res = { ok: failed === 0, failed: failed, stoppedAt: stoppedAt, executed: out.length, total: a.operations.length, results: out };
+        if (firstHint) res.hint = firstHint;
         // atomic: ask the runner to undo the whole batch after its undo group closes
         if (failed && a.atomic) { res.rolledBack = true; A._rollback = true; }
         return res;

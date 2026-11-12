@@ -113,6 +113,14 @@ await scenario("timeoutSeconds honoured", async () => {
   return { timeoutMs: r.ms, nextCallMs: after.ms };
 });
 
+await scenario("batch error in a 1000-layer comp", async () => {
+  const big = JSON.parse((await call("run_extendscript", { code: "var c=app.project.items.addComp('MCP Stress Big',640,360,1,5,30); for (var i=0;i<1000;i++) c.layers.addNull(); return c.id;", timeoutSeconds: 600 })).text).result;
+  const r = await call("batch", { operations: [{ tool: "set_property", args: { comp: big, layer: "No Such Layer", property: "Opacity", value: 1 } }] }, { expectError: true });
+  if (r.text.length > 1500) { failures++; console.log(`  batch error is ${r.text.length} chars`); }
+  await call("modify_item", { item: big, delete: true });
+  return { ms: r.ms, errorChars: r.text.length };
+});
+
 await scenario("get_project_info with ~50 comps", async () => {
   const made = JSON.parse((await call("run_extendscript", { code: "var ids=[]; for (var i=0;i<50;i++) ids.push(app.project.items.addComp('MCP Stress PI '+i,640,360,1,5,30).id); return ids;" })).text).result;
   const ms = [];

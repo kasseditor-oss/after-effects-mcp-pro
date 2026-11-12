@@ -213,3 +213,16 @@ test("cancelling a queued call removes it before After Effects runs it", async (
   assert.equal(fs.readdirSync(path.join(dir, "queue")).length, 0, "queue emptied after cancel");
   await client.close();
 });
+
+test("a failed batch shows the hint once", async () => {
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), "aemcp-hint-"));
+  const hint = "Layers: 1:A, 2:B ... and 990 more";
+  const stop = fakeListener(dir, (p) => ({ ok: true, id: p.id, data: { ok: false, failed: 1, stoppedAt: 0, executed: 1, total: 1, results: [{ index: 0, tool: "set_property", ok: false, error: "Layer 'X' not found" }], hint } }));
+  await new Promise((r) => setTimeout(r, 60));
+  const client = await connect({ AE_MCP_BRIDGE_DIR: dir });
+  const r = await client.callTool({ name: "batch", arguments: { operations: [{ tool: "set_property", args: { layer: "X", property: "Opacity", value: 1 } }] } });
+  stop();
+  assert.equal(r.isError, true);
+  assert.equal(r.content[0].text.split("990 more").length - 1, 1, "hint appears exactly once");
+  await client.close();
+});

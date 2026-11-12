@@ -339,10 +339,11 @@ async function dispatch(req: { params: { name: string; arguments?: Record<string
           type: "text",
           text:
             `Error: batch operation ${first?.index} (${first?.tool}) failed: ${first?.error}` +
-            (first?.hint ? `\nHint: ${first.hint}` : "") +
+            (data.hint ? `\nHint: ${data.hint}` : "") +
             "\n" +
             (data.rolledBack ? "The whole batch was undone (atomic)." : `${data.executed - data.failed} earlier operation(s) stay applied as one undo step; call undo to revert them.`) +
-            `\n${JSON.stringify(data)}`,
+            // hint already shown above: keep it out of the JSON
+            `\n${JSON.stringify({ ...data, hint: undefined })}`,
         }],
       };
     }
