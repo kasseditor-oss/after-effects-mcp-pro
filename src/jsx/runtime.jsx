@@ -130,6 +130,53 @@
         }
         return "unknown";
     }
+    // Project folder by path: "Assets/Images/Logos" (each level created when create is true).
+    // An exact folder name containing "/" still wins, for projects that use such names.
+    function folderPath(pathStr, create) {
+        var root = app.project.rootFolder;
+        if (pathStr === undefined || pathStr === null || pathStr === "" || pathStr === "/") return root;
+        if (typeof pathStr === "number" || /^id:\d+$/.test(String(pathStr))) {
+            var byId = findItem(pathStr);
+            if (!(byId instanceof FolderItem)) fail("Item " + pathStr + " is not a folder");
+            return byId;
+        }
+        var exact = findItem(String(pathStr), function (it) { return it instanceof FolderItem; });
+        if (exact) return exact;
+        var parts = String(pathStr).replace(/^\/+|\/+$/g, "").split(/\s*\/\s*/);
+        var cur = root;
+        for (var i = 0; i < parts.length; i++) {
+            var next = null;
+            for (var j = 1; j <= cur.numItems; j++) {
+                var it = cur.item(j);
+                if (it instanceof FolderItem && lower(it.name) === lower(parts[i])) { next = it; break; }
+            }
+            if (!next) {
+                if (!create) fail("Folder '" + pathStr + "' not found (missing '" + parts[i] + "')");
+                next = app.project.items.addFolder(parts[i]);
+                next.parentFolder = cur;
+            }
+            cur = next;
+        }
+        return cur;
+    }
+    A.folderPath = folderPath;
+    function folderName(f) {
+        if (!f || f === app.project.rootFolder) return null;
+        var parts = [];
+        while (f && f !== app.project.rootFolder) { parts.unshift(f.name); f = f.parentFolder; }
+        return parts.join("/");
+    }
+
+    // Create the parent folders of an output file, like mkdir -p. Returns the File.
+    function outFile(p) {
+        var f = new File(p);
+        var dirs = [], d = f.parent;
+        while (d && !d.exists) { dirs.unshift(d); d = d.parent; }
+        for (var i = 0; i < dirs.length; i++) if (!dirs[i].create()) fail("Cannot create folder " + dirs[i].fsName, "Check the path and write permissions.");
+        return f;
+    }
+    A.outFile = outFile;
+
     function findItem(ref, typeFilter) {
         if (ref === undefined || ref === null || ref === "") return null;
         var items = allItems();
@@ -517,7 +564,7 @@
     function compSummary(c) {
         return { id: c.id, name: c.name, width: c.width, height: c.height, pixelAspect: c.pixelAspect, duration: round(c.duration), frameRate: round(c.frameRate, 3),
             numLayers: c.numLayers, bgColor: toHex(c.bgColor), workAreaStart: round(c.workAreaStart), workAreaDuration: round(c.workAreaDuration), time: round(c.time),
-            folder: c.parentFolder && c.parentFolder !== app.project.rootFolder ? c.parentFolder.name : null };
+            folder: folderName(c.parentFolder) };
     }
     A.compSummary = compSummary;
 
@@ -637,9 +684,9 @@
             var it = items[i];
             var t = itemType(it);
             if (a.type && a.type !== t && !(a.type === "footage" && t !== "composition" && t !== "folder")) continue;
-            if (a.folder) { var f = it.parentFolder; if (!f || (f.name !== a.folder && String(f.id) !== String(a.folder))) continue; }
+            if (a.folder) { var f = it.parentFolder; var fp = folderName(f) || "/"; if (!f || (lower(fp) !== lower(String(a.folder).replace(/^\/+|\/+$/g, "") || "/") && lower(f.name) !== lower(a.folder) && String(f.id) !== String(a.folder))) continue; }
             if (a.query && lower(it.name).indexOf(lower(a.query)) < 0) continue;
-            var o = { id: it.id, name: it.name, type: t, folder: it.parentFolder && it.parentFolder !== app.project.rootFolder ? it.parentFolder.name : null, label: it.label };
+            var o = { id: it.id, name: it.name, type: t, folder: folderName(it.parentFolder), label: it.label };
             if ((it instanceof CompItem || it instanceof FootageItem)) { o.width = it.width; o.height = it.height; o.duration = round(it.duration); o.frameRate = round(it.frameRate, 3); }
             if (it instanceof FootageItem && it.file) o.file = it.file.fsName;
             if (it instanceof FootageItem) { try { o.missing = it.footageMissing; } catch (e) { } }
@@ -652,7 +699,7 @@
 
     H.save_project = function (a) {
         if (a.path) {
-            var f = new File(a.path);
+            var f = outFile(a.path);
             if (f.exists && !a.overwrite) fail("File already exists: " + f.fsName, "Pass overwrite: true to replace it.");
             app.project.save(f);
         } else {
@@ -682,8 +729,7 @@
         var out = [], errors = [];
         var folder = null;
         if (a.folder) {
-            folder = findItem(a.folder, function (it) { return it instanceof FolderItem; });
-            if (!folder) folder = app.project.items.addFolder(a.folder);
+            folder = folderPath(a.folder, true);
         }
         for (var i = 0; i < a.paths.length; i++) {
             try {
@@ -697,7 +743,7 @@
                 }
                 var item = app.project.importFile(io);
                 if (folder) item.parentFolder = folder;
-                var o = { id: item.id, name: item.name, type: itemType(item) };
+                var o = { id: item.id, name: item.name, type: itemType(item), folder: folderName(item.parentFolder) };
                 if (a.addToComp) {
                     var comp = getComp(a.addToComp);
                     var l = comp.layers.add(item);
@@ -711,22 +757,21 @@
     };
 
     H.create_folder = function (a) {
-        var f = app.project.items.addFolder(a.name);
-        if (a.parent) { var p = findItem(a.parent, function (it) { return it instanceof FolderItem; }); if (!p) fail("Parent folder not found"); f.parentFolder = p; }
-        return { id: f.id, name: f.name };
+        var parent = a.parent ? folderPath(a.parent, true) : app.project.rootFolder;
+        var f = folderPath((folderName(parent) ? folderName(parent) + "/" : "") + a.name, true);
+        return { id: f.id, name: f.name, path: folderName(f) };
     };
 
     H.organize_items = function (a) {
         var moved = [];
-        var folder = findItem(a.folder, function (it) { return it instanceof FolderItem; });
-        if (!folder) { if (a.createFolder === false) fail("Folder not found: " + a.folder); folder = app.project.items.addFolder(a.folder); }
+        var folder = folderPath(a.folder, a.createFolder !== false);
         for (var i = 0; i < a.items.length; i++) {
             var it = findItem(a.items[i]);
             if (!it) fail("Item not found: " + a.items[i]);
             it.parentFolder = folder;
             moved.push(it.name);
         }
-        return { folder: folder.name, moved: moved };
+        return { folder: folderName(folder) || "/", moved: moved };
     };
 
     H.modify_item = function (a) {
@@ -766,7 +811,7 @@
         w = def(w, 1920); h = def(h, 1080);
         var c = app.project.items.addComp(a.name, w, h, def(a.pixelAspect, 1), def(a.duration, 10), def(a.frameRate, 30));
         if (has(a, "backgroundColor")) c.bgColor = color(a.backgroundColor);
-        if (a.folder) { var f = findItem(a.folder, function (it) { return it instanceof FolderItem; }) || app.project.items.addFolder(a.folder); c.parentFolder = f; }
+        if (a.folder) c.parentFolder = folderPath(a.folder, true);
         if (def(a.open, true)) { try { c.openInViewer(); } catch (e) { } }
         return compSummary(c);
     };
@@ -1731,7 +1776,7 @@
             for (var w = 0; w < want.length && !tpl; w++) for (var k = 0; k < avail.length; k++) if (avail[k].indexOf(want[w]) === 0) { tpl = avail[k]; break; }
         }
         if (tpl) om.applyTemplate(tpl);
-        if (a.outputPath) om.file = new File(a.outputPath);
+        if (a.outputPath) om.file = outFile(a.outputPath);
         if (has(a, "start")) it.timeSpanStart = a.start;
         if (has(a, "duration")) it.timeSpanDuration = a.duration;
         else if (a.workAreaOnly === false) { it.timeSpanStart = 0; it.timeSpanDuration = c.duration; }
