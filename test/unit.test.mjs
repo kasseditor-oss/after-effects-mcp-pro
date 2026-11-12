@@ -160,3 +160,22 @@ test("listener I/O errors are retried once automatically", async () => {
   assert.equal(JSON.parse(r.content[0].text).attempt, 1);
   await client.close();
 });
+
+test("every tool opens the After Effects activity card (MCP Apps)", async () => {
+  const client = await connect();
+  const { tools } = await client.listTools();
+  for (const t of tools) assert.equal(t._meta?.ui?.resourceUri, "ui://after-effects/activity.html", t.name);
+  const { resources } = await client.listResources();
+  const card = resources.find((r) => r.uri === "ui://after-effects/activity.html");
+  assert.equal(card?.mimeType, "text/html;profile=mcp-app");
+  const res = await client.readResource({ uri: card.uri });
+  const html = res.contents[0].text;
+  assert.equal(res.contents[0].mimeType, "text/html;profile=mcp-app");
+  assert.match(html, /ui\/initialize/);
+  assert.match(html, /After Effects/);
+  assert.match(html, /src="data:image\/(png|svg\+xml);base64,/, "card shows the Ae icon");
+  // the card script must at least parse
+  const script = html.match(/<script>([\s\S]*)<\/script>/)[1];
+  assert.doesNotThrow(() => new Function(script));
+  await client.close();
+});

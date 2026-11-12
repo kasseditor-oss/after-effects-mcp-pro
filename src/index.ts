@@ -19,6 +19,7 @@ import { zodToJsonSchema } from "zod-to-json-schema";
 import { AEError, Bridge, SERVER_VERSION } from "./bridge.js";
 import { findInstalls } from "./env.js";
 import { TOOLS, NODE_ONLY, type ToolDef } from "./tools.js";
+import { WIDGET_MIME, WIDGET_URI, widgetHtml } from "./widget.js";
 
 const here = path.dirname(fileURLToPath(import.meta.url));
 
@@ -51,7 +52,7 @@ const server = new Server(
     ...(ICONS.length ? { icons: ICONS } : {}),
   } as any,
   {
-    capabilities: { tools: {}, resources: {}, prompts: {}, logging: {} },
+    capabilities: { tools: {}, resources: {}, prompts: {}, logging: {}, extensions: { "io.modelcontextprotocol/ui": { mimeTypes: [WIDGET_MIME] } } } as any,
     instructions:
       "Controls a live Adobe After Effects session. Workflow tips: call get_selection or get_project_info first to see context; " +
       "address layers by 'id:<n>' when you will reorder them; use batch to build many things in one undo step; " +
@@ -84,7 +85,10 @@ const LISTED = TOOLS.filter((d) => !(d.name === "run_extendscript" && process.en
     openWorldHint: false,
   },
   ...(ICONS.length ? { icons: ICONS } : {}),
+  // MCP Apps: Claude renders the After Effects activity card for every call
+  _meta: { ui: { resourceUri: WIDGET_URI, visibility: ["model", "app"] }, "ui/resourceUri": WIDGET_URI },
 }));
+const CARD_ICON = (ICONS.find((i) => i.sizes?.includes("64x64")) ?? ICONS.find((i) => i.mimeType === "image/svg+xml") ?? ICONS[0])?.src ?? "";
 
 server.setRequestHandler(ListToolsRequestSchema, async () => ({ tools: LISTED as any }));
 
@@ -187,7 +191,7 @@ async function nodeTool(name: string, a: any): Promise<CallToolResult> {
     }
     case "preview_frame": {
       const { info, data } = await captureFrame(a, a.savePath);
-      return ok({ ...info, savedTo: a.savePath ?? null }, [{ type: "image", data, mimeType: "image/png" }]);
+      return { ...ok({ ...info, savedTo: a.savePath ?? null }, [{ type: "image", data, mimeType: "image/png" }]), _meta: { "after-effects/summary": `Frame ${info.time}s de ${info.comp}` } };
     }
     case "preview_contact_sheet": {
       const comp = await bridge.call<any>("get_composition", { comp: a.comp }, { undo: false });
@@ -306,12 +310,16 @@ server.setRequestHandler(CallToolRequestSchema, async (req): Promise<CallToolRes
 // ------------------------------------------------------------------ resources
 server.setRequestHandler(ListResourcesRequestSchema, async () => ({
   resources: [
+    { uri: WIDGET_URI, name: "After Effects activity", title: "After Effects activity", mimeType: WIDGET_MIME, description: "Inline card showing what Claude is doing in After Effects", _meta: { ui: { prefersBorder: false } } } as any,
     { uri: "aftereffects://project", name: "Project info", mimeType: "application/json", description: "Current project overview" },
     { uri: "aftereffects://compositions", name: "Compositions", mimeType: "application/json", description: "All compositions" },
     { uri: "aftereffects://selection", name: "Selection", mimeType: "application/json", description: "Active comp and selected layers" },
   ],
 }));
 server.setRequestHandler(ReadResourceRequestSchema, async (req) => {
+  if (req.params.uri === WIDGET_URI) {
+    return { contents: [{ uri: WIDGET_URI, mimeType: WIDGET_MIME, text: widgetHtml(CARD_ICON), _meta: { ui: { prefersBorder: false, csp: { connectDomains: [], resourceDomains: [] } } } } as any] };
+  }
   const map: Record<string, string> = { "aftereffects://project": "get_project_info", "aftereffects://compositions": "list_compositions", "aftereffects://selection": "get_selection" };
   const tool = map[req.params.uri];
   if (!tool) throw new Error(`Unknown resource ${req.params.uri}`);
