@@ -367,3 +367,33 @@ test("ES3 check rejects chained conditionals (ExtendScript evaluates them wrongl
   assert.match(out, /bad\.jsx: line 1: nested/);
   assert.doesNotMatch(out, /ok\.jsx/);
 });
+
+test("long single calls send heartbeat progress when a progressToken is given", async () => {
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), "aemcp-beat-"));
+  const q = path.join(dir, "queue");
+  // fake AE: answers each command 5 s after it shows up, without progress files
+  const pending = new Map();
+  const timer = setInterval(() => {
+    fs.writeFileSync(path.join(dir, "heartbeat.json"), JSON.stringify({ time: Date.now(), version: "2.0.2", ae: "fake", paused: false, executed: 0, project: "" }));
+    for (const f of fs.existsSync(q) ? fs.readdirSync(q) : []) {
+      if (!f.endsWith(".jsx") || pending.has(f)) continue;
+      const src = fs.readFileSync(path.join(q, f), "utf8");
+      pending.set(f, setTimeout(() => {
+        for (const m of src.matchAll(/\.run\((".*"), ("[^"]+\.json")\);/g)) {
+          const payload = JSON.parse(JSON.parse(m[1]));
+          fs.writeFileSync(JSON.parse(m[2]), JSON.stringify({ ok: true, id: payload.id, data: { created: true } }));
+        }
+        fs.rmSync(path.join(q, f), { force: true });
+      }, 5000));
+    }
+  }, 30);
+  await new Promise((r) => setTimeout(r, 80));
+  const client = await connect({ AE_MCP_BRIDGE_DIR: dir });
+  const seen = [];
+  const r = await client.callTool({ name: "new_project", arguments: { discardChanges: false } }, undefined, { onprogress: (p) => seen.push(p) });
+  clearInterval(timer);
+  assert.ok(!r.isError, r.content[0].text);
+  assert.ok(seen.length >= 1, "at least one heartbeat during a 5 s call");
+  assert.match(seen[0].message, /After Effects is working/);
+  await client.close();
+});

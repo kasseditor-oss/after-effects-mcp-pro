@@ -349,10 +349,21 @@ export class Bridge {
 
   private async waitForResult(resultPath: string, timeoutMs: number, mode: Mode, id: string, timeoutParam = false, signal?: AbortSignal, onProgress?: CallOptions["onProgress"], callId?: string): Promise<string> {
     const progressPath = resultPath.replace(/\.json$/, ".progress.json");
-    let lastDone = -1;
+    let lastDone = -1, lastTick = Date.now();
+    const started = Date.now();
     try {
       return await this.waitLoop(resultPath, timeoutMs, mode, id, timeoutParam, signal, callId, () => {
-        if (!onProgress || !fs.existsSync(progressPath)) return;
+        if (!onProgress) return;
+        // No progress file (a single long AE call such as closing a big project): send a
+        // heartbeat every 2 s so the client sees the call is alive.
+        if (!fs.existsSync(progressPath)) {
+          if (lastDone < 0 && Date.now() - lastTick >= 2000) {
+            lastTick = Date.now();
+            const secs = Math.round((Date.now() - started) / 1000);
+            onProgress(secs, 0, `After Effects is working (${secs} s)`);
+          }
+          return;
+        }
         try {
           const p = JSON.parse(fs.readFileSync(progressPath, "utf8"));
           if (p.done !== lastDone) {
