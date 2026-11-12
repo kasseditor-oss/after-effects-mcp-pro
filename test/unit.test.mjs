@@ -317,3 +317,30 @@ test("an undo group makes one undo call revert every grouped call", async () => 
   stop();
   await client.close();
 });
+
+test("macOS platform: install discovery and AppleScript command (runs on any OS)", async () => {
+  const { findInstallsIn, appleScriptFor } = await import(new URL("../build/platform/macos.js", import.meta.url).href);
+  const apps = fs.mkdtempSync(path.join(os.tmpdir(), "aemcp-apps-"));
+  for (const v of ["2025", "2026"]) {
+    const d = path.join(apps, `Adobe After Effects ${v}`);
+    fs.mkdirSync(path.join(d, `Adobe After Effects ${v}.app`), { recursive: true });
+    fs.writeFileSync(path.join(d, "aerender"), "");
+  }
+  fs.mkdirSync(path.join(apps, "Adobe Premiere Pro 2026"));
+  const found = findInstallsIn(apps);
+  assert.deepEqual(found.map((i) => i.version), ["2026", "2025"]);
+  assert.ok(found[0].executable.endsWith("Adobe After Effects 2026.app"));
+  assert.ok(found[0].aerender);
+  assert.equal(appleScriptFor('/Users/a "b"/x.jsx', "Adobe After Effects 2026"), 'tell application "Adobe After Effects 2026" to DoScriptFile "/Users/a \\"b\\"/x.jsx"');
+});
+
+test("platform selection and bridge folder per OS", async () => {
+  const { platform } = await import(new URL("../build/platform/index.js", import.meta.url).href);
+  const prev = process.env.AE_MCP_PLATFORM;
+  process.env.AE_MCP_PLATFORM = "macos";
+  assert.equal(platform().name, "macos");
+  assert.ok(platform().userDataDir().endsWith(path.join("Library", "Application Support")));
+  process.env.AE_MCP_PLATFORM = "windows";
+  assert.equal(platform().name, "windows");
+  if (prev === undefined) delete process.env.AE_MCP_PLATFORM; else process.env.AE_MCP_PLATFORM = prev;
+});

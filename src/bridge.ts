@@ -1,9 +1,9 @@
 import * as crypto from "node:crypto";
 import * as fs from "node:fs";
 import * as path from "node:path";
-import { execFile, execSync, spawn } from "node:child_process";
 import { fileURLToPath } from "node:url";
-import { aePids, aeReady, bridgeDir, findInstalls, isMac, isWin } from "./env.js";
+import { aePids, aeReady, bridgeDir, findInstalls } from "./env.js";
+import { platform } from "./platform/index.js";
 
 const here = path.dirname(fileURLToPath(import.meta.url));
 
@@ -337,31 +337,12 @@ export class Bridge {
     return res.data as T;
   }
 
-  private runDirect(file: string): Promise<void> {
-    const installs = findInstalls();
-    return new Promise((resolve, reject) => {
-      if (isWin) {
-        if (!installs.length) return reject(new AEError("AfterFX.exe not found", "Set AE_MCP_AE_PATH to your After Effects folder."));
-        // AfterFX.exe -r silently ignores paths with spaces (e.g. user names like "John Smith"): use the 8.3 short path
-        let target = file;
-        if (/\s/.test(file)) {
-          try {
-            target = execSync(`for %A in ("${path.win32.normalize(file)}") do @echo %~sA`, { encoding: "utf8", windowsHide: true }).trim();
-          } catch {
-            /* keep long path */
-          }
-          if (/\s/.test(target)) return reject(new AEError("The bridge folder path contains spaces and has no 8.3 short name", "Set AE_MCP_BRIDGE_DIR to a folder without spaces, e.g. C:\\ae-mcp."));
-        }
-        execFile(installs[0].executable, ["-r", target], { windowsHide: true, timeout: 30_000 }, (err) => {
-          if (err && (err as any).killed) return reject(new AEError("AfterFX.exe -r did not return", "After Effects may be showing a modal dialog."));
-          resolve();
-        });
-      } else if (isMac) {
-        const appName = installs.length ? path.basename(installs[0].executable, ".app") : "Adobe After Effects 2026";
-        const as = `tell application "${appName}" to DoScriptFile "${file.replace(/"/g, '\\"')}"`;
-        execFile("osascript", ["-e", as], { timeout: 30_000 }, (err) => (err ? reject(new AEError(`osascript failed: ${err.message}`)) : resolve()));
-      } else reject(new AEError("Unsupported platform: After Effects runs on Windows and macOS only"));
-    });
+  private async runDirect(file: string): Promise<void> {
+    try {
+      await platform().runScriptFile(file, findInstalls()[0]);
+    } catch (e: any) {
+      throw new AEError(e.message, e.hint);
+    }
   }
 
   private async waitForResult(resultPath: string, timeoutMs: number, mode: Mode, id: string, timeoutParam = false, signal?: AbortSignal, onProgress?: CallOptions["onProgress"], callId?: string): Promise<string> {
@@ -456,8 +437,7 @@ export class Bridge {
     if (this.aeRunning()) return { alreadyRunning: true, seconds: 0 };
     const installs = findInstalls();
     if (!installs.length) throw new AEError("No After Effects installation found", "Set AE_MCP_AE_PATH.");
-    if (isWin) spawn(installs[0].executable, [], { detached: true, stdio: "ignore" }).unref();
-    else spawn("open", ["-a", installs[0].executable], { detached: true, stdio: "ignore" }).unref();
+    platform().launch(installs[0]);
     while (Date.now() - t0 < waitSeconds * 1000) {
       await sleep(3000);
       this.runningCache.at = 0;

@@ -9,7 +9,7 @@
 import * as fs from "node:fs";
 import * as os from "node:os";
 import * as path from "node:path";
-import { execFileSync, execSync } from "node:child_process";
+import { execFileSync } from "node:child_process";
 import { fileURLToPath, pathToFileURL } from "node:url";
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
@@ -28,7 +28,7 @@ const listenerDst = path.join(bridge, "ae-mcp-pro-listener.jsx");
 function aeRunning() {
   try {
     if (isWin) return /AfterFX\.exe/i.test(execFileSync("tasklist", ["/FI", "IMAGENAME eq AfterFX.exe", "/NH"], { encoding: "utf8" }));
-    return execFileSync("pgrep", ["-f", "After Effects"], { encoding: "utf8" }).trim().length > 0;
+    return execFileSync("pgrep", ["-x", "After Effects"], { encoding: "utf8" }).trim().length > 0;
   } catch {
     return false;
   }
@@ -91,20 +91,19 @@ for (const v of versions) {
 // Start the listener in the running instance so no restart is needed. Sending a
 // script while AE is still on its splash screen can hang it, so only do this
 // once AE is fully loaded; otherwise the listener starts with AE next time.
-if (running && isWin) {
-  let env = null;
+if (running) {
+  let plat = null;
   try {
-    env = await import(pathToFileURL(path.join(root, "build", "env.js")).href);
+    plat = (await import(pathToFileURL(path.join(root, "build", "platform", "index.js")).href)).platform();
   } catch {
     report.push("build/ not found (run npm run build): the listener will start next time AE opens");
   }
-  const install = env?.findInstalls()[0];
-  if (env && !env.aeReady()) report.push("After Effects is still starting: the listener will start next time AE opens (or restart AE)");
-  else if (install) {
+  const install = plat?.findInstalls()[0];
+  if (plat && !plat.aeReady()) report.push("After Effects is still starting: the listener will start next time AE opens (or restart AE)");
+  else if (plat && install) {
     try {
-      // AfterFX -r ignores paths with spaces: pass the 8.3 short path
-      const target = /\s/.test(listenerDst) ? execSync(`for %A in ("${listenerDst}") do @echo %~sA`, { encoding: "utf8" }).trim() : listenerDst;
-      execFileSync(install.executable, ["-r", target], { timeout: 20000 });
+      // Windows: AfterFX.exe -r (8.3 short path); macOS: AppleScript DoScriptFile
+      await plat.runScriptFile(listenerDst, install);
       report.push("listener started in the running After Effects");
     } catch (e) {
       report.push(`could not start listener now (${e.message}); it will start next time AE opens`);
