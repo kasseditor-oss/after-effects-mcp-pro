@@ -1,6 +1,6 @@
 {
   "name": "after-effects-mcp-pro",
-  "version": "2.0.0",
+  "version": "2.0.1",
   "description": "MCP server for Adobe After Effects: 60+ tools, synchronous results, live frame previews, background rendering, zero-click bridge.",
   "main": "build/index.js",
   "directories": {

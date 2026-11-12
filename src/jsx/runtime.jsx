@@ -468,6 +468,20 @@
     }
     A.coerce = coerce;
 
+    function expectedType(p) {
+        var t = p.propertyValueType;
+        if (t === PropertyValueType.OneD) return "a number";
+        if (t === PropertyValueType.TwoD || t === PropertyValueType.TwoD_SPATIAL) return "[x, y]";
+        if (t === PropertyValueType.ThreeD || t === PropertyValueType.ThreeD_SPATIAL) return "[x, y, z] (or [x, y])";
+        if (t === PropertyValueType.COLOR) return "a color: '#RRGGBB' or [r, g, b] (0-1)";
+        if (t === PropertyValueType.TEXT_DOCUMENT) return "a string, or {text, font, fontSize, fillColor, ...}";
+        if (t === PropertyValueType.SHAPE) return "{vertices: [[x,y],...], inTangents?, outTangents?, closed?}";
+        if (t === PropertyValueType.MARKER) return "{comment, duration?}";
+        if (t === PropertyValueType.LAYER_INDEX) return "a layer index";
+        if (t === PropertyValueType.MASK_INDEX) return "a mask index";
+        return "a value of this property's type";
+    }
+
     function propInfo(p, withKeys) {
         var o = { name: p.name, matchName: p.matchName, path: propPath(p) };
         if (!isProperty(p)) { o.group = true; o.numProperties = p.numProperties; return o; }
@@ -1324,9 +1338,14 @@
         var t = target(a);
         var p = resolveProp(t.layer, a.property);
         if (!isProperty(p)) fail("'" + a.property + "' is a property group, not a property");
-        if (has(a, "time")) p.setValueAtTime(a.time, coerce(p, a.value));
-        else if (p.numKeys > 0) p.setValueAtTime(t.comp.time, coerce(p, a.value));
-        else p.setValue(coerce(p, a.value));
+        try {
+            if (has(a, "time")) p.setValueAtTime(a.time, coerce(p, a.value));
+            else if (p.numKeys > 0) p.setValueAtTime(t.comp.time, coerce(p, a.value));
+            else p.setValue(coerce(p, a.value));
+        } catch (e) {
+            if (e.aeHint) throw e;
+            fail("Cannot set '" + propPath(p) + "': " + String(e).replace(/^Error: /, ""), "Expected " + expectedType(p) + ". Current value: " + A.JSON.stringify(serValue(p.value)));
+        }
         return propInfo(p, false);
     };
 
@@ -1908,8 +1927,15 @@
 
     H.run_extendscript = function (a) {
         // The code runs inside a function; use `return` to send a value back.
-        var fn = new Function("AEMCP", "args", a.code);
-        var v = fn(A, def(a.args, {}));
+        var fn;
+        try { fn = new Function("AEMCP", "args", a.code); }
+        catch (se) {
+            fail("Syntax error in your ExtendScript: " + String(se).replace(/^\w*Error: /, "") + (se.line ? " (line " + Math.max(1, se.line - 1) + ")" : ""),
+                "The code is the BODY of an ES3 function: no let/const, arrow functions, template literals or JSON (use AEMCP.JSON). Use 'return' to send a value back.");
+        }
+        var v;
+        try { v = fn(A, def(a.args, {})); }
+        catch (re) { var e2 = new Error(String(re).replace(/^Error: /, "") + (re.line ? " (line " + Math.max(1, re.line - 1) + " of your code)" : "")); e2.aeHint = re.aeHint; throw e2; }
         return { result: serDeep(v, 0) };
     };
     function serDeep(v, d) {

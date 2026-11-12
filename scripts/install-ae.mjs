@@ -10,7 +10,7 @@ import * as fs from "node:fs";
 import * as os from "node:os";
 import * as path from "node:path";
 import { execFileSync, execSync } from "node:child_process";
-import { fileURLToPath } from "node:url";
+import { fileURLToPath, pathToFileURL } from "node:url";
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 const isWin = process.platform === "win32";
@@ -88,21 +88,26 @@ for (const v of versions) {
   }
 }
 
-// Start the listener in the running instance so no restart is needed.
+// Start the listener in the running instance so no restart is needed. Sending a
+// script while AE is still on its splash screen can hang it, so only do this
+// once AE is fully loaded; otherwise the listener starts with AE next time.
 if (running && isWin) {
-  const dirs = fs.readdirSync(path.join(process.env.ProgramFiles || "C:\\Program Files", "Adobe")).filter((d) => /^Adobe After Effects/i.test(d)).sort().reverse();
-  for (const d of dirs) {
-    const exe = path.join(process.env.ProgramFiles || "C:\\Program Files", "Adobe", d, "Support Files", "AfterFX.exe");
-    if (fs.existsSync(exe)) {
-      try {
-        // AfterFX -r ignores paths with spaces: pass the 8.3 short path
-        const target = /\s/.test(listenerDst) ? execSync(`for %A in ("${listenerDst}") do @echo %~sA`, { encoding: "utf8" }).trim() : listenerDst;
-        execFileSync(exe, ["-r", target], { timeout: 20000 });
-        report.push("listener started in the running After Effects");
-      } catch (e) {
-        report.push(`could not start listener now (${e.message}); it will start next time AE opens`);
-      }
-      break;
+  let env = null;
+  try {
+    env = await import(pathToFileURL(path.join(root, "build", "env.js")).href);
+  } catch {
+    report.push("build/ not found (run npm run build): the listener will start next time AE opens");
+  }
+  const install = env?.findInstalls()[0];
+  if (env && !env.aeReady()) report.push("After Effects is still starting: the listener will start next time AE opens (or restart AE)");
+  else if (install) {
+    try {
+      // AfterFX -r ignores paths with spaces: pass the 8.3 short path
+      const target = /\s/.test(listenerDst) ? execSync(`for %A in ("${listenerDst}") do @echo %~sA`, { encoding: "utf8" }).trim() : listenerDst;
+      execFileSync(install.executable, ["-r", target], { timeout: 20000 });
+      report.push("listener started in the running After Effects");
+    } catch (e) {
+      report.push(`could not start listener now (${e.message}); it will start next time AE opens`);
     }
   }
 }
