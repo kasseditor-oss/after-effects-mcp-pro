@@ -2473,9 +2473,70 @@
         var p = resolveProp(t.layer, a.property);
         if (!isProperty(p) || !p.canAddToMotionGraphicsTemplate(t.comp)) fail("'" + a.property + "' cannot be added to Essential Graphics", "Supported: most transform, effect, text and color properties.");
         var ok = a.name ? p.addToMotionGraphicsTemplateAs(t.comp, a.name) : p.addToMotionGraphicsTemplate(t.comp);
-        var names = [];
-        for (var i = 1; i <= t.comp.motionGraphicsTemplateControllerCount; i++) names.push(t.comp.getMotionGraphicsTemplateControllerName(i));
-        return { added: ok !== false, comp: t.comp.name, controllers: names };
+        if (a.templateName) t.comp.motionGraphicsTemplateName = a.templateName;
+        var names = [], index = null, want = a.name || p.name;
+        // controller indices do NOT follow the order of creation: look the new one up by name
+        for (var i = 1; i <= t.comp.motionGraphicsTemplateControllerCount; i++) {
+            var nm = t.comp.getMotionGraphicsTemplateControllerName(i);
+            names.push(nm);
+            if (nm === want) index = i;
+        }
+        return { added: ok !== false, comp: t.comp.name, name: want, index: index, templateName: t.comp.motionGraphicsTemplateName || null, controllers: names };
+    };
+
+    // several Essential Properties of one instance in one call: values {name: value}
+    H.set_essential_properties = function (a) {
+        var c = getComp(a.comp);
+        var l = getLayer(c, a.layer);
+        var ov = overridesOf(l), set = [], errors = [];
+        for (var k in a.values) {
+            if (!a.values.hasOwnProperty(k)) continue;
+            try {
+                var p = resolveProp(ov, k);
+                if (!isProperty(p)) throw new Error("not a property");
+                p.setValue(coerce(p, a.values[k]));
+                set.push(p.name);
+            } catch (e) { errors.push(k + ": " + String(e).replace(/^Error: /, "")); }
+        }
+        return { layer: l.name, set: set, errors: errors };
+    };
+
+    // N instances of a template comp in another comp, each with its own values
+    H.instantiate_template = function (a) {
+        var tpl = getComp(a.template), into = getComp(a.into);
+        if (tpl === into) fail("A template cannot be placed inside itself");
+        var out = [];
+        for (var i = 0; i < a.items.length; i++) {
+            var it = a.items[i];
+            var l = into.layers.add(tpl);
+            if (it.name) l.name = it.name;
+            if (it.position) { var pp = l.property("ADBE Transform Group").property("ADBE Position"); pp.setValue(coerce(pp, it.position)); }
+            if (has(it, "startTime")) l.startTime = it.startTime;
+            var r = { index: l.index, id: l.id, name: l.name, set: [], errors: [] };
+            if (it.values) {
+                var sv = H.set_essential_properties({ comp: into.id, layer: "id:" + l.id, values: it.values });
+                r.set = sv.set; r.errors = sv.errors;
+            }
+            out.push(r);
+        }
+        return { template: tpl.name, into: into.name, instances: out };
+    };
+
+    // .mogrt export: AE writes <folder>/<template name>.mogrt asynchronously and the comp
+    // object is invalid afterwards, so the server waits for the file.
+    H.export_mogrt = function (a) {
+        var c = getComp(a.comp), id = c.id;
+        if (!c.motionGraphicsTemplateControllerCount) fail("Comp '" + c.name + "' has no Essential Graphics controllers", "Add some with add_to_essential_graphics first.");
+        var p = String(a.path).replace(/\\/g, "/");
+        var folder = p, name = c.motionGraphicsTemplateName || c.name;
+        if (/\.mogrt$/i.test(p)) { folder = p.replace(/\/[^\/]*$/, ""); name = p.replace(/^.*\//, "").replace(/\.mogrt$/i, ""); }
+        if (!c.motionGraphicsTemplateName || /\.mogrt$/i.test(p)) c.motionGraphicsTemplateName = name;
+        var dir = new Folder(folder);
+        if (!dir.exists) dir.create();
+        var target = new File(folder + "/" + name + ".mogrt");
+        if (target.exists && !a.overwrite) fail("File already exists: " + target.fsName, "Pass overwrite:true to replace it.");
+        var ok = c.exportAsMotionGraphicsTemplate(!!a.overwrite || !target.exists, folder);
+        return { ok: ok !== false, comp: getComp(id).name, file: target.fsName };
     };
 
     // ---- Misc

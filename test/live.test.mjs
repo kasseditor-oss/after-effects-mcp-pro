@@ -394,6 +394,29 @@ await call("preview_contact_sheet", { comp: C, frames: 4, maxSize: 400 }, {
   const arc = (await call("get_properties_at_time", { comp: bc.data?.id, time: 0.5, requests: [{ layer: "B", properties: ["Position"] }] })).data?.results?.[0]?.values?.Position;
   results.push({ tool: "spatial tangents bend the path", pass: arc && arc[1] < 80, ms: 0, note: `mid position ${JSON.stringify(arc)}` });
 }
+// QA task A4 in 4 calls: template comp, its contents + controllers, 3 instances with values, .mogrt export
+{
+  const before = results.length;
+  const tpl = await call("create_composition", { name: COMP + " EG tpl", width: 600, height: 160, duration: 3, backgroundColor: "#000000", open: false });
+  created.push(tpl.data?.id);
+  await call("batch", { operations: [
+    { tool: "create_text_layer", args: { comp: tpl.data?.id, text: "Texto", fontSize: 60, name: "T" } },
+    { tool: "add_to_essential_graphics", args: { comp: tpl.data?.id, layer: "T", property: "Source Text", name: "Texto", templateName: "QA Lower" } },
+    { tool: "apply_effect", args: { comp: tpl.data?.id, layer: "T", effect: "Fill", params: { Color: "#ffffff" } } },
+    { tool: "add_to_essential_graphics", args: { comp: tpl.data?.id, layer: "T", property: "Effects/Fill/Color", name: "Cor" } },
+  ] }, { check: (d) => (d.ok ? true : JSON.stringify(d).slice(0, 200)) });
+  const host = await call("create_composition", { name: COMP + " EG host", width: 1280, height: 720, duration: 3, backgroundColor: "#202020", open: false });
+  created.push(host.data?.id);
+  await call("instantiate_template", { template: tpl.data?.id, into: host.data?.id, items: [
+    { name: "A", position: [640, 160], values: { Texto: "Ao vivo agora!", Cor: "#ff3366" } },
+    { name: "B", position: [640, 360], values: { Texto: "Segunda linha", Cor: "#33ccff" } },
+    { name: "C", position: [640, 560], values: { Texto: "Terceira 🎬", Cor: "#ffcc00" } },
+  ] }, { check: (d) => (d.instances.length === 3 && d.instances.every((i) => i.set.length === 2 && !i.errors.length) ? true : JSON.stringify(d).slice(0, 300)) });
+  await call("export_mogrt", { comp: tpl.data?.id, path: path.join(out, "mogrt", "qa-lower.mogrt") }, { check: (d) => (d.bytes > 1000 && /qa-lower\.mogrt$/i.test(d.file) ? true : JSON.stringify(d)) });
+  await call("list_essential_properties", { comp: host.data?.id, layer: "B" }, { check: (d) => (d.properties.some((p) => p.name === "Texto" && /Segunda/.test(JSON.stringify(p.value))) ? true : JSON.stringify(d).slice(0, 200)) });
+  const r = await client.callTool({ name: "preview_frame", arguments: { comp: host.data?.id, time: 0, format: "jpeg" } });
+  fs.writeFileSync(path.join(out, "a4-eg.jpg"), Buffer.from(r.content.find((c) => c.type === "image").data, "base64"));
+}
 // text-fade-up must REVEAL the text: invisible before, fully visible after (pixel check)
 {
   const fc = await call("create_composition", { name: COMP + " fade", width: 640, height: 360, duration: 3, backgroundColor: "#000000", open: false });

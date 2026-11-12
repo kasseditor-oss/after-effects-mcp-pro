@@ -6812,6 +6812,194 @@
   }
  },
  {
+  "name": "set_essential_properties",
+  "title": "Set Essential Properties",
+  "description": "Set several Essential Properties of one precomp instance by name in one call: values {\"Texto\": \"Ao vivo\", \"Cor\": \"#ff3366\"}.",
+  "inputSchema": {
+   "type": "object",
+   "properties": {
+    "comp": {
+     "anyOf": [
+      {
+       "type": "string"
+      },
+      {
+       "type": "integer"
+      }
+     ],
+     "description": "Composition name or numeric item id. Omit to use the active composition."
+    },
+    "layer": {
+     "anyOf": [
+      {
+       "type": "integer",
+       "exclusiveMinimum": 0
+      },
+      {
+       "type": "string"
+      }
+     ],
+     "description": "Layer: 1-based index, exact name, or 'id:<layerId>' (stable across reordering)."
+    },
+    "values": {
+     "type": "object",
+     "additionalProperties": {}
+    },
+    "timeoutSeconds": {
+     "type": "integer",
+     "minimum": 1,
+     "maximum": 3600,
+     "description": "Max seconds to wait for After Effects (default 60, long tools 300+)."
+    }
+   },
+   "required": [
+    "layer",
+    "values"
+   ]
+  },
+  "annotations": {
+   "title": "Set Essential Properties",
+   "readOnlyHint": false,
+   "destructiveHint": false,
+   "idempotentHint": false,
+   "openWorldHint": false
+  },
+  "_meta": {
+   "ui": {
+    "resourceUri": "ui://after-effects/activity.html",
+    "visibility": [
+     "model",
+     "app"
+    ]
+   },
+   "ui/resourceUri": "ui://after-effects/activity.html"
+  }
+ },
+ {
+  "name": "instantiate_template",
+  "title": "Instantiate template",
+  "description": "Place a template comp N times into another comp, each with its own name, position and Essential Property values: items [{name, position, values}].",
+  "inputSchema": {
+   "type": "object",
+   "properties": {
+    "template": {
+     "type": [
+      "string",
+      "number"
+     ]
+    },
+    "into": {
+     "type": [
+      "string",
+      "number"
+     ]
+    },
+    "items": {
+     "type": "array",
+     "items": {
+      "type": "object",
+      "properties": {
+       "name": {
+        "type": "string"
+       },
+       "position": {
+        "type": "array",
+        "items": {
+         "type": "number"
+        }
+       },
+       "startTime": {
+        "type": "number"
+       },
+       "values": {
+        "type": "object",
+        "additionalProperties": {}
+       }
+      },
+      "additionalProperties": false
+     },
+     "minItems": 1,
+     "maxItems": 100
+    },
+    "timeoutSeconds": {
+     "type": "integer",
+     "minimum": 1,
+     "maximum": 3600,
+     "description": "Max seconds to wait for After Effects (default 60, long tools 300+)."
+    }
+   },
+   "required": [
+    "template",
+    "into",
+    "items"
+   ]
+  },
+  "annotations": {
+   "title": "Instantiate template",
+   "readOnlyHint": false,
+   "destructiveHint": false,
+   "idempotentHint": false,
+   "openWorldHint": false
+  },
+  "_meta": {
+   "ui": {
+    "resourceUri": "ui://after-effects/activity.html",
+    "visibility": [
+     "model",
+     "app"
+    ]
+   },
+   "ui/resourceUri": "ui://after-effects/activity.html"
+  }
+ },
+ {
+  "name": "export_mogrt",
+  "title": "Export .mogrt",
+  "description": "Export a comp with Essential Graphics controllers as a Motion Graphics Template (.mogrt). path: a folder, or a full .mogrt file path (its name becomes the template name).",
+  "inputSchema": {
+   "type": "object",
+   "properties": {
+    "comp": {
+     "anyOf": [
+      {
+       "type": "string"
+      },
+      {
+       "type": "integer"
+      }
+     ],
+     "description": "Composition name or numeric item id. Omit to use the active composition."
+    },
+    "path": {
+     "type": "string"
+    },
+    "overwrite": {
+     "type": "boolean"
+    }
+   },
+   "required": [
+    "path"
+   ]
+  },
+  "annotations": {
+   "title": "Export .mogrt",
+   "readOnlyHint": false,
+   "destructiveHint": false,
+   "idempotentHint": false,
+   "openWorldHint": false
+  },
+  "_meta": {
+   "ui": {
+    "resourceUri": "ui://after-effects/activity.html",
+    "visibility": [
+     "model",
+     "app"
+    ]
+   },
+   "ui/resourceUri": "ui://after-effects/activity.html"
+  }
+ },
+ {
   "name": "add_to_essential_graphics",
   "title": "Add to Essential Graphics",
   "description": "Expose a property of a layer in its comp's Essential Graphics panel (optionally with a custom name) so precomp instances can override it.",
@@ -6846,6 +7034,10 @@
     },
     "name": {
      "type": "string"
+    },
+    "templateName": {
+     "type": "string",
+     "description": "Name of the Motion Graphics template (instead of 'Untitled')."
     },
     "timeoutSeconds": {
      "type": "integer",

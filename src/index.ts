@@ -450,6 +450,22 @@ async function nodeTool(name: string, a: any, report?: Progress): Promise<CallTo
       }
       return ok({ comp: comp.name, frames: files.length, firstFrame: first, lastFrame: last, first: files[0], last: files[files.length - 1] });
     }
+    case "export_mogrt": {
+      // the runtime starts the export; AE writes the file asynchronously
+      const r = await bridge.call<any>("export_mogrt", a, { timeoutMs: 120_000 });
+      const t0 = Date.now();
+      let last = -1;
+      while (Date.now() - t0 < 120_000) {
+        if (fs.existsSync(r.file)) {
+          const size = fs.statSync(r.file).size;
+          if (size > 0 && size === last) break;
+          last = size;
+        }
+        await new Promise((res) => setTimeout(res, 250));
+      }
+      if (!fs.existsSync(r.file)) return err(`After Effects did not write ${r.file}`, "Check that the comp has Essential Graphics controllers and the folder is writable.");
+      return ok({ ...r, bytes: fs.statSync(r.file).size });
+    }
     case "get_background_render": {
       const all = [...jobs.values(), ...diskJobs()];
       const list = a.jobId ? all.filter((j) => j.id === a.jobId) : all;

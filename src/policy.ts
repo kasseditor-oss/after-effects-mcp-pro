@@ -66,6 +66,7 @@ export const PATH_ARGS: Record<string, string[]> = {
   render_in_background: ["outputPath"],
   preview_frame: ["savePath"],
   render_png_sequence: ["outputPath"],
+  export_mogrt: ["path"],
 };
 
 /** AE_MCP_ALLOWED_DIRS: ';'-separated folders; when set, every path must resolve inside one of them. */
