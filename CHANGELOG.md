@@ -23,6 +23,11 @@ Server 2.2.0, AE listener 2.0.4: **run `npx after-effects-mcp-pro setup` (or `np
 - One runtime folder per server version; background render jobs survive a server restart; `aerender` never waits on stdin, an empty output is an error, and the output folder is created.
 - Preview times outside the comp and fonts without glyphs are reported.
 - `undo` verifies that the layers the last call created are gone.
+- `threeD`, `blendMode` and `motionBlur` were ignored on shape and text layers (in ExtendScript they are not `instanceof AVLayer`).
+- `add_layer_style` uses the fixed Layer Styles command ids (`drop-shadow` failed in some sessions).
+- Shape paths accept `Shape N` for the Nth shape group (groups are named `Group N`): `Contents/Shape 1/Contents/Trim Paths 1/End`.
+- `render_in_background` accepts a comp id like the other tools.
+- After Effects and `aerender` started by the server get the standard Windows environment (Common Files, ProgramData, windir...). MCP clients start servers with a reduced environment, and AE then hung at startup (`launch_after_effects`, direct mode) and `aerender` never got past its first line.
 - `launch_after_effects` waits when After Effects is already running but still starting (it returned at once and the next call failed).
 - After Effects (Beta) is detected (and sorted after releases); macOS process check and Beta preference folders.
 

@@ -4,6 +4,7 @@ import * as path from "node:path";
 import { execFile, execFileSync, spawn } from "node:child_process";
 import type { ComposeSpec } from "../imaging.js";
 import { sortInstalls, type AEInstall, type Platform } from "./types.js";
+import { appEnv } from "./appenv.js";
 
 /** Installed versions under an Applications folder (parameter so tests can use a fake tree). */
 export function findInstallsIn(appsRoot: string, override?: string): AEInstall[] {
@@ -61,7 +62,7 @@ export const macos: Platform = {
   modalDialog: () => null,
 
   launch(install) {
-    spawn("open", ["-a", install.executable], { detached: true, stdio: "ignore" }).unref();
+    spawn("open", ["-a", install.executable], { detached: true, stdio: "ignore", env: appEnv() }).unref();
   },
 
   // sips can resize and convert one image; grids and background fill are Windows-only,

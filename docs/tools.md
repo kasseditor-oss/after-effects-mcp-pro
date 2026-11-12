@@ -1440,7 +1440,7 @@ No parameters.
 | `overwrite` | boolean |  | Replace an existing output file. |
 | `wait` | boolean |  |  |
 | `waitSeconds` | integer |  |  |
-| `comp` | string | yes | Composition name. |
+| `comp` | string \| number | yes | Composition name or id. |
 | `outputPath` | string | yes |  |
 | `outputModuleTemplate` | string |  |  |
 | `renderSettingsTemplate` | string |  |  |
@@ -1505,7 +1505,7 @@ No parameters.
 | `values` | object | yes |  |
 
 ```json
-{"name":"set_essential_properties","arguments":{"comp":"Main","layer":1,"values":{}}}
+{"name":"set_essential_properties","arguments":{"comp":"Main","layer":"Badge 1","values":{"Texto":"Ao vivo","Cor":"#ff3366"}}}
 ```
 
 ### instantiate_template
@@ -1519,7 +1519,7 @@ No parameters.
 | `items` | object[] | yes |  |
 
 ```json
-{"name":"instantiate_template","arguments":{"template":"glow","into":"text","items":[{}]}}
+{"name":"instantiate_template","arguments":{"template":"Badge","into":"Main","items":[{"name":"Badge 1","position":[960,300],"values":{"Texto":"Live now"}},{"name":"Badge 2","position":[960,540],"values":{"Texto":"New episode"}}]}}
 ```
 
 ### export_mogrt
@@ -1549,7 +1549,7 @@ No parameters.
 | `templateName` | string |  | Name of the Motion Graphics template (instead of 'Untitled'). |
 
 ```json
-{"name":"add_to_essential_graphics","arguments":{"comp":"Main","layer":1,"property":"Position"}}
+{"name":"add_to_essential_graphics","arguments":{"comp":"Badge","layer":"Label","property":"Source Text","name":"Texto","templateName":"Badge"}}
 ```
 
 ## Utility

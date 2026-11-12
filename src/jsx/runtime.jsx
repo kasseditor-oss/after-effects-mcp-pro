@@ -358,6 +358,15 @@
                     }
                 }
             }
+            // "Shape 2" / "Group 2" = the 2nd shape group, whatever its name (groups default to "Group N")
+            if (!next && /^(shape|group) \d+$/i.test(seg)) {
+                var vm = "";
+                try { vm = cur.matchName; } catch (e4) { vm = ""; }
+                if (vm === "ADBE Root Vectors Group" || vm === "ADBE Vectors Group") {
+                    var want = Number(seg.replace(/^\D+/, "")), nth = 0;
+                    for (var v = 1; v <= cur.numProperties && !next; v++) if (cur.property(v).matchName === "ADBE Vector Group" && ++nth === want) next = cur.property(v);
+                }
+            }
             if (!next) {
                 var avail = [];
                 var nKids = 0;
@@ -563,6 +572,9 @@
     }
 
     // ------------------------------------------------------------ layer info
+    // ShapeLayer and TextLayer are not "instanceof AVLayer" in ExtendScript, though they have
+    // threeDLayer, blendingMode, motionBlur... (3D, blend modes and motion blur were ignored on them)
+    function isAV(l) { return l instanceof AVLayer || l instanceof ShapeLayer || l instanceof TextLayer; }
     function layerType(l) {
         if (l instanceof TextLayer) return "text";
         if (l instanceof ShapeLayer) return "shape";
@@ -616,7 +628,7 @@
         var o = { index: l.index, id: l.id, name: l.name, type: layerType(l), enabled: l.enabled, locked: l.locked, shy: l.shy, solo: l.solo,
             inPoint: round(l.inPoint), outPoint: round(l.outPoint), startTime: round(l.startTime), label: l.label };
         if (l.parent) o.parent = { index: l.parent.index, name: l.parent.name };
-        if (l instanceof AVLayer) {
+        if (isAV(l)) {
             o.threeD = l.threeDLayer;
             o.blendMode = blendName(l.blendingMode);
             o.motionBlur = l.motionBlur;
@@ -1051,14 +1063,14 @@
         // AE gives new layers the comp duration counted from their start: clamp to the comp end
         if (l.outPoint > comp.duration + 1e-6 && l.inPoint < comp.duration) l.outPoint = comp.duration;
         var tg = l.property("ADBE Transform Group");
-        if (has(a, "threeD") && l instanceof AVLayer) l.threeDLayer = !!a.threeD;
+        if (has(a, "threeD") && isAV(l)) l.threeDLayer = !!a.threeD;
         if (has(a, "anchor")) setAnchor(l, a.anchor);
         if (has(a, "position")) { var pp = tg.property("ADBE Position"); pp.setValue(coerce(pp, a.position)); }
         if (has(a, "anchorPoint")) { var ap = tg.property("ADBE Anchor Point"); ap.setValue(coerce(ap, a.anchorPoint)); }
         if (has(a, "scale")) { var sp = tg.property("ADBE Scale"); sp.setValue(coerce(sp, typeof a.scale === "number" ? [a.scale, a.scale, a.scale] : a.scale)); }
         if (has(a, "rotation")) tg.property("ADBE Rotate Z").setValue(a.rotation);
         if (has(a, "opacity")) tg.property("ADBE Opacity").setValue(a.opacity);
-        if (has(a, "blendMode") && l instanceof AVLayer) l.blendingMode = blendValue(a.blendMode);
+        if (has(a, "blendMode") && isAV(l)) l.blendingMode = blendValue(a.blendMode);
         if (has(a, "label")) l.label = a.label;
         if (has(a, "parent")) l.parent = a.parent === "" || a.parent === null ? null : getLayer(comp, a.parent);
     }
@@ -1487,7 +1499,7 @@
             if (has(a, "locked")) l.locked = !!a.locked;
             if (has(a, "shy")) l.shy = !!a.shy;
             if (has(a, "solo")) l.solo = !!a.solo;
-            if (l instanceof AVLayer) {
+            if (isAV(l)) {
                 if (has(a, "motionBlur")) l.motionBlur = !!a.motionBlur;
                 if (has(a, "adjustmentLayer")) l.adjustmentLayer = !!a.adjustmentLayer;
                 if (has(a, "collapseTransformation")) l.collapseTransformation = !!a.collapseTransformation;
@@ -2304,12 +2316,16 @@
         for (var i = 1; i <= c.numLayers; i++) { if (c.layer(i).selected) prevSel.push(c.layer(i)); c.layer(i).selected = false; }
         c.openInViewer();
         l.selected = true;
-        var cmd = app.findMenuCommandId(STYLE_MENU[a.style]) || st[0];
-        app.executeCommand(cmd);
+        // fixed command ids first: findMenuCommandId("Drop Shadow") returns an unrelated id in AE 2026
+        var styleGroup = function () { try { return l.property("ADBE Layer Styles").property(st[1]); } catch (e) { return null; } };
+        app.executeCommand(st[0]);
+        var group = styleGroup();
+        if (!group || !group.enabled) {
+            var alt = app.findMenuCommandId(STYLE_MENU[a.style]);
+            if (alt > 0 && alt !== st[0]) { app.executeCommand(alt); group = styleGroup(); }
+        }
         l.selected = false;
         for (var j = 0; j < prevSel.length; j++) prevSel[j].selected = true;
-        var group = null;
-        try { group = l.property("ADBE Layer Styles").property(st[1]); } catch (e) { }
         if (!group || !group.enabled) fail("After Effects did not add the '" + a.style + "' layer style", "The comp must be able to open in the viewer; layer styles need an AV layer.");
         var set = [], errors = [];
         var params = a.params || {};

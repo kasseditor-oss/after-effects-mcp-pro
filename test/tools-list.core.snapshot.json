@@ -2471,7 +2471,10 @@
      "maximum": 86400
     },
     "comp": {
-     "type": "string"
+     "type": [
+      "string",
+      "number"
+     ]
     },
     "outputPath": {
      "type": "string"

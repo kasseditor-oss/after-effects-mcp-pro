@@ -27,6 +27,7 @@ import { checkCompat, currentAEVersion, MIN_AE, noteAEVersion, versionWarning } 
 import { compose, type ImageFormat } from "./imaging.js";
 import { WIDGET_MIME, WIDGET_URI, widgetHtml } from "./widget.js";
 import { runCli } from "./cli.js";
+import { appEnv } from "./platform/appenv.js";
 
 const here = path.dirname(fileURLToPath(import.meta.url));
 
@@ -377,6 +378,8 @@ async function nodeTool(name: string, a: any, report?: Progress): Promise<CallTo
       const saved = await bridge.call<any>("save_project", {}, { undo: false }).catch((e) => {
         throw new AEError(`Project must be saved before background rendering: ${e.message}`, "Call save_project with a path first.");
       });
+      // aerender takes a comp name: resolve an id (other tools accept both)
+      if (typeof a.comp === "number") a.comp = (await bridge.call<any>("get_composition", { comp: a.comp }, { undo: false })).name;
       const id = Math.random().toString(36).slice(2, 8);
       const PRESETS: Record<string, string> = { "mp4-h264-high": "H.264 - Match Render Settings - 40 Mbps", "prores-422": "High Quality", "prores-4444-alpha": "High Quality with Alpha" };
       if (a.preset === "png-seq") return err("No PNG sequence output template in this After Effects", "Use render_png_sequence for numbered PNG frames.");
@@ -390,7 +393,7 @@ async function nodeTool(name: string, a: any, report?: Progress): Promise<CallTo
       if (a.startFrame !== undefined) argv.push("-s", String(a.startFrame));
       if (a.endFrame !== undefined) argv.push("-e", String(a.endFrame));
       // stdin ignored: aerender must never wait for input
-      const proc = spawn(install.aerender, argv, { windowsHide: true, stdio: ["ignore", "pipe", "pipe"] });
+      const proc = spawn(install.aerender, argv, { windowsHide: true, stdio: ["ignore", "pipe", "pipe"], env: appEnv() });
       const job: RenderJob = { id, comp: a.comp, output: a.outputPath, started: Date.now(), status: "running", log: [], proc };
       saveJob(job, proc.pid);
       const logFile = path.join(jobsDir(), `${id}.log`);

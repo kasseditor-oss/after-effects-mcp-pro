@@ -6950,8 +6950,11 @@
      "maximum": 86400
     },
     "comp": {
-     "type": "string",
-     "description": "Composition name."
+     "type": [
+      "string",
+      "number"
+     ],
+     "description": "Composition name or id."
     },
     "outputPath": {
      "type": "string"

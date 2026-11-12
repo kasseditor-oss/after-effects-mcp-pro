@@ -569,3 +569,21 @@ test("launch_after_effects waits for an After Effects that is running but not re
   assert.ok(Date.now() - t0 >= 2500, "it waited for the listener");
   await client.close();
 });
+
+test("processes for After Effects get a full environment even from a reduced MCP client env", async () => {
+  const { appEnv } = await import(new URL("../build/platform/appenv.js", import.meta.url).href);
+  // what the MCP SDK passes by default on Windows (no Common Files, ProgramData, windir...)
+  const r = String.raw;
+  const reduced = { APPDATA: r`C:\Users\a\AppData\Roaming`, HOMEDRIVE: "C:", HOMEPATH: r`\Users\a`, LOCALAPPDATA: r`C:\Users\a\AppData\Local`, PATH: r`C:\Windows\system32`, PROCESSOR_ARCHITECTURE: "AMD64", SYSTEMDRIVE: "C:", SYSTEMROOT: r`C:\Windows`, TEMP: r`C:\Users\a\AppData\Local\Temp`, USERNAME: "a", USERPROFILE: r`C:\Users\a`, PROGRAMFILES: r`C:\Program Files` };
+  const e = appEnv(reduced, "win32");
+  assert.equal(e.CommonProgramFiles, r`C:\Program Files\Common Files`);
+  assert.equal(e.ProgramData, r`C:\ProgramData`);
+  assert.equal(e.windir, r`C:\Windows`);
+  assert.equal(e.TMP, r`C:\Users\a\AppData\Local\Temp`);
+  // existing variables (any case) are kept, never duplicated
+  assert.equal(e.SYSTEMROOT, r`C:\Windows`);
+  assert.equal(Object.keys(e).filter((k) => k.toLowerCase() === "systemroot").length, 1);
+  assert.equal(Object.keys(e).filter((k) => k.toLowerCase() === "programfiles").length, 1);
+  const m = appEnv({ PATH: "/usr/bin" }, "darwin");
+  assert.ok(m.HOME && m.TMPDIR);
+});

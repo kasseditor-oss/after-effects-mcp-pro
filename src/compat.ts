@@ -30,7 +30,8 @@ export function parseAEVersion(v: string | null | undefined): number | null {
 export function currentAEVersion(heartbeatAE?: string | null): string | null {
   const forced = process.env.AE_MCP_ASSUME_AE_VERSION;
   if (forced) return forced;
-  if (heartbeatAE && /^\d+\.\d+/.test(heartbeatAE)) return heartbeatAE;
+  // remembered: a heartbeat read while the listener rewrites it can come back empty
+  if (heartbeatAE && /^\d+\.\d+/.test(heartbeatAE)) reported = heartbeatAE;
   return reported;
 }
 

@@ -599,6 +599,19 @@ await call("preview_contact_sheet", { comp: C, frames: 4, maxSize: 400 }, {
     await call("set_time_remap", { comp: tc.data?.id, layer: "Clip", mode: "reverse" }, { check: (d) => (d.keys === 2 ? true : JSON.stringify(d)) });
   }
 }
+// QA redo findings: "Shape N" paths, 3D/blend/motion blur on shape and text layers, every layer style, comp id in render_in_background
+{
+  const qc = await call("create_composition", { name: COMP + " qa3", width: 640, height: 360, duration: 1, open: false });
+  created.push(qc.data?.id);
+  await call("create_shape_layer", { comp: qc.data?.id, name: "Ring", shapes: [{ type: "ellipse", size: [200, 200], fill: false, stroke: "#ffffff", trimPaths: { end: 50 } }], threeD: true, blendMode: "add" }, { check: (d) => (d.threeD === true && d.blendMode === "add" ? true : JSON.stringify(d)) });
+  await call("set_property", { comp: qc.data?.id, layer: "Ring", property: "Contents/Shape 1/Contents/Trim Paths 1/End", value: 80 }, { check: (d) => (Math.abs(d.value - 80) < 0.01 ? true : JSON.stringify(d)) });
+  await call("create_text_layer", { comp: qc.data?.id, name: "T3", text: "3D", threeD: true }, { check: (d) => (d.threeD === true ? true : JSON.stringify(d)) });
+  await call("set_layer_properties", { comp: qc.data?.id, layer: "T3", motionBlur: true }, { check: (d) => (d.layers?.[0]?.motionBlur === true ? true : JSON.stringify(d)) });
+  for (const style of ["drop-shadow", "inner-shadow", "outer-glow", "inner-glow", "bevel-emboss", "satin", "color-overlay", "gradient-overlay", "stroke"]) {
+    await call("create_shape_layer", { comp: qc.data?.id, name: `S ${style}`, type: "rectangle", size: [80, 80] });
+    await call("add_layer_style", { comp: qc.data?.id, layer: `S ${style}`, style }, { check: (d) => (d.style === style ? true : JSON.stringify(d)) });
+  }
+}
 // text-fade-up must REVEAL the text: invisible before, fully visible after (pixel check)
 {
   const fc = await call("create_composition", { name: COMP + " fade", width: 640, height: 360, duration: 3, backgroundColor: "#000000", open: false });
@@ -694,6 +707,8 @@ if (job.data?.jobId) {
   let ffprobe = null;
   try { execFileSync("ffprobe", ["-version"], { stdio: "ignore" }); ffprobe = "ffprobe"; } catch { /* not installed */ }
   const probe = (f) => (ffprobe ? JSON.parse(execFileSync(ffprobe, ["-v", "error", "-show_streams", "-of", "json", f], { encoding: "utf8" })).streams.find((s) => s.codec_type === "video") : null);
+  const compId = (await call("get_composition", { comp: COMP })).data?.id;
+  await call("render_in_background", { comp: compId, outputPath: path.join(out, "presets", "by-id.mp4"), startFrame: 0, endFrame: 2, preset: "mp4-h264-high", wait: true }, { check: (d) => (d.status === "done" ? true : JSON.stringify(d).slice(0, 200)) });
   for (const [preset, ext, codec] of [["mp4-h264-high", "mp4", "h264"], ["prores-422", "mov", "prores"], ["prores-4444-alpha", "mov", "prores"]]) {
     const file = path.join(out, "presets", `${preset}.${ext}`);
     const r = await call("render_in_background", { comp: COMP, outputPath: file, startFrame: 0, endFrame: 4, preset, wait: true }, { check: (d) => (d.status === "done" ? true : JSON.stringify(d).slice(0, 200)) });

@@ -4,6 +4,7 @@ import * as path from "node:path";
 import { execFile, execFileSync, execSync, spawn } from "node:child_process";
 import type { ComposeSpec } from "../imaging.js";
 import { sortInstalls, type AEInstall, type Platform } from "./types.js";
+import { appEnv } from "./appenv.js";
 
 // One PowerShell process does every resize, the grid and the encoding:
 // starting PowerShell costs ~0.5-1 s, so doing it per frame was the bottleneck.
@@ -177,7 +178,7 @@ export const windows: Platform = {
       if (!install) return reject(Object.assign(new Error("AfterFX.exe not found"), { hint: "Set AE_MCP_AE_PATH to your After Effects folder." }));
       const target = shortPath(file);
       if (/\s/.test(target)) return reject(Object.assign(new Error("The bridge folder path contains spaces and has no 8.3 short name"), { hint: "Set AE_MCP_BRIDGE_DIR to a folder without spaces, e.g. C:\\ae-mcp." }));
-      execFile(install.executable, ["-r", target], { windowsHide: true, timeout: 30_000 }, (err) => {
+      execFile(install.executable, ["-r", target], { windowsHide: true, timeout: 30_000, env: appEnv() }, (err) => {
         if (err && (err as any).killed) return reject(Object.assign(new Error("AfterFX.exe -r did not return"), { hint: "After Effects may be showing a modal dialog." }));
         resolve();
       });
@@ -199,7 +200,7 @@ export const windows: Platform = {
   },
 
   launch(install) {
-    spawn(install.executable, [], { detached: true, stdio: "ignore" }).unref();
+    spawn(install.executable, [], { detached: true, stdio: "ignore", env: appEnv() }).unref();
   },
 
   // One PowerShell process does every resize, background fill, label and the encoding.

@@ -41,6 +41,9 @@ const EXAMPLES = {
   import_files: { paths: ["C:/work/logo.png"], addToComp: "Main" },
   set_property: { comp: "Main", layer: "Title", property: "Opacity", value: 50 },
   get_property: { comp: "Main", layer: "Title", property: "Position" },
+  set_essential_properties: { comp: "Main", layer: "Badge 1", values: { Texto: "Ao vivo", Cor: "#ff3366" } },
+  instantiate_template: { template: "Badge", into: "Main", items: [{ name: "Badge 1", position: [960, 300], values: { Texto: "Live now" } }, { name: "Badge 2", position: [960, 540], values: { Texto: "New episode" } }] },
+  add_to_essential_graphics: { comp: "Badge", layer: "Label", property: "Source Text", name: "Texto", templateName: "Badge" },
 };
 
 const SAMPLE_STRINGS = {
