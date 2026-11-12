@@ -1890,25 +1890,64 @@
         }
         return out;
     }
+    // format -> output module templates to try (first match wins), the container AE must
+    // end up using, and the file extension that container writes.
+    var RQ_FORMATS = {
+        "h264": { want: ["H.264 - Match Render Settings - 15 Mbps", "H.264 - Match Render Settings -  15 Mbps", "H.264"], format: "H.264", ext: "mp4" },
+        "mp4": { want: ["H.264 - Match Render Settings - 15 Mbps", "H.264 - Match Render Settings -  15 Mbps", "H.264"], format: "H.264", ext: "mp4" },
+        "prores": { want: ["High Quality"], format: "QuickTime", ext: "mov", exact: true },
+        "mov": { want: ["High Quality"], format: "QuickTime", ext: "mov", exact: true },
+        "prores-alpha": { want: ["High Quality with Alpha"], format: "QuickTime", ext: "mov" },
+        "lossless": { want: ["Lossless"], format: "AVI", ext: "avi", exact: true },
+        "tiff": { want: ["TIFF Sequence with Alpha"], format: "TIFF Sequence", ext: "tif" },
+        "png": { want: ["PNG Sequence", "PNG"], format: "PNG Sequence", ext: "png" }
+    };
     H.add_to_render_queue = function (a) {
         var c = getComp(a.comp);
         var rq = app.project.renderQueue;
         var it = rq.items.add(c);
-        if (a.renderSettingsTemplate) it.applyTemplate(a.renderSettingsTemplate);
-        var om = it.outputModule(1);
-        var tpl = a.outputModuleTemplate;
-        if (!tpl && a.format) {
-            var f = lower(a.format);
-            var want = f === "png" ? ["PNG Sequence", "PNG"] : f === "mov" || f === "prores" ? ["High Quality with Alpha", "Apple ProRes 4444", "High Quality"] : f === "h264" || f === "mp4" ? ["H.264 - Match Render Settings - 15 Mbps", "H.264 - Match Render Settings -  15 Mbps", "H.264", "Adobe Media Encoder"] : ["Lossless"];
+        try {
+            if (a.renderSettingsTemplate) it.applyTemplate(a.renderSettingsTemplate);
+            var om = it.outputModule(1);
             var avail = om.templates;
-            for (var w = 0; w < want.length && !tpl; w++) for (var k = 0; k < avail.length; k++) if (avail[k].indexOf(want[w]) === 0) { tpl = avail[k]; break; }
+            var tpl = a.outputModuleTemplate, spec = null;
+            if (!tpl && a.format) {
+                spec = RQ_FORMATS[lower(a.format)];
+                for (var w = 0; w < spec.want.length && !tpl; w++) {
+                    for (var k = 0; k < avail.length; k++) {
+                        if (spec.exact ? avail[k] === spec.want[w] : avail[k].indexOf(spec.want[w]) === 0) { tpl = avail[k]; break; }
+                    }
+                }
+                if (!tpl) {
+                    var shown = [];
+                    for (var s2 = 0; s2 < avail.length; s2++) if (!/^_HIDDEN/.test(avail[s2])) shown.push(avail[s2]);
+                    fail("No output module template renders '" + a.format + "' in this After Effects", lower(a.format) === "png"
+                        ? "AE 2026 has no PNG Sequence template and its Format setting is read-only from scripts. Use render_png_sequence (writes numbered PNGs directly), or save a PNG Sequence output module template in AE and pass outputModuleTemplate. Templates: " + shown.join(", ")
+                        : "Templates: " + shown.join(", "));
+                }
+            }
+            if (tpl) om.applyTemplate(tpl);
+            if (a.outputPath) {
+                // keep [####] frame-number tokens; AE fixes the extension to match the format
+                om.file = outFile(a.outputPath);
+            }
+            if (has(a, "start")) it.timeSpanStart = a.start;
+            if (has(a, "duration")) it.timeSpanDuration = a.duration;
+            else if (a.workAreaOnly === false) { it.timeSpanStart = 0; it.timeSpanDuration = c.duration; }
+            var actualFormat = om.getSettings(GetSettingsFormat.STRING)["Format"];
+            var file = om.file ? om.file.fsName : null;
+            if (spec) {
+                var ext = file ? lower(file.replace(/^.*\./, "")) : null;
+                if (actualFormat !== spec.format || (ext && ext !== spec.ext)) {
+                    fail("Render queue item would write " + actualFormat + " (" + file + ") instead of " + a.format, "Pass outputModuleTemplate explicitly; available: " + avail.join(", "));
+                }
+            }
+            return { added: { index: rq.numItems, comp: c.name, outputFile: file, template: tpl || om.name, format: actualFormat }, availableOutputTemplates: avail };
+        } catch (e) {
+            // never leave a half-configured item in the queue
+            try { it.remove(); } catch (e2) { }
+            throw e;
         }
-        if (tpl) om.applyTemplate(tpl);
-        if (a.outputPath) om.file = outFile(a.outputPath);
-        if (has(a, "start")) it.timeSpanStart = a.start;
-        if (has(a, "duration")) it.timeSpanDuration = a.duration;
-        else if (a.workAreaOnly === false) { it.timeSpanStart = 0; it.timeSpanDuration = c.duration; }
-        return { added: { index: rq.numItems, comp: c.name, outputFile: om.file ? om.file.fsName : null, template: tpl || om.name }, availableOutputTemplates: om.templates };
     };
     H.get_render_queue = function () { return rqSummary(app.project.renderQueue); };
     H.clear_render_queue = function (a) {
@@ -1951,7 +1990,7 @@
         var out = [];
         for (var i = 0; i < times.length; i++) {
             var t = Math.max(0, Math.min(times[i], c.duration - c.frameDuration));
-            var f = new File(a.outputDir + "/" + a.prefix + "-" + i + ".png");
+            var f = new File(a.names ? a.names[i] : a.outputDir + "/" + a.prefix + "-" + i + ".png");
             if (f.exists) f.remove();
             c.saveFrameToPng(t, f);
             out.push({ time: round(t, 3), file: f.fsName });

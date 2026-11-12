@@ -319,6 +319,32 @@ async function nodeTool(name: string, a: any, report?: Progress): Promise<CallTo
       }
       return ok({ jobId: id, status: job.status, exitCode: job.exitCode ?? null, seconds: Math.round((Date.now() - job.started) / 1000), logTail: job.log.slice(-6) });
     }
+    case "render_png_sequence": {
+      const comp = await bridge.call<any>("get_composition", { comp: a.comp, layerLimit: 0 }, { undo: false });
+      const fps = comp.frameRate;
+      const first = a.startFrame ?? Math.round((a.start ?? comp.workAreaStart) * fps);
+      const last = a.endFrame ?? (a.duration !== undefined ? first + Math.round(a.duration * fps) - 1 : Math.round((comp.workAreaStart + comp.workAreaDuration) * fps) - 1);
+      if (last < first) return err(`Empty frame range ${first}-${last}`);
+      if (last - first + 1 > 2000) return err(`${last - first + 1} frames requested; the limit is 2000`, "Render longer ranges with add_to_render_queue (TIFF sequence) or render_in_background.");
+      const m = /\[(#+)\]/.exec(a.outputPath);
+      const pad = m ? m[1].length : 4;
+      const name = (n: number) => (m ? a.outputPath.replace(m[0], String(n).padStart(pad, "0")) : a.outputPath.replace(/(\.png)?$/i, `_${String(n).padStart(pad, "0")}.png`));
+      const files: string[] = [];
+      for (let n = first; n <= last; n++) files.push(path.resolve(name(n)));
+      fs.mkdirSync(path.dirname(files[0]), { recursive: true });
+      if (!a.overwrite) {
+        const exists = files.filter((f) => fs.existsSync(f));
+        if (exists.length) return err(`${exists.length} output file(s) already exist, e.g. ${exists[0]}`, "Pass overwrite:true to replace them.");
+      }
+      // chunks keep each AE call short and give progress between chunks
+      const times = files.map((_, i) => +((first + i) / fps).toFixed(6));
+      for (let i = 0; i < files.length; i += 50) {
+        await bridge.call("render_frames", { comp: comp.id, times: times.slice(i, i + 50), names: files.slice(i, i + 50).map((f) => f.split(path.sep).join("/")), outputDir: "", prefix: "" }, { undo: false, timeoutMs: 300_000 });
+        await waitForFiles(files.slice(i, i + 50), 300_000);
+        report?.(Math.min(i + 50, files.length), files.length, `${Math.min(i + 50, files.length)}/${files.length} frames`);
+      }
+      return ok({ comp: comp.name, frames: files.length, firstFrame: first, lastFrame: last, first: files[0], last: files[files.length - 1] });
+    }
     case "get_background_render": {
       const list = a.jobId ? [jobs.get(a.jobId)].filter(Boolean) : [...jobs.values()];
       if (!list.length) return ok({ jobs: [] });

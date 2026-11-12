@@ -5438,7 +5438,7 @@
  {
   "name": "add_to_render_queue",
   "title": "Add to render queue",
-  "description": "Queue a comp for rendering with an output path and format (h264/mp4, mov/prores, png sequence, lossless) or explicit templates. Returns available output templates.",
+  "description": "Queue a comp for rendering with an output path and format (h264/mp4, mov/prores = QuickTime ProRes, prores-alpha, lossless = AVI, tiff sequence) or an explicit outputModuleTemplate. Fails (and adds nothing) when the format cannot be produced; checks the final container and extension. For PNG frames use render_png_sequence.",
   "inputSchema": {
    "type": "object",
    "properties": {
@@ -5463,8 +5463,10 @@
       "mp4",
       "mov",
       "prores",
+      "prores-alpha",
       "png",
-      "lossless"
+      "lossless",
+      "tiff"
      ]
     },
     "outputModuleTemplate": {
@@ -5492,6 +5494,68 @@
   },
   "annotations": {
    "title": "Add to render queue",
+   "readOnlyHint": false,
+   "destructiveHint": false,
+   "idempotentHint": false,
+   "openWorldHint": false
+  },
+  "_meta": {
+   "ui": {
+    "resourceUri": "ui://after-effects/activity.html",
+    "visibility": [
+     "model",
+     "app"
+    ]
+   },
+   "ui/resourceUri": "ui://after-effects/activity.html"
+  }
+ },
+ {
+  "name": "render_png_sequence",
+  "title": "Render PNG sequence",
+  "description": "Write numbered PNG frames of a comp directly (no render queue): outputPath like 'C:/out/frame_[####].png' ([####] = zero-padded frame number). Range by start/duration in seconds or startFrame/endFrame; defaults to the work area. Reports progress per frame.",
+  "inputSchema": {
+   "type": "object",
+   "properties": {
+    "comp": {
+     "anyOf": [
+      {
+       "type": "string"
+      },
+      {
+       "type": "integer"
+      }
+     ],
+     "description": "Composition name or numeric item id. Omit to use the active composition."
+    },
+    "outputPath": {
+     "type": "string"
+    },
+    "start": {
+     "type": "number"
+    },
+    "duration": {
+     "type": "number",
+     "exclusiveMinimum": 0
+    },
+    "startFrame": {
+     "type": "integer",
+     "minimum": 0
+    },
+    "endFrame": {
+     "type": "integer",
+     "minimum": 0
+    },
+    "overwrite": {
+     "type": "boolean"
+    }
+   },
+   "required": [
+    "outputPath"
+   ]
+  },
+  "annotations": {
+   "title": "Render PNG sequence",
    "readOnlyHint": false,
    "destructiveHint": false,
    "idempotentHint": false,

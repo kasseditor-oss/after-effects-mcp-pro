@@ -80,6 +80,7 @@ export const TOOL_LABELS: Record<string, string> = {
   clear_render_queue: "Limpando fila de render",
   render_queue: "Renderizando",
   render_in_background: "Render em segundo plano",
+  render_png_sequence: "Renderizando sequência PNG",
   get_background_render: "Progresso do render",
   list_fonts: "Listando fontes",
   get_selection: "Lendo a seleção",

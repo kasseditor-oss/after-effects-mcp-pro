@@ -333,6 +333,20 @@ await call("list_compositions");
 
 await call("add_to_render_queue", { comp: C, outputPath: path.join(out, "queue-render.mov"), format: "lossless", start: 0, duration: 0.5 }, { check: (d) => (d.added.outputFile ? true : "no output") });
 await call("get_render_queue", {}, { check: (d) => (d.items.length >= 1 ? true : "empty") });
+// formats: png has no template in AE 2026 -> clear error, nothing queued; prores -> .mov; png frames via render_png_sequence
+{
+  const before = (await call("get_render_queue")).data?.items.length;
+  await call("add_to_render_queue", { comp: C, format: "png", outputPath: path.join(out, "rq", "frame_[####].png") }, { expectError: true });
+  await call("get_render_queue", {}, { check: (d) => (d.items.length === before ? true : "a failed add left an item in the queue") });
+  await call("add_to_render_queue", { comp: C, format: "prores", outputPath: path.join(out, "rq", "clip.mov"), start: 0, duration: 0.2 }, { check: (d) => (d.added.format === "QuickTime" && /\.mov$/i.test(d.added.outputFile) ? true : JSON.stringify(d.added)) });
+  await call("render_png_sequence", { comp: C, outputPath: path.join(out, "png", "frame_[####].png"), startFrame: 0, endFrame: 9 }, {
+    check: (d) => {
+      const names = Array.from({ length: 10 }, (_, i) => path.join(out, "png", `frame_${String(i).padStart(4, "0")}.png`));
+      const missing = names.filter((n) => !fs.existsSync(n));
+      return d.frames === 10 && !missing.length ? true : `missing ${missing.length}: ${missing[0]}`;
+    },
+  });
+}
 await call("clear_render_queue");
 
 await call("save_project", { path: path.join(out, "mcp-live-test.aep"), overwrite: true }, { check: (d) => (d.saved ? true : "not saved") });
