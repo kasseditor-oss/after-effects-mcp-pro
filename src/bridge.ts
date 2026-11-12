@@ -77,7 +77,9 @@ export class Bridge {
   private pids: number[] = [];
   private readyPids = new Set<number>();
   private lastAliveCheck = 0;
-  readonly stats = { calls: 0, timeouts: 0, ioErrors: 0, latencies: [] as number[] };
+  private pending: { tool: string; args: Record<string, unknown>; opts: CallOptions; resolve: (v: any) => void; reject: (e: unknown) => void }[] = [];
+  private flushTimer: ReturnType<typeof setTimeout> | null = null;
+  readonly stats = { calls: 0, groups: 0, timeouts: 0, ioErrors: 0, latencies: [] as number[] };
 
   constructor() {
     for (const sub of ["queue", "results", "direct", "frames", "runtime"]) fs.mkdirSync(path.join(this.dir, sub), { recursive: true });
@@ -168,6 +170,9 @@ export class Bridge {
     if (forced === "listener" || forced === "direct") return forced;
     const hb = this.heartbeat();
     if (hb && hb.ageMs < 4000 && !hb.paused) return "listener";
+    // The listener cannot beat while AE runs a long command: if it answered recently
+    // and AE is still running, it is busy, not gone. Do not fall back to direct mode.
+    if (hb && !hb.paused && this.lastMode === "listener" && hb.ageMs < 120_000 && this.aeRunning()) return "listener";
     if (hb && hb.ageMs < 4000 && hb.paused) {
       throw new AEError("The AE MCP Pro bridge is paused inside After Effects", "Click 'Resume' in Window > AE MCP Pro.jsx.", "PAUSED");
     }
@@ -185,27 +190,108 @@ export class Bridge {
   }
 
   private commandScript(payload: object, resultPath: string): string {
-    const rp = resultPath.replace(/\\/g, "/");
-    const rtp = this.runtimePath.replace(/\\/g, "/");
-    // If loading the runtime itself fails, still write a result so the server never waits for nothing.
-    return [
-      "(function(){",
-      "  try {",
-      `    if (!$.global.AEMCP || $.global.AEMCP.hash !== ${jsString(this.runtimeHash)}) $.evalFile(new File(${jsString(rtp)}));`,
-      `    $.global.AEMCP.run(${jsString(JSON.stringify(payload))}, ${jsString(rp)});`,
-      "  } catch (e) {",
-      `    var f = new File(${jsString(rp)}); f.encoding = "UTF-8";`,
-      `    if (f.open("w")) { f.write('{"ok":false,"error":"Bridge failure: ' + String(e).replace(/[\\\\"\\r\\n]/g, " ") + ' (line ' + e.line + ')"}'); f.close(); }`,
-      "  }",
-      "})();",
-    ].join("\n");
+    return this.groupScript([{ payload, resultPath }]);
   }
 
-  /** Runs one runtime handler in After Effects and returns its data. Calls are serialized. */
+  /** One command file that runs several calls in order, each with its own result file and undo group. */
+  private groupScript(items: { payload: object; resultPath: string }[]): string {
+    const rtp = this.runtimePath.replace(/\\/g, "/");
+    const runs = items.map(({ payload, resultPath }) => {
+      const rp = resultPath.replace(/\\/g, "/");
+      return [
+        "  try {",
+        `    if (!$.global.AEMCP || $.global.AEMCP.hash !== ${jsString(this.runtimeHash)}) $.evalFile(new File(${jsString(rtp)}));`,
+        `    $.global.AEMCP.run(${jsString(JSON.stringify(payload))}, ${jsString(rp)});`,
+        "  } catch (e) {",
+        `    var f = new File(${jsString(rp)}); f.encoding = "UTF-8";`,
+        `    if (f.open("w")) { f.write('{"ok":false,"error":"Bridge failure: ' + String(e).replace(/[\\\\"\\r\\n]/g, " ") + ' (line ' + e.line + ')"}'); f.close(); }`,
+        "  }",
+      ].join("\n");
+    });
+    return ["(function(){", ...runs, "})();"].join("\n");
+  }
+
+  /**
+   * Runs one runtime handler in After Effects and returns its data.
+   * Calls run in order. With the listener, calls that arrive together (a 20 ms
+   * window, or while an earlier group is still running) share one queue file:
+   * AE runs them in one pass, each with its own result file and undo step.
+   * AE_MCP_NO_COALESCE=1 sends every call on its own.
+   */
   call<T = any>(tool: string, args: Record<string, unknown> = {}, opts: CallOptions = {}): Promise<T> {
-    const run = this.chain.then(() => this.callNow<T>(tool, args, opts));
-    this.chain = run.catch(() => undefined);
-    return run;
+    if (process.env.AE_MCP_NO_COALESCE === "1") {
+      const run = this.chain.then(() => this.callNow<T>(tool, args, opts));
+      this.chain = run.catch(() => undefined);
+      return run;
+    }
+    return new Promise<T>((resolve, reject) => {
+      this.pending.push({ tool, args, opts, resolve, reject });
+      if (!this.flushTimer) {
+        this.flushTimer = setTimeout(() => {
+          this.flushTimer = null;
+          // the group is taken when its turn comes, so calls arriving meanwhile join it
+          this.chain = this.chain.then(() => this.flush()).catch(() => undefined);
+        }, 20);
+      }
+    });
+  }
+
+  private async flush(): Promise<void> {
+    const group = this.pending.splice(0);
+    if (!group.length) return;
+    let mode: Mode;
+    try {
+      mode = this.chooseMode();
+    } catch (e) {
+      for (const g of group) g.reject(e);
+      return;
+    }
+    if (mode === "direct" || group.length === 1) {
+      for (const g of group) await this.callNow(g.tool, g.args, g.opts).then(g.resolve, g.reject);
+      return;
+    }
+    this.lastMode = mode;
+    this.stats.groups++;
+    const tag = "g" + crypto.randomBytes(5).toString("hex");
+    const items = group.map((g) => {
+      const id = crypto.randomBytes(6).toString("hex");
+      return { g, id, resultPath: path.join(this.dir, "results", `${id}.json`) };
+    });
+    const live = items.filter((it) => {
+      if (!it.g.opts.signal?.aborted) return true;
+      it.g.reject(new AEError("Cancelled before it was sent to After Effects", "Nothing was changed.", "CANCELLED"));
+      return false;
+    });
+    if (!live.length) return;
+    const script = this.groupScript(live.map((it) => ({ payload: { id: it.id, tool: it.g.tool, args: it.g.args, undo: it.g.opts.undo !== false }, resultPath: it.resultPath })));
+    const name = `${Date.now()}-${tag}.jsx`;
+    const tmp = path.join(this.dir, "queue", name + ".tmp");
+    fs.writeFileSync(tmp, script, "utf8");
+    fs.renameSync(tmp, path.join(this.dir, "queue", name));
+    await Promise.all(
+      live.map(async (it) => {
+        const t0 = Date.now();
+        this.stats.calls++;
+        try {
+          const raw = await this.waitForResult(it.resultPath, it.g.opts.timeoutMs ?? 60_000, "listener", tag, !!it.g.opts.timeoutParam, it.g.opts.signal, it.g.opts.onProgress, it.id);
+          this.stats.latencies.push(Date.now() - t0);
+          if (this.stats.latencies.length > 50) this.stats.latencies.shift();
+          let res: any;
+          try {
+            res = JSON.parse(raw);
+          } finally {
+            fs.rmSync(it.resultPath, { force: true });
+          }
+          if (!res.ok && /^Script error: IOError|^Script error: .*I\/O error/i.test(res.error || "")) {
+            this.stats.ioErrors++;
+            it.g.resolve(await this.callNow(it.g.tool, it.g.args, { ...it.g.opts, isRetry: true }));
+          } else if (!res.ok) it.g.reject(new AEError(res.error || "Unknown After Effects error", res.hint, res.cancelled ? "CANCELLED" : "SCRIPT_ERROR"));
+          else it.g.resolve(res.data);
+        } catch (e) {
+          it.g.reject(e);
+        }
+      }),
+    );
   }
 
   private async callNow<T>(tool: string, args: Record<string, unknown>, opts: CallOptions): Promise<T> {
@@ -278,11 +364,11 @@ export class Bridge {
     });
   }
 
-  private async waitForResult(resultPath: string, timeoutMs: number, mode: Mode, id: string, timeoutParam = false, signal?: AbortSignal, onProgress?: CallOptions["onProgress"]): Promise<string> {
+  private async waitForResult(resultPath: string, timeoutMs: number, mode: Mode, id: string, timeoutParam = false, signal?: AbortSignal, onProgress?: CallOptions["onProgress"], callId?: string): Promise<string> {
     const progressPath = resultPath.replace(/\.json$/, ".progress.json");
     let lastDone = -1;
     try {
-      return await this.waitLoop(resultPath, timeoutMs, mode, id, timeoutParam, signal, () => {
+      return await this.waitLoop(resultPath, timeoutMs, mode, id, timeoutParam, signal, callId, () => {
         if (!onProgress || !fs.existsSync(progressPath)) return;
         try {
           const p = JSON.parse(fs.readFileSync(progressPath, "utf8"));
@@ -299,7 +385,13 @@ export class Bridge {
     }
   }
 
-  private async waitLoop(resultPath: string, timeoutMs: number, mode: Mode, id: string, timeoutParam: boolean, signal: AbortSignal | undefined, poll: () => void): Promise<string> {
+  /**
+   * id: tag of the queue file. callId is set when the file is shared with other
+   * calls: then a cancelled or timed-out call is skipped through a <callId>.cancel
+   * marker (checked by the runtime) instead of deleting the whole file.
+   */
+  private async waitLoop(resultPath: string, timeoutMs: number, mode: Mode, id: string, timeoutParam: boolean, signal: AbortSignal | undefined, callId: string | undefined, poll: () => void): Promise<string> {
+    const cancelMarker = () => fs.writeFileSync(resultPath.replace(/\.json$/, ".cancel"), "1");
     const start = Date.now();
     let delay = 15;
     while (Date.now() - start < timeoutMs) {
@@ -317,6 +409,10 @@ export class Bridge {
       if (signal?.aborted) {
         const qdir = path.join(this.dir, "queue");
         const queued = fs.readdirSync(qdir).filter((f) => f.includes(id) && f.endsWith(".jsx"));
+        if (callId) {
+          cancelMarker();
+          throw new AEError("Cancelled: After Effects skips this command if it has not reached it yet", "It shared a queue file with other calls; check the project state if unsure.", "CANCELLED");
+        }
         if (mode === "listener" && queued.length) {
           for (const f of queued) fs.rmSync(path.join(qdir, f), { force: true });
           throw new AEError("Cancelled: the command was removed from the queue before After Effects started it", "Nothing was changed.", "CANCELLED");
@@ -339,8 +435,9 @@ export class Bridge {
     const qdir = path.join(this.dir, "queue");
     const files = fs.readdirSync(qdir).filter((f) => f.includes(id));
     const running = files.some((f) => f.endsWith(".run"));
-    // not started yet: drop it so it can never run later
-    for (const f of files) if (!f.endsWith(".run")) fs.rmSync(path.join(qdir, f), { force: true });
+    // not started yet: drop it (or, in a shared file, mark it) so it can never run later
+    if (callId) cancelMarker();
+    else for (const f of files) if (!f.endsWith(".run")) fs.rmSync(path.join(qdir, f), { force: true });
     const secs = Math.round(timeoutMs / 1000);
     let message: string, hint: string;
     if (mode === "listener" && files.length && !running) {

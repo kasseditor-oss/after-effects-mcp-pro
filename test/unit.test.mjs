@@ -140,10 +140,12 @@ function fakeListener(dir, respond, version = "2.0.1") {
       if (!f.endsWith(".jsx")) continue;
       const src = fs.readFileSync(path.join(q, f), "utf8");
       fs.rmSync(path.join(q, f));
-      const m = src.match(/\.run\((".*"), ("[^"]+\.json")\);/);
-      const payload = JSON.parse(JSON.parse(m[1]));
-      const resultPath = JSON.parse(m[2]);
-      fs.writeFileSync(resultPath, JSON.stringify(respond(payload, n++)));
+      // a queue file can hold several calls (coalescing): answer each one
+      for (const m of src.matchAll(/\.run\((".*"), ("[^"]+\.json")\);/g)) {
+        const payload = JSON.parse(JSON.parse(m[1]));
+        const resultPath = JSON.parse(m[2]);
+        fs.writeFileSync(resultPath, JSON.stringify(respond(payload, n++)));
+      }
     }
   }, 20);
   return () => clearInterval(timer);
@@ -260,5 +262,22 @@ test("read tools declare outputSchema and return matching structuredContent", as
   assert.equal(typeof r.structuredContent?.server, "string");
   const { OUTPUTS } = await import(path.join(root, "build", "tools.js").replace(/\\/g, "/").replace(/^([A-Za-z]):/, "file:///$1:"));
   assert.ok(OUTPUTS.bridge_status.safeParse(r.structuredContent).success);
+  await client.close();
+});
+
+test("parallel calls share one queue file and each gets its own answer", async () => {
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), "aemcp-coalesce-"));
+  const files = [];
+  const q = path.join(dir, "queue");
+  const watcher = setInterval(() => { for (const f of fs.existsSync(q) ? fs.readdirSync(q) : []) if (f.endsWith(".jsx") && !files.includes(f)) files.push(f); }, 5);
+  await new Promise((r) => setTimeout(r, 30));
+  const stop = fakeListener(dir, (p) => ({ ok: true, id: p.id, data: { echo: p.args.query } }));
+  await new Promise((r) => setTimeout(r, 60));
+  const client = await connect({ AE_MCP_BRIDGE_DIR: dir });
+  const rs = await Promise.all(Array.from({ length: 20 }, (_, i) => client.callTool({ name: "list_layers", arguments: { query: "q" + i } })));
+  stop();
+  clearInterval(watcher);
+  rs.forEach((r, i) => assert.equal(JSON.parse(r.content[0].text).echo, "q" + i, "answer matches its own call"));
+  assert.ok(files.length <= 3, `20 calls used ${files.length} queue files`);
   await client.close();
 });

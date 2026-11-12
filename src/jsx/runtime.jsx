@@ -2080,6 +2080,12 @@
 
     A.run = function (payloadText, resultPath) {
         A._progressPath = String(resultPath).replace(/\.json$/, ".progress.json");
+        var cancel = new File(String(resultPath).replace(/\.json$/, ".cancel"));
+        if (cancel.exists) {
+            cancel.remove();
+            writeFile(resultPath, JSONX.stringify({ ok: false, cancelled: true, error: "Cancelled before it ran" }));
+            return false;
+        }
         var res;
         var t0 = new Date().getTime();
         var payload = null;
