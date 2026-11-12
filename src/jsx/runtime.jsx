@@ -1538,7 +1538,9 @@
                 ap.addProperty("ADBE Text Position 3D").setValue([0, def(amt, 60), 0]);
                 var se = an.property("ADBE Text Selectors").addProperty("ADBE Text Selector");
                 setKeys(se.property("ADBE Text Percent Offset"), [{ time: start, value: -100 }, { time: start + def(a.duration, 1.2), value: 100 }], "smooth");
-                try { se.property("ADBE Text Range Advanced").property("ADBE Text Range Shape").setValue(3); } catch (e3) { }
+                // Ramp Up: with Offset -100 every character is past the ramp (fully selected =
+                // opacity 0), with +100 none is. Animating -100 -> 100 reveals left to right.
+                try { se.property("ADBE Text Range Advanced").property("ADBE Text Range Shape").setValue(2); } catch (e3) { }
                 try { se.property("ADBE Text Range Advanced").property("ADBE Text Levels Max Ease").setValue(50); } catch (e4) { }
                 applied.push("Text Animator (Fade Up)"); break;
             }

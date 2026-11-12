@@ -24,6 +24,21 @@ const client = new Client({ name: "live-test", version: "1.0.0" });
 await client.connect(transport);
 
 const results = [];
+// Mean luminance (0-255) of an image, sampled on a 40x40 grid (Windows only; elsewhere 128).
+function meanLuma(file) {
+  if (process.platform !== "win32") return 128;
+  const ps = `Add-Type -AssemblyName System.Drawing; $b=[System.Drawing.Bitmap]::FromFile('${file.replace(/'/g, "''")}'); $s=0; $n=0; for($y=0;$y -lt 40;$y++){ for($x=0;$x -lt 40;$x++){ $p=$b.GetPixel([int]($x*($b.Width-1)/39),[int]($y*($b.Height-1)/39)); $s+=0.299*$p.R+0.587*$p.G+0.114*$p.B; $n++ } }; $b.Dispose(); ([math]::Round($s/$n,2)).ToString([Globalization.CultureInfo]::InvariantCulture)`;
+  return Number(execFileSync("powershell", ["-NoProfile", "-Command", ps], { encoding: "utf8" }).trim());
+}
+// Render one frame of a comp to a file and return its mean luminance.
+async function lumaAt(compId, time, name) {
+  const r = await client.callTool({ name: "preview_frame", arguments: { comp: compId, time, format: "png", maxSize: 640 } });
+  const img = r.content.find((c) => c.type === "image");
+  const file = path.join(out, `${name}.png`);
+  fs.writeFileSync(file, Buffer.from(img.data, "base64"));
+  return meanLuma(file);
+}
+
 // Center pixel [r,g,b] of an image file (Windows: System.Drawing; elsewhere: skip with a neutral value).
 function centerPixel(file) {
   if (process.platform !== "win32") return [255, 0, 0];
@@ -234,6 +249,29 @@ await call("preview_contact_sheet", { comp: C, frames: 4, maxSize: 400 }, {
     });
   }
   await call("modify_item", { item: red.data?.id, delete: true });
+}
+// text-fade-up must REVEAL the text: invisible before, fully visible after (pixel check)
+{
+  const fc = await call("create_composition", { name: COMP + " fade", width: 640, height: 360, duration: 3, backgroundColor: "#000000", open: false });
+  const ref = await call("create_composition", { name: COMP + " fade ref", width: 640, height: 360, duration: 3, backgroundColor: "#000000", open: false });
+  for (const id of [fc.data?.id, ref.data?.id]) await call("create_text_layer", { comp: id, text: "FADE UP TEST", font: "Arial-BoldMT", fontSize: 80, color: "#ffffff", name: "T" });
+  await call("animate_layer", { comp: fc.data?.id, layer: "T", preset: "text-fade-up", startTime: 0.5, duration: 1, amount: 0 });
+  const before = await lumaAt(fc.data?.id, 0.2, "fade-before");
+  const after = await lumaAt(fc.data?.id, 2, "fade-after");
+  const full = await lumaAt(ref.data?.id, 2, "fade-ref");
+  const pass = before < 1 && after > full * 0.9;
+  results.push({ tool: "text-fade-up reveal", pass, ms: 0, note: `luma before ${before}, after ${after}, static ${full}` });
+  console.log(`${pass ? "PASS" : "FAIL"} text-fade-up reveal: before ${before}, after ${after}, static ${full}`);
+  // typewriter: hidden before start, complete after
+  const tw = await call("create_composition", { name: COMP + " tw", width: 640, height: 360, duration: 3, backgroundColor: "#000000", open: false });
+  await call("create_text_layer", { comp: tw.data?.id, text: "FADE UP TEST", font: "Arial-BoldMT", fontSize: 80, color: "#ffffff", name: "T" });
+  await call("animate_layer", { comp: tw.data?.id, layer: "T", preset: "typewriter", startTime: 0.5, duration: 1 });
+  const twBefore = await lumaAt(tw.data?.id, 0.2, "tw-before");
+  const twAfter = await lumaAt(tw.data?.id, 2, "tw-after");
+  const twPass = twBefore < 1 && twAfter > full * 0.9;
+  results.push({ tool: "typewriter reveal", pass: twPass, ms: 0, note: `luma before ${twBefore}, after ${twAfter}` });
+  console.log(`${twPass ? "PASS" : "FAIL"} typewriter reveal: before ${twBefore}, after ${twAfter}`);
+  for (const id of [fc.data?.id, ref.data?.id, tw.data?.id]) created.push(id);
 }
 const folder = await call("create_folder", { name: "MCP Test Assets" });
 const imp = await call("import_files", { paths: [path.join(out, "frame.png")], folder: "MCP Test Assets", addToComp: C }, { check: (d) => (d.imported.length === 1 && d.imported[0].layer ? true : JSON.stringify(d)) });
