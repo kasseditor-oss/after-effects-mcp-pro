@@ -373,7 +373,8 @@ async function nodeTool(name: string, a: any, report?: Progress): Promise<CallTo
       if (a.renderSettingsTemplate) argv.push("-RStemplate", a.renderSettingsTemplate);
       if (a.startFrame !== undefined) argv.push("-s", String(a.startFrame));
       if (a.endFrame !== undefined) argv.push("-e", String(a.endFrame));
-      const proc = spawn(install.aerender, argv, { windowsHide: true });
+      // stdin ignored: aerender must never wait for input
+      const proc = spawn(install.aerender, argv, { windowsHide: true, stdio: ["ignore", "pipe", "pipe"] });
       const job: RenderJob = { id, comp: a.comp, output: a.outputPath, started: Date.now(), status: "running", log: [], proc };
       saveJob(job, proc.pid);
       const logFile = path.join(jobsDir(), `${id}.log`);
@@ -388,6 +389,13 @@ async function nodeTool(name: string, a: any, report?: Progress): Promise<CallTo
         job.exitCode = code;
         job.ended = Date.now();
         job.status = code === 0 ? "done" : "error";
+        // exit 0 without any real output file is not a success (seen once: only an empty temp .m4v)
+        const dir = path.dirname(job.output), base = path.parse(job.output).name;
+        const wrote = fs.existsSync(dir) && fs.readdirSync(dir).some((f) => f.startsWith(base) && !/\.(aep|m4v)$/i.test(f) && fs.statSync(path.join(dir, f)).size > 0);
+        if (job.status === "done" && !wrote) {
+          job.status = "error";
+          job.log.push("aerender exited with code 0 but wrote no output file");
+        }
         job.proc = undefined;
         saveJob(job);
       });
