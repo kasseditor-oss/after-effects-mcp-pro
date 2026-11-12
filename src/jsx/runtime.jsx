@@ -1898,8 +1898,29 @@
         return String(v);
     }
 
+    // A composition open in the viewer redraws after every change, which makes big
+    // batches 2-4x slower. Park the viewer on a tiny empty comp, then restore it.
+    function parkViewer() {
+        var shown = null;
+        try {
+            var v = app.activeViewer;
+            if (v && v.type === ViewerType.VIEWER_COMPOSITION) { v.setActive(); if (app.project.activeItem instanceof CompItem) shown = app.project.activeItem; }
+        } catch (e) { }
+        if (!shown) return null;
+        var tmp = app.project.items.addComp("__aemcp_parked__", 4, 4, 1, 1, 30);
+        tmp.openInViewer();
+        return { shown: shown, tmp: tmp };
+    }
+    function unparkViewer(p) {
+        if (!p) return;
+        try { p.shown.openInViewer(); } catch (e) { }
+        try { p.tmp.remove(); } catch (e2) { }
+    }
+
     H.batch = function (a) {
         var out = [], failed = 0, stoppedAt = null;
+        var parked = a.operations.length > 20 && a.parkViewer !== false ? parkViewer() : null;
+        try {
         for (var i = 0; i < a.operations.length; i++) {
             var op = a.operations[i];
             var h = H[op.tool];
@@ -1911,6 +1932,7 @@
                 if (!a.continueOnError) { stoppedAt = i; break; }
             }
         }
+        } finally { unparkViewer(parked); }
         var res = { ok: failed === 0, failed: failed, stoppedAt: stoppedAt, executed: out.length, total: a.operations.length, results: out };
         // atomic: ask the runner to undo the whole batch after its undo group closes
         if (failed && a.atomic) { res.rolledBack = true; A._rollback = true; }
