@@ -12,7 +12,9 @@
     "install-ae": "node scripts/install-ae.mjs",
     "icon": "powershell -ExecutionPolicy Bypass -File scripts/make-icon.ps1",
     "test": "node --test test/unit.test.mjs",
-    "test:live": "node test/live.test.mjs"
+    "test:live": "node test/live.test.mjs --cleanup",
+    "test:live:keep": "node test/live.test.mjs",
+    "test:stress": "node test/stress.test.mjs"
   },
   "author": "",
   "license": "MIT",
