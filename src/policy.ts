@@ -11,7 +11,7 @@ export function evalEnabled(): boolean {
 
 /** AE_MCP_READONLY=1: only tools that read or preview. */
 export function readOnlyMode(): boolean {
-  return process.env.AE_MCP_READONLY === "1";
+  return /^(1|true|yes|on)$/i.test(process.env.AE_MCP_READONLY ?? "");
 }
 
 const READ_EXTRA = new Set(["bridge_status", "check_expressions"]);

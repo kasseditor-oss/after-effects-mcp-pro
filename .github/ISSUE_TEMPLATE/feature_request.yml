@@ -1,0 +1,16 @@
+name: Feature request
+description: A tool or option you would like
+labels: [enhancement]
+body:
+  - type: textarea
+    id: goal
+    attributes:
+      label: What do you want to do in After Effects
+      description: The result you want, not only the API. Example prompts help.
+    validations:
+      required: true
+  - type: textarea
+    id: api
+    attributes:
+      label: ExtendScript notes
+      description: If you know the AE scripting API involved (or that there is none), say so.

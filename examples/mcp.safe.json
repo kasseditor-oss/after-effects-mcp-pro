@@ -1,0 +1,13 @@
+{
+  "mcpServers": {
+    "after-effects": {
+      "command": "npx",
+      "args": ["-y", "after-effects-mcp-pro"],
+      "env": {
+        "AE_MCP_TOOLSET": "core",
+        "AE_MCP_EVAL": "off",
+        "AE_MCP_ALLOWED_DIRS": "D:\Projects\Motion;D:\Renders"
+      }
+    }
+  }
+}

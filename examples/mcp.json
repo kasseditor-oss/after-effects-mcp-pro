@@ -1,0 +1,11 @@
+{
+  "mcpServers": {
+    "after-effects": {
+      "command": "npx",
+      "args": ["-y", "after-effects-mcp-pro"],
+      "env": {
+        "AE_MCP_TOOLSET": "full"
+      }
+    }
+  }
+}

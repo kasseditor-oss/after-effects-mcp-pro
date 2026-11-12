@@ -1,0 +1,452 @@
+{
+  "manifest_version": "0.3",
+  "name": "after-effects-mcp-pro",
+  "display_name": "After Effects MCP Pro",
+  "version": "2.1.0",
+  "description": "Drive Adobe After Effects from Claude: comps, layers, text, shapes, keyframes, effects, layer styles, previews and rendering.",
+  "long_description": "MCP server for Adobe After Effects (2022 or newer, Windows and macOS). Builds comps, layers, text, shapes, masks, keyframes, expressions, effects and layer styles; previews frames and contact sheets so Claude can look at the result; renders in the background with aerender. Run the setup once (`npx after-effects-mcp-pro setup`) to install the fast listener inside After Effects; without it the server uses direct mode.",
+  "author": {
+    "name": "kasseditor-oss",
+    "url": "https://github.com/kasseditor-oss"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/kasseditor-oss/after-effects-mcp-pro.git"
+  },
+  "homepage": "https://github.com/kasseditor-oss/after-effects-mcp-pro",
+  "documentation": "https://github.com/kasseditor-oss/after-effects-mcp-pro#readme",
+  "support": "https://github.com/kasseditor-oss/after-effects-mcp-pro/issues",
+  "icon": "assets/icon-256.png",
+  "server": {
+    "type": "node",
+    "entry_point": "build/index.js",
+    "mcp_config": {
+      "command": "node",
+      "args": [
+        "${__dirname}/build/index.js"
+      ],
+      "env": {
+        "AE_MCP_TOOLSET": "${user_config.toolset}",
+        "AE_MCP_EVAL": "${user_config.eval}",
+        "AE_MCP_READONLY": "${user_config.read_only}"
+      }
+    }
+  },
+  "tools": [
+    {
+      "name": "bridge_status",
+      "description": "Check the connection to After Effects: install found, AE running, bridge mode (listener/direct), AE version, open project. Call this first if anything fails."
+    },
+    {
+      "name": "launch_after_effects",
+      "description": "Start After Effects if it is not running and wait until it accepts commands (can take 30-120s)."
+    },
+    {
+      "name": "get_project_info",
+      "description": "Fast project overview: counts by type, first 50 comps, active comp. detail:true lists every comp."
+    },
+    {
+      "name": "list_project_items",
+      "description": "List project panel items (compositions, footage, solids, folders) with ids, folders, sizes, missing-footage flags. Paginated: limit (default 200, max 1000) and offset; the response has total and truncated."
+    },
+    {
+      "name": "save_project",
+      "description": "Save the project, or 'Save As' when path is given."
+    },
+    {
+      "name": "open_project",
+      "description": "Open an .aep file. Refuses if the current project has unsaved changes unless discardChanges is true."
+    },
+    {
+      "name": "new_project",
+      "description": "Close the current project and create an empty one. Refuses on unsaved changes unless discardChanges is true."
+    },
+    {
+      "name": "import_files",
+      "description": "Import footage/images/audio/PSD/AI files (optionally as image sequence) into the project, into a folder, and optionally straight into a comp."
+    },
+    {
+      "name": "remove_unused_footage",
+      "description": "Delete footage no layer uses. type:'solid' only clears unused null/solid sources; keep: ids to preserve."
+    },
+    {
+      "name": "create_folder",
+      "description": "Create a folder in the project panel."
+    },
+    {
+      "name": "organize_items",
+      "description": "Move project items into a folder (created if missing)."
+    },
+    {
+      "name": "modify_item",
+      "description": "Rename, relabel, comment, replace footage source, conform frame rate, set loop count, or delete a project item."
+    },
+    {
+      "name": "list_compositions",
+      "description": "All compositions with id, size, duration, fps, layer count, work area."
+    },
+    {
+      "name": "get_composition",
+      "description": "Full composition details: settings, markers, selection and a summary of each layer (type, timing, transform, effects, parent, matte). At most layerLimit (default 200) layers; use list_layers to page through more."
+    },
+    {
+      "name": "create_composition",
+      "description": "Create a comp (preset 1080p|4k|vertical|square... or width/height). open:false is faster when you add many layers first."
+    },
+    {
+      "name": "set_composition_settings",
+      "description": "Change composition name, size, duration, fps, background, work area, motion blur, shutter, renderer, current time, resolution."
+    },
+    {
+      "name": "duplicate_composition",
+      "description": "Duplicate a composition."
+    },
+    {
+      "name": "open_composition",
+      "description": "Open a composition in the viewer/timeline and optionally move the playhead."
+    },
+    {
+      "name": "precompose_layers",
+      "description": "Pre-compose layers into a new composition."
+    },
+    {
+      "name": "create_text_layer",
+      "description": "Create a text layer with full styling (font, size, color, stroke, tracking, leading, alignment, caps). Anchor is centered on the text. Returns the font AE actually used."
+    },
+    {
+      "name": "create_shape_layer",
+      "description": "Create a shape layer with one or many shapes (rectangle, ellipse, polygon, star, custom path), fill/stroke, rounded corners, Trim Paths and Repeater."
+    },
+    {
+      "name": "create_solid_layer",
+      "description": "Create a solid color layer, or an adjustment layer (adjustment: true)."
+    },
+    {
+      "name": "create_null_layer",
+      "description": "Create a null object, optionally parenting layers to it."
+    },
+    {
+      "name": "create_camera",
+      "description": "Create a 3D camera (two-node). Set zoom or focal length (mm), depth of field, focus distance, aperture."
+    },
+    {
+      "name": "create_light",
+      "description": "Create a light (point, spot, parallel, ambient) with color, intensity, cone and shadows."
+    },
+    {
+      "name": "add_item_to_comp",
+      "description": "Add a project item (footage, image, audio, or another comp) as a layer. fitToComp scales it to fit or fill the frame."
+    },
+    {
+      "name": "set_time_remap",
+      "description": "Enable time remap and write its keyframes: speed (2 = twice as fast, out point adjusted), ramp (speed with easing), freeze (hold the frame at comp time 'at'), reverse, or keyframes [{time, sourceTime}]."
+    },
+    {
+      "name": "list_layers",
+      "description": "List layers of a comp with type, timing, transform, parent, matte and effects (text cut to 200 chars). Paginated: limit (default 200, max 1000) and offset; the response has total and truncated."
+    },
+    {
+      "name": "get_layer_details",
+      "description": "Deep inspection of a layer: modified/animated property tree with keyframes and expressions, markers, bounding box."
+    },
+    {
+      "name": "set_layer_properties",
+      "description": "Change transform, timing, switches (enabled, solo, shy, lock, 3D, motion blur, adjustment, collapse), blend mode, quality, parent, label or name on one or many layers."
+    },
+    {
+      "name": "duplicate_layer",
+      "description": "Duplicate a layer one or more times, optionally offsetting position and time for each copy."
+    },
+    {
+      "name": "delete_layers",
+      "description": "Delete one or more layers. removeSources:true also deletes the Solids-folder item of deleted nulls/solids when nothing else uses it."
+    },
+    {
+      "name": "reorder_layer",
+      "description": "Move a layer to top/bottom, to an index, or before/after another layer."
+    },
+    {
+      "name": "set_parent",
+      "description": "Parent layers to another layer (or unparent with parent: null)."
+    },
+    {
+      "name": "set_track_matte",
+      "description": "Use another layer as alpha/luma (inverted) matte. Uses the AE 2023+ API so any layer can be the matte."
+    },
+    {
+      "name": "split_layer",
+      "description": "Split a layer at a time (default: playhead)."
+    },
+    {
+      "name": "sequence_layers",
+      "description": "Place layers one after another (with optional overlap) or stagger their start times."
+    },
+    {
+      "name": "align_layers",
+      "description": "Align layers to the composition (left/center/right, top/center/bottom) using their real visual bounds, with an optional margin."
+    },
+    {
+      "name": "set_text",
+      "description": "Change the text and/or style of a text layer (font, size, color, stroke, tracking, leading, justification)."
+    },
+    {
+      "name": "get_property",
+      "description": "Read any property by path ('Position', 'Effects/Gaussian Blur/Blurriness', 'Contents/Group 1/...'): value, keyframes, expression."
+    },
+    {
+      "name": "set_property",
+      "description": "Set any property's value by path. If the property is animated, sets a keyframe at 'time' (or the playhead)."
+    },
+    {
+      "name": "set_keyframes",
+      "description": "Add many keyframes to any property in one call, with easing presets or custom ease per key. Use replace:true to clear existing keys first."
+    },
+    {
+      "name": "remove_keyframes",
+      "description": "Remove keyframes from a property (all, or within a from/to time range)."
+    },
+    {
+      "name": "set_expression",
+      "description": "Set or clear (empty string) an expression on any property. Returns the expression error right away if AE reports one."
+    },
+    {
+      "name": "check_expressions",
+      "description": "Find every expression in a comp and report the ones that error."
+    },
+    {
+      "name": "add_text_animator",
+      "description": "Add a text animator: properties (opacity, position, scale, rotation, tracking, blur, fillColor, strokeColor, skew) driven by a range, wiggly or expression selector; optionally animate the range (offset/start/end from->to)."
+    },
+    {
+      "name": "apply_expression_preset",
+      "description": "Apply a ready expression (with its own Slider controls when useful): loop-cycle, loop-pingpong, inertia-bounce, wiggle-controlled, link-to-slider, time-remap-loop, follow-layer, fit-text-box, counter-number."
+    },
+    {
+      "name": "keyframes_from_markers",
+      "description": "Put a keyframe on a property at every comp (or layer) marker: values one per marker, or pattern:'alternate' cycling values. Animate on the beat."
+    },
+    {
+      "name": "position_along_path",
+      "description": "Animate a layer's Position along a mask path or shape path of another layer: keyframes at every vertex, timed by path length (constant speed), with the path's curves as spatial tangents; autoOrient turns it along the path."
+    },
+    {
+      "name": "animate_layer",
+      "description": "One-call animation preset: fade-in/out, slide-in/out, pop, scale-in, blur-in, typewriter, text-fade-up, wiggle, pulse, float, bounce, loop... e.g. {layer:'Title', preset:'pop', startTime:0.5}."
+    },
+    {
+      "name": "list_available_effects",
+      "description": "Search all installed effects (incl. third-party plugins) by name, match name or category."
+    },
+    {
+      "name": "apply_effect",
+      "description": "Apply any effect by display name or match name to one or many layers and set parameters by name/match name/index. Param value can be {keyframes:[...]} or {expression:'...'}. Returns all parameters with their values."
+    },
+    {
+      "name": "get_layer_effects",
+      "description": "List effects on a layer with every parameter value."
+    },
+    {
+      "name": "modify_effect",
+      "description": "Change parameters of an effect already on a layer, rename, enable/disable, reorder, duplicate or remove it."
+    },
+    {
+      "name": "apply_effect_template",
+      "description": "Apply a ready-made look (glow, neon, drop-shadow, cinematic-look, film-grain, vignette...) to layers."
+    },
+    {
+      "name": "apply_preset_file",
+      "description": "Apply an Animation Preset (.ffx) file to a layer."
+    },
+    {
+      "name": "add_layer_style",
+      "description": "Add a Photoshop-style layer style (drop-shadow, inner-shadow, outer-glow, inner-glow, bevel-emboss, satin, color-overlay, gradient-overlay, stroke) and set its parameters by name (Color, Opacity, Size, Distance, ...). The result lists the available parameters."
+    },
+    {
+      "name": "modify_mask",
+      "description": "Change an existing mask (by name or index): mode, inverted, feather, expansion, opacity, a new shape (rect/ellipse/vertices), and keyframes for path/feather/expansion/opacity. Path keyframe values are {shape, rect} or {vertices, inTangents, outTangents, closed}."
+    },
+    {
+      "name": "add_mask",
+      "description": "Add a rectangle, ellipse or custom path mask with mode, feather, opacity, expansion and inversion. rect is [x,y,w,h] in layer space (default: layer bounds)."
+    },
+    {
+      "name": "remove_masks",
+      "description": "Remove one mask (by name or index) or all masks from a layer."
+    },
+    {
+      "name": "audio_to_keyframes",
+      "description": "Run Convert Audio to Keyframes on an audio/video layer: creates an 'Audio Amplitude' null with Left/Right/Both Channels sliders keyframed per frame."
+    },
+    {
+      "name": "markers_from_audio_peaks",
+      "description": "Add comp markers at the local peaks of the 'Audio Amplitude' Both Channels slider above threshold (beat markers). Run audio_to_keyframes first."
+    },
+    {
+      "name": "markers",
+      "description": "Comp or layer markers in one tool: action add {time, comment, duration...} | list {includeLayers} | remove {time?, comment?}. With layer: that layer's markers."
+    },
+    {
+      "name": "add_marker",
+      "description": "Add a comp marker (or a layer marker when layer is given) with comment, duration, chapter, URL and label."
+    },
+    {
+      "name": "list_markers",
+      "description": "List comp markers (and layer markers with includeLayers)."
+    },
+    {
+      "name": "remove_markers",
+      "description": "Remove markers from a comp or layer, all or filtered by time/comment."
+    },
+    {
+      "name": "preview_frame",
+      "description": "Render one frame of a composition and return it as an image, so you can SEE the result and check your work. maxSize downscales (default 960px). JPEG by default (3-5x smaller than PNG)."
+    },
+    {
+      "name": "preview_contact_sheet",
+      "description": "Render N frames (or given times) as ONE labelled grid image to check an animation over time."
+    },
+    {
+      "name": "add_to_render_queue",
+      "description": "Queue a comp for rendering: format h264|prores|prores-alpha|lossless|tiff or outputModuleTemplate, outputPath, start/duration. PNG frames: render_png_sequence."
+    },
+    {
+      "name": "render_png_sequence",
+      "description": "Write numbered PNG frames of a comp directly: outputPath 'C:/out/frame_[####].png', range by start/duration or startFrame/endFrame."
+    },
+    {
+      "name": "get_render_queue",
+      "description": "List render queue items, status and output files."
+    },
+    {
+      "name": "clear_render_queue",
+      "description": "Remove render queue items (all, or only finished ones)."
+    },
+    {
+      "name": "render_queue",
+      "description": "The render queue in one tool: action render (default: renders the queue, blocking AE until done) | list | clear | add (same arguments as add_to_render_queue). Prefer render_in_background for long renders."
+    },
+    {
+      "name": "render_in_background",
+      "description": "Render a comp with aerender in a separate process (project is saved first). wait:true waits with per-frame progress."
+    },
+    {
+      "name": "get_background_render",
+      "description": "Status, progress and log tail of background renders."
+    },
+    {
+      "name": "replace_footage",
+      "description": "Swap the source file of a footage item (or a still/image sequence) for another file. Every comp that uses it keeps its layers, timing and effects."
+    },
+    {
+      "name": "list_presets",
+      "description": "List .ffx animation presets from the user's User Presets folder and the After Effects Presets folder, with name filter. Use the path with apply_preset_file."
+    },
+    {
+      "name": "get_properties_at_time",
+      "description": "Read many properties of many layers at one time in one call: requests [{layer, properties:[...]}]."
+    },
+    {
+      "name": "list_essential_properties",
+      "description": "Without layer: list the Essential Graphics controllers of a comp. With layer (a precomp layer in comp): list that instance's Essential Properties with their current values."
+    },
+    {
+      "name": "set_essential_property",
+      "description": "Set an Essential Property value on one precomp layer instance (by name or 1-based index), e.g. change the title text or color of one use of a template comp."
+    },
+    {
+      "name": "set_essential_properties",
+      "description": "Set several Essential Properties of one precomp instance by name in one call: values {\"Texto\": \"Ao vivo\", \"Cor\": \"#ff3366\"}."
+    },
+    {
+      "name": "instantiate_template",
+      "description": "Place a template comp N times into another comp, each with its own name, position and Essential Property values: items [{name, position, values}]."
+    },
+    {
+      "name": "export_mogrt",
+      "description": "Export a comp with Essential Graphics controllers as a Motion Graphics Template (.mogrt). path: a folder, or a full .mogrt file path (its name becomes the template name)."
+    },
+    {
+      "name": "add_to_essential_graphics",
+      "description": "Expose a property of a layer in its comp's Essential Graphics panel (optionally with a custom name) so precomp instances can override it."
+    },
+    {
+      "name": "list_fonts",
+      "description": "Search installed fonts; returns PostScript names to use in text tools (AE 2024+)."
+    },
+    {
+      "name": "get_selection",
+      "description": "What the user has selected in AE right now: active comp, playhead, selected layers and properties. Great for 'animate this layer' requests."
+    },
+    {
+      "name": "select_layers",
+      "description": "Select layers in the timeline (empty list clears the selection)."
+    },
+    {
+      "name": "begin_undo_group",
+      "description": "Group the following calls so ONE undo call reverts them all. Close with end_undo_group."
+    },
+    {
+      "name": "end_undo_group",
+      "description": "Close the open undo group. The next undo call without steps reverts every call of the group."
+    },
+    {
+      "name": "undo",
+      "description": "Undo or redo the last After Effects steps. Every MCP call is a single undo step; right after end_undo_group, undo without steps reverts the whole group."
+    },
+    {
+      "name": "execute_menu_command",
+      "description": "Execute an AE menu command by id or (English) menu name, e.g. 'Fit to Comp', 'Center Anchor Point in Layer Content'."
+    },
+    {
+      "name": "run_extendscript",
+      "description": "Run custom ExtendScript (ES3 function body; `return` a value). AEMCP helpers and `args` are available. Disabled with AE_MCP_EVAL=off."
+    },
+    {
+      "name": "batch",
+      "description": "Run many AE tools in ONE call and ONE undo step, e.g. [{tool:'create_text_layer',args:{...}},{tool:'animate_layer',args:{...}}]. Fails with isError + partial results; atomic:true reverts all."
+    }
+  ],
+  "tools_generated": false,
+  "prompts_generated": true,
+  "keywords": [
+    "after-effects",
+    "adobe",
+    "motion-design",
+    "motion-graphics",
+    "animation",
+    "video"
+  ],
+  "license": "MIT",
+  "user_config": {
+    "toolset": {
+      "type": "string",
+      "title": "Tool profile",
+      "description": "full (93 tools), core (31) or minimal (10). Unlisted tools still work when called by name.",
+      "default": "full",
+      "required": false
+    },
+    "eval": {
+      "type": "string",
+      "title": "run_extendscript",
+      "description": "on or off. off hides the custom-script tool (recommended for shared setups).",
+      "default": "on",
+      "required": false
+    },
+    "read_only": {
+      "type": "boolean",
+      "title": "Read-only mode",
+      "description": "Only list_, get_ and preview_ tools.",
+      "default": false,
+      "required": false
+    }
+  },
+  "compatibility": {
+    "platforms": [
+      "win32",
+      "darwin"
+    ],
+    "runtimes": {
+      "node": ">=18.0.0"
+    }
+  }
+}

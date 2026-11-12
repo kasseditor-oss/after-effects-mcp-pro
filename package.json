@@ -1,11 +1,51 @@
 {
   "name": "after-effects-mcp-pro",
   "version": "2.1.0",
-  "description": "MCP server for Adobe After Effects: 60+ tools, synchronous results, live frame previews, background rendering, zero-click bridge.",
-  "main": "build/index.js",
-  "directories": {
-    "test": "test"
+  "description": "MCP server for Adobe After Effects: 93 tools, live frame previews, background rendering, layer styles, time remap, Essential Graphics and a zero-click bridge.",
+  "keywords": [
+    "mcp",
+    "mcp-server",
+    "model-context-protocol",
+    "after-effects",
+    "adobe",
+    "motion-design",
+    "motion-graphics",
+    "extendscript",
+    "claude"
+  ],
+  "homepage": "https://github.com/kasseditor-oss/after-effects-mcp-pro#readme",
+  "bugs": {
+    "url": "https://github.com/kasseditor-oss/after-effects-mcp-pro/issues"
   },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/kasseditor-oss/after-effects-mcp-pro.git"
+  },
+  "license": "MIT",
+  "author": "kasseditor-oss",
+  "type": "module",
+  "main": "build/index.js",
+  "bin": {
+    "after-effects-mcp-pro": "build/index.js"
+  },
+  "files": [
+    "build",
+    "bridge",
+    "assets",
+    "scripts/install-ae.mjs",
+    "scripts/copy-assets.mjs",
+    "README.md",
+    "CHANGELOG.md",
+    "LICENSE",
+    "manifest.json"
+  ],
+  "engines": {
+    "node": ">=18"
+  },
+  "os": [
+    "win32",
+    "darwin"
+  ],
   "scripts": {
     "build": "tsc -p tsconfig.json && node scripts/copy-assets.mjs",
     "start": "node build/index.js",
@@ -16,11 +56,9 @@
     "test:live:keep": "node test/live.test.mjs",
     "test:stress": "node test/stress.test.mjs",
     "typecheck": "tsc -p tsconfig.json --noEmit",
-    "check:es3": "node scripts/check-es3.mjs"
+    "check:es3": "node scripts/check-es3.mjs",
+    "manifest": "node scripts/gen-manifest.mjs"
   },
-  "author": "",
-  "license": "MIT",
-  "type": "module",
   "dependencies": {
     "@modelcontextprotocol/sdk": "^1.32.2",
     "zod": "^3.25.76",
@@ -30,18 +68,5 @@
     "@types/node": "^26.6.6",
     "acorn": "^8.19.0",
     "typescript": "^7.0.2"
-  },
-  "bin": {
-    "after-effects-mcp-pro": "build/index.js"
-  },
-  "engines": {
-    "node": ">=18"
-  },
-  "files": [
-    "build",
-    "bridge",
-    "assets",
-    "scripts",
-    "README.md"
-  ]
+  }
 }

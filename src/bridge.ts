@@ -155,7 +155,7 @@ export class Bridge {
   listenerVersionWarning(): string | null {
     const hb = this.heartbeat();
     if (!hb || hb.ageMs > 10_000 || hb.version === LISTENER_VERSION) return null;
-    return `The After Effects listener is version ${hb.version} but this server (${SERVER_VERSION}) expects ${LISTENER_VERSION}. Run "npm run install-ae" in the server folder to update it.`;
+    return `The After Effects listener is version ${hb.version} but this server (${SERVER_VERSION}) expects ${LISTENER_VERSION}. Run "npx after-effects-mcp-pro setup" (or "npm run install-ae" in a clone) to update it.`;
   }
 
   heartbeat(): (Heartbeat & { ageMs: number }) | null {

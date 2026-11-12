@@ -1,0 +1,39 @@
+# Smithery listing (local stdio server: After Effects must run on the same machine).
+# Not submitted yet: see docs/listing.md.
+startCommand:
+  type: stdio
+  configSchema:
+    type: object
+    properties:
+      toolset:
+        type: string
+        enum: [full, core, minimal]
+        default: full
+        description: How many tools are listed (unlisted tools still work by name).
+      eval:
+        type: string
+        enum: ["on", "off"]
+        default: "on"
+        description: off hides run_extendscript (custom ExtendScript).
+      readOnly:
+        type: boolean
+        default: false
+        description: Only list_, get_ and preview_ tools.
+      allowedDirs:
+        type: string
+        description: Folders separated by ; that file tools may use (empty = any).
+  commandFunction: |-
+    (config) => ({
+      command: 'npx',
+      args: ['-y', 'after-effects-mcp-pro'],
+      env: {
+        AE_MCP_TOOLSET: config.toolset || 'full',
+        AE_MCP_EVAL: config.eval || 'on',
+        AE_MCP_READONLY: config.readOnly ? '1' : '0',
+        ...(config.allowedDirs ? { AE_MCP_ALLOWED_DIRS: config.allowedDirs } : {})
+      }
+    })
+  exampleConfig:
+    toolset: core
+    eval: "off"
+    readOnly: false

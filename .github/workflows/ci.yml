@@ -26,6 +26,8 @@ jobs:
       - name: ExtendScript files parse as ES3
         run: npm run check:es3
       - run: npm run build
+      - name: Claude Desktop extension manifest is up to date
+        run: node scripts/gen-manifest.mjs --check
       # Unit tests never need After Effects. They include the tools/list snapshot,
       # so an accidental change to a tool's name, schema or annotations fails CI.
       - run: npm test

@@ -26,8 +26,13 @@ import { checkPaths, disabledReason, listed, policySummary, toolset } from "./po
 import { checkCompat, currentAEVersion, MIN_AE, noteAEVersion, versionWarning } from "./compat.js";
 import { compose, type ImageFormat } from "./imaging.js";
 import { WIDGET_MIME, WIDGET_URI, widgetHtml } from "./widget.js";
+import { runCli } from "./cli.js";
 
 const here = path.dirname(fileURLToPath(import.meta.url));
+
+// --help / --version / setup: handled before the server (and its bridge folder) is created
+const cliExit = runCli(process.argv.slice(2), here, SERVER_VERSION);
+if (cliExit !== null) process.exit(cliExit);
 
 // ------------------------------------------------------------------ icons
 // The icon is what MCP clients (Claude Desktop / claude.ai / Claude Code) show
@@ -290,7 +295,7 @@ async function nodeTool(name: string, a: any, report?: Progress): Promise<CallTo
         bridgeDir: bridge.dir,
         installs: installs.map((i) => ({ version: i.version, path: i.appDir, aerender: !!i.aerender, ...(i.beta ? { beta: true } : {}) })),
         afterEffectsRunning: running,
-        listener: hb ? { alive: hb.ageMs < 4000, lastHeartbeatMsAgo: hb.ageMs, paused: hb.paused, executed: hb.executed, version: hb.version } : "not installed (run: npm run install-ae) - direct mode will be used",
+        listener: hb ? { alive: hb.ageMs < 4000, lastHeartbeatMsAgo: hb.ageMs, paused: hb.paused, executed: hb.executed, version: hb.version } : "not installed (run: npx after-effects-mcp-pro setup, or npm run install-ae in a clone) - direct mode will be used",
       };
       if (running) {
         try {
