@@ -1677,6 +1677,74 @@
         return { expressions: total, errors: errors };
     };
 
+    // ---- Text animators
+    var TA_PROPS = { opacity: "ADBE Text Opacity", position: "ADBE Text Position 3D", scale: "ADBE Text Scale 3D", rotation: "ADBE Text Rotation",
+        tracking: "ADBE Text Tracking Amount", blur: "ADBE Text Blur", fillColor: "ADBE Text Fill Color", strokeColor: "ADBE Text Stroke Color", skew: "ADBE Text Skew" };
+    var TA_BASED = { characters: 1, "characters-excluding-spaces": 2, words: 3, lines: 4 };
+    var TA_SHAPES = { square: 1, "ramp-up": 2, "ramp-down": 3, triangle: 4, round: 5, smooth: 6 };
+    function addTextAnimator(l, spec) {
+        if (!(l instanceof TextLayer)) fail("Layer '" + l.name + "' is not a text layer");
+        var an = l.property("ADBE Text Properties").property("ADBE Text Animators").addProperty("ADBE Text Animator");
+        if (spec.name) an.name = spec.name;
+        var ap = an.property("ADBE Text Animator Properties");
+        var props = spec.properties || {};
+        for (var k in props) {
+            if (!props.hasOwnProperty(k)) continue;
+            if (!TA_PROPS[k]) fail("Unknown animator property '" + k + "'", "Use opacity, position, scale, rotation, tracking, blur, fillColor, strokeColor or skew.");
+            var p = ap.addProperty(TA_PROPS[k]);
+            var v = props[k];
+            if (k === "position" && v instanceof Array && v.length === 2) v = [v[0], v[1], 0];
+            if (k === "scale" && typeof v === "number") v = [v, v, v];
+            if (k === "scale" && v instanceof Array && v.length === 2) v = [v[0], v[1], 100];
+            if (k === "blur" && typeof v === "number") v = [v, v];
+            if (k === "fillColor" || k === "strokeColor") v = color(v);
+            p.setValue(v);
+        }
+        var sel = spec.selector || { type: "range" };
+        var type = lower(def(sel.type, "range"));
+        var sels = an.property("ADBE Text Selectors"), s;
+        if (type === "range") {
+            s = sels.addProperty("ADBE Text Selector");
+            if (has(sel, "start")) s.property("ADBE Text Percent Start").setValue(sel.start);
+            if (has(sel, "end")) s.property("ADBE Text Percent End").setValue(sel.end);
+            if (has(sel, "offset")) s.property("ADBE Text Percent Offset").setValue(sel.offset);
+            var adv = s.property("ADBE Text Range Advanced");
+            if (has(sel, "basedOn")) adv.property("ADBE Text Range Type2").setValue(TA_BASED[sel.basedOn]);
+            if (has(sel, "shape")) adv.property("ADBE Text Range Shape").setValue(TA_SHAPES[sel.shape]);
+            if (has(sel, "easeHigh")) adv.property("ADBE Text Levels Max Ease").setValue(sel.easeHigh);
+            if (has(sel, "easeLow")) adv.property("ADBE Text Levels Min Ease").setValue(sel.easeLow);
+            if (has(sel, "smoothness")) adv.property("ADBE Text Selector Smoothness").setValue(sel.smoothness);
+            if (has(sel, "randomize")) adv.property("ADBE Text Randomize Order").setValue(sel.randomize ? 1 : 0);
+            if (has(sel, "amount")) adv.property("ADBE Text Selector Max Amount").setValue(sel.amount);
+        } else if (type === "wiggly") {
+            s = sels.addProperty("ADBE Text Wiggly Selector");
+            if (has(sel, "maxAmount")) s.property("ADBE Text Wiggly Max Amount").setValue(sel.maxAmount);
+            if (has(sel, "minAmount")) s.property("ADBE Text Wiggly Min Amount").setValue(sel.minAmount);
+            if (has(sel, "wigglesPerSecond")) s.property("ADBE Text Temporal Freq").setValue(sel.wigglesPerSecond);
+            if (has(sel, "correlation")) s.property("ADBE Text Character Correlation").setValue(sel.correlation);
+            if (has(sel, "basedOn")) s.property("ADBE Text Range Type2").setValue(TA_BASED[sel.basedOn]);
+        } else if (type === "expression") {
+            s = sels.addProperty("ADBE Text Expressible Selector");
+            if (has(sel, "basedOn")) s.property("ADBE Text Range Type2").setValue(TA_BASED[sel.basedOn]);
+            s.property("ADBE Text Expressible Amount").expression = def(sel.expression, "selectorValue * textIndex / textTotal");
+        } else fail("Unknown selector type '" + sel.type + "'", "Use range, wiggly or expression.");
+        var animated = null;
+        if (spec.animate) {
+            if (type !== "range") fail("animate needs a range selector");
+            var map = { offset: "ADBE Text Percent Offset", start: "ADBE Text Percent Start", end: "ADBE Text Percent End" };
+            var ap2 = s.property(map[def(spec.animate.property, "offset")]);
+            var t0 = def(spec.animate.startTime, l.inPoint);
+            setKeys(ap2, [{ time: t0, value: spec.animate.from }, { time: t0 + def(spec.animate.duration, 1), value: spec.animate.to }], def(spec.animate.easing, "smooth"));
+            animated = propPath(ap2);
+        }
+        return { layer: l.name, animator: an.name, index: an.propertyIndex, selector: type, path: propPath(an), animated: animated };
+    }
+    A.addTextAnimator = addTextAnimator;
+    H.add_text_animator = function (a) {
+        var t = target(a);
+        return addTextAnimator(t.layer, a);
+    };
+
     // Procedural animation presets: keyframes and expressions built for you.
     H.animate_layer = function (a) {
         var t = target(a);
@@ -1732,29 +1800,13 @@
                 applied.push("Gaussian Blur"); break;
             }
             case "typewriter": {
-                if (!(l instanceof TextLayer)) fail("typewriter needs a text layer");
-                var anim = l.property("ADBE Text Properties").property("ADBE Text Animators").addProperty("ADBE Text Animator");
-                anim.name = "Typewriter";
-                anim.property("ADBE Text Animator Properties").addProperty("ADBE Text Opacity").setValue(0);
-                var sel = anim.property("ADBE Text Selectors").addProperty("ADBE Text Selector");
-                var sp = sel.property("ADBE Text Percent Start");
-                setKeys(sp, [{ time: start, value: 0 }, { time: start + def(a.duration, 2), value: 100 }], "linear");
-                try { sel.property("ADBE Text Range Advanced").property("ADBE Text Selector Smoothness").setValue(0); } catch (e2) { }
+                // hidden characters (opacity 0) behind a Start that sweeps 0 -> 100
+                addTextAnimator(l, { name: "Typewriter", properties: { opacity: 0 }, selector: { type: "range", smoothness: 0 }, animate: { property: "start", from: 0, to: 100, startTime: start, duration: def(a.duration, 2), easing: "linear" } });
                 applied.push("Text Animator (Typewriter)"); break;
             }
             case "text-fade-up": {
-                if (!(l instanceof TextLayer)) fail("text-fade-up needs a text layer");
-                var an = l.property("ADBE Text Properties").property("ADBE Text Animators").addProperty("ADBE Text Animator");
-                an.name = "Fade Up";
-                var ap = an.property("ADBE Text Animator Properties");
-                ap.addProperty("ADBE Text Opacity").setValue(0);
-                ap.addProperty("ADBE Text Position 3D").setValue([0, def(amt, 60), 0]);
-                var se = an.property("ADBE Text Selectors").addProperty("ADBE Text Selector");
-                setKeys(se.property("ADBE Text Percent Offset"), [{ time: start, value: -100 }, { time: start + def(a.duration, 1.2), value: 100 }], "smooth");
-                // Ramp Up: with Offset -100 every character is past the ramp (fully selected =
-                // opacity 0), with +100 none is. Animating -100 -> 100 reveals left to right.
-                try { se.property("ADBE Text Range Advanced").property("ADBE Text Range Shape").setValue(2); } catch (e3) { }
-                try { se.property("ADBE Text Range Advanced").property("ADBE Text Levels Max Ease").setValue(50); } catch (e4) { }
+                // Ramp Up: Offset -100 selects every character (hidden, lowered), +100 none
+                addTextAnimator(l, { name: "Fade Up", properties: { opacity: 0, position: [0, def(amt, 60), 0] }, selector: { type: "range", shape: "ramp-up", easeHigh: 50 }, animate: { property: "offset", from: -100, to: 100, startTime: start, duration: def(a.duration, 1.2), easing: "smooth" } });
                 applied.push("Text Animator (Fade Up)"); break;
             }
             case "wiggle": expr(pos, "wiggle(" + def(a.frequency, 2) + "," + def(amt, 30) + ")"); break;

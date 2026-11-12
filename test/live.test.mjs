@@ -362,6 +362,17 @@ await call("preview_contact_sheet", { comp: C, frames: 4, maxSize: 400 }, {
   await call("preview_frame", { comp: lc.data?.id, time: 99999 }, { check: (d) => (d.clampedFrom === 99999 && /outside the comp/.test(d.warning) ? true : JSON.stringify(d)) });
   await call("create_text_layer", { comp: lc.data?.id, text: "\u05e9\u05dc\u05d5\u05dd", font: "BebasNeue-Regular", name: "Hebrew" }, { check: (d) => (/missing glyphs/.test(d.warning ?? "") || d.appliedFont !== "BebasNeue-Regular" ? true : "no glyph warning: " + JSON.stringify(d).slice(0, 200)) });
 }
+// text animators: wiggly position + range opacity; the preview changes over time
+{
+  const ta = await call("create_composition", { name: COMP + " animator", width: 640, height: 360, duration: 3, backgroundColor: "#000000", open: false });
+  created.push(ta.data?.id);
+  await call("create_text_layer", { comp: ta.data?.id, text: "WIGGLE TEXT", font: "Arial-BoldMT", fontSize: 80, name: "W" });
+  await call("add_text_animator", { comp: ta.data?.id, layer: "W", name: "Jitter", properties: { position: [0, 60] }, selector: { type: "wiggly", wigglesPerSecond: 4, maxAmount: 100, minAmount: -100 } }, { check: (d) => (d.selector === "wiggly" ? true : JSON.stringify(d)) });
+  await call("add_text_animator", { comp: ta.data?.id, layer: "W", name: "Reveal", properties: { opacity: 0 }, selector: { type: "range", shape: "ramp-up", basedOn: "characters" }, animate: { property: "offset", from: -100, to: 100, startTime: 0, duration: 2 } }, { check: (d) => (/Offset/.test(d.animated) ? true : JSON.stringify(d)) });
+  const l1 = await lumaAt(ta.data?.id, 0.6, "anim-a");
+  const l2 = await lumaAt(ta.data?.id, 2.5, "anim-b");
+  results.push({ tool: "text animator changes the frame", pass: Math.abs(l1 - l2) > 0.5, ms: 0, note: `luma ${l1} -> ${l2}` });
+}
 // text-fade-up must REVEAL the text: invisible before, fully visible after (pixel check)
 {
   const fc = await call("create_composition", { name: COMP + " fade", width: 640, height: 360, duration: 3, backgroundColor: "#000000", open: false });

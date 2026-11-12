@@ -4503,6 +4503,275 @@
   }
  },
  {
+  "name": "add_text_animator",
+  "title": "Add text animator",
+  "description": "Add a text animator: properties (opacity, position, scale, rotation, tracking, blur, fillColor, strokeColor, skew) driven by a range, wiggly or expression selector; optionally animate the range (offset/start/end from->to).",
+  "inputSchema": {
+   "type": "object",
+   "properties": {
+    "comp": {
+     "anyOf": [
+      {
+       "type": "string"
+      },
+      {
+       "type": "integer"
+      }
+     ],
+     "description": "Composition name or numeric item id. Omit to use the active composition."
+    },
+    "layer": {
+     "anyOf": [
+      {
+       "type": "integer",
+       "exclusiveMinimum": 0
+      },
+      {
+       "type": "string"
+      }
+     ],
+     "description": "Layer: 1-based index, exact name, or 'id:<layerId>' (stable across reordering)."
+    },
+    "name": {
+     "type": "string"
+    },
+    "properties": {
+     "type": "object",
+     "properties": {
+      "opacity": {
+       "type": "number"
+      },
+      "position": {
+       "type": "array",
+       "items": {
+        "type": "number"
+       }
+      },
+      "scale": {
+       "anyOf": [
+        {
+         "type": "number"
+        },
+        {
+         "type": "array",
+         "items": {
+          "type": "number"
+         }
+        }
+       ]
+      },
+      "rotation": {
+       "type": "number"
+      },
+      "tracking": {
+       "type": "number"
+      },
+      "blur": {
+       "anyOf": [
+        {
+         "type": "number"
+        },
+        {
+         "type": "array",
+         "items": {
+          "type": "number"
+         }
+        }
+       ]
+      },
+      "fillColor": {
+       "anyOf": [
+        {
+         "type": "string"
+        },
+        {
+         "type": "array",
+         "items": {
+          "type": "number"
+         },
+         "minItems": 3,
+         "maxItems": 4
+        }
+       ],
+       "description": "Color as '#RRGGBB' or [r,g,b] (0-1 or 0-255)."
+      },
+      "strokeColor": {
+       "anyOf": [
+        {
+         "type": "string"
+        },
+        {
+         "type": "array",
+         "items": {
+          "type": "number"
+         },
+         "minItems": 3,
+         "maxItems": 4
+        }
+       ],
+       "description": "Color as '#RRGGBB' or [r,g,b] (0-1 or 0-255)."
+      },
+      "skew": {
+       "type": "number"
+      }
+     },
+     "additionalProperties": false
+    },
+    "selector": {
+     "type": "object",
+     "properties": {
+      "type": {
+       "type": "string",
+       "enum": [
+        "range",
+        "wiggly",
+        "expression"
+       ]
+      },
+      "basedOn": {
+       "type": "string",
+       "enum": [
+        "characters",
+        "characters-excluding-spaces",
+        "words",
+        "lines"
+       ]
+      },
+      "shape": {
+       "type": "string",
+       "enum": [
+        "square",
+        "ramp-up",
+        "ramp-down",
+        "triangle",
+        "round",
+        "smooth"
+       ]
+      },
+      "start": {
+       "type": "number"
+      },
+      "end": {
+       "type": "number"
+      },
+      "offset": {
+       "type": "number"
+      },
+      "amount": {
+       "type": "number"
+      },
+      "easeHigh": {
+       "type": "number"
+      },
+      "easeLow": {
+       "type": "number"
+      },
+      "smoothness": {
+       "type": "number"
+      },
+      "randomize": {
+       "type": "boolean"
+      },
+      "expression": {
+       "type": "string"
+      },
+      "wigglesPerSecond": {
+       "type": "number"
+      },
+      "maxAmount": {
+       "type": "number"
+      },
+      "minAmount": {
+       "type": "number"
+      },
+      "correlation": {
+       "type": "number"
+      }
+     },
+     "required": [
+      "type"
+     ],
+     "additionalProperties": false
+    },
+    "animate": {
+     "type": "object",
+     "properties": {
+      "property": {
+       "type": "string",
+       "enum": [
+        "offset",
+        "start",
+        "end"
+       ]
+      },
+      "from": {
+       "type": "number"
+      },
+      "to": {
+       "type": "number"
+      },
+      "startTime": {
+       "type": "number"
+      },
+      "duration": {
+       "type": "number",
+       "exclusiveMinimum": 0
+      },
+      "easing": {
+       "type": "string",
+       "enum": [
+        "linear",
+        "hold",
+        "easy-ease",
+        "ease-in",
+        "ease-out",
+        "ease-in-out",
+        "smooth",
+        "strong-ease",
+        "expo",
+        "snap",
+        "anticipate"
+       ],
+       "description": "Keyframe easing preset."
+      }
+     },
+     "required": [
+      "from",
+      "to"
+     ],
+     "additionalProperties": false
+    },
+    "timeoutSeconds": {
+     "type": "integer",
+     "minimum": 1,
+     "maximum": 3600,
+     "description": "Max seconds to wait for After Effects (default 60, long tools 300+)."
+    }
+   },
+   "required": [
+    "layer",
+    "properties"
+   ]
+  },
+  "annotations": {
+   "title": "Add text animator",
+   "readOnlyHint": false,
+   "destructiveHint": false,
+   "idempotentHint": false,
+   "openWorldHint": false
+  },
+  "_meta": {
+   "ui": {
+    "resourceUri": "ui://after-effects/activity.html",
+    "visibility": [
+     "model",
+     "app"
+    ]
+   },
+   "ui/resourceUri": "ui://after-effects/activity.html"
+  }
+ },
+ {
   "name": "animate_layer",
   "title": "Animation preset",
   "description": "One-call animation preset: fade-in/out, slide-in/out, pop, scale-in, blur-in, typewriter, text-fade-up, wiggle, pulse, float, bounce, loop... e.g. {layer:'Title', preset:'pop', startTime:0.5}. Details: ae://docs/animate_layer",
