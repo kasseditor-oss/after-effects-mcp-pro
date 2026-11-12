@@ -1212,7 +1212,7 @@
         }
         if (s.offset) grp.property("ADBE Vector Transform Group").property("ADBE Vector Position").setValue(s.offset);
         if (has(s, "rotation")) grp.property("ADBE Vector Transform Group").property("ADBE Vector Rotation").setValue(s.rotation);
-        if (ctx) ctx.paths.push(shapePaths(grp));
+        if (ctx && !A._lean) ctx.paths.push(shapePaths(grp)); // costs property reads: skipped in lean batches
         return grp;
     }
 
@@ -2480,6 +2480,7 @@
             if (same) { res.tool = out[0].tool; for (q = 0; q < out.length; q++) delete out[q].tool; }
         }
         if (firstHint) res.hint = firstHint;
+        if (a.operations.length > 20) res.viewer = parked ? (parked.closed ? "tab closed during the batch" : "parked on an empty comp") : "not parked (no comp viewer was active)";
         // atomic: ask the runner to undo the whole batch after its undo group closes
         if (failed && a.atomic) { res.rolledBack = true; A._rollback = true; }
         return res;
