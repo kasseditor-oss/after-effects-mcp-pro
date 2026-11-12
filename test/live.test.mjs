@@ -147,6 +147,17 @@ await call("undo", {}, {});
 await call("list_layers", { comp: C }, { check: (d) => (d.count === before - 2 ? true : `undo did not revert batch as one step: ${before} -> ${d.count}`) });
 await call("undo", { action: "redo" });
 
+// progress: a 100-operation batch with a progressToken streams increasing notifications
+{
+  const seen = [];
+  const ops = Array.from({ length: 100 }, (_, i) => ({ tool: "create_null_layer", args: { comp: C, name: `PG${i}` } }));
+  const t0 = Date.now();
+  const r = await client.callTool({ name: "batch", arguments: { operations: ops } }, undefined, { timeout: 600_000, onprogress: (p) => seen.push(p.progress) });
+  const increasing = seen.every((v, i) => i === 0 || v > seen[i - 1]);
+  results.push({ tool: "progress", pass: !r.isError && seen.length >= 5 && increasing, ms: Date.now() - t0, note: `${seen.length} notifications` });
+  console.log(`${seen.length >= 5 && increasing ? "PASS" : "FAIL"} progress notifications: ${seen.length}`);
+  await call("delete_layers", { comp: C, layers: ops.map((o) => o.args.name), removeSources: true });
+}
 const nBefore = (await call("list_layers", { comp: C })).data?.total;
 await call("batch", { operations: [
   { tool: "create_null_layer", args: { comp: C, name: "BP1" } },
@@ -241,6 +252,16 @@ if (job.data?.jobId) {
       break;
     }
   }
+}
+
+// aerender with wait:true streams per-frame progress
+if (job.data?.jobId) {
+  const seen = [];
+  const t0 = Date.now();
+  const r = await client.callTool({ name: "render_in_background", arguments: { comp: COMP, outputPath: path.join(out, "bg-wait.avi"), startFrame: 0, endFrame: 9, wait: true } }, undefined, { timeout: 600_000, onprogress: (p) => seen.push(p.progress) });
+  const d = r.isError ? {} : JSON.parse(r.content[0].text);
+  results.push({ tool: "render_in_background(wait)", pass: d.status === "done" && seen.length >= 1, ms: Date.now() - t0, note: `${seen.length} progress, status ${d.status}` });
+  console.log(`${d.status === "done" && seen.length >= 1 ? "PASS" : "FAIL"} render_in_background wait: ${seen.length} progress notifications`);
 }
 
 // structuredContent of the read tools must validate against their own output schemas

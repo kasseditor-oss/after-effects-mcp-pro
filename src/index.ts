@@ -127,7 +127,7 @@ interface RenderJob {
 const jobs = new Map<string, RenderJob>();
 
 /** Wait until AE has finished writing each file (saveFrameToPng is asynchronous). */
-async function waitForFiles(files: string[], timeoutMs = 90_000) {
+async function waitForFiles(files: string[], timeoutMs = 90_000, report?: Progress) {
   const t0 = Date.now();
   const last = new Map<string, number>();
   const done = new Set<string>();
@@ -135,7 +135,10 @@ async function waitForFiles(files: string[], timeoutMs = 90_000) {
     for (const f of files) {
       if (done.has(f) || !fs.existsSync(f)) continue;
       const size = fs.statSync(f).size;
-      if (size > 0 && last.get(f) === size) done.add(f);
+      if (size > 0 && last.get(f) === size) {
+        done.add(f);
+        report?.(done.size, files.length, `frame ${done.size}/${files.length}`);
+      }
       last.set(f, size);
     }
     if (done.size < files.length) await new Promise((r) => setTimeout(r, 100));
@@ -148,14 +151,14 @@ async function waitForFiles(files: string[], timeoutMs = 90_000) {
  * Render frames in one AE round trip, then resize / tile / encode them in one
  * image process. columns: 0 = return each frame separately.
  */
-async function renderFrames(a: { comp?: string | number; times?: number[]; maxSize: number; format: ImageFormat; quality: number; columns?: number; labels?: boolean; keepPath?: string; background?: "comp" | "transparent" | "checker" }) {
+async function renderFrames(a: { comp?: string | number; times?: number[]; maxSize: number; format: ImageFormat; quality: number; columns?: number; labels?: boolean; keepPath?: string; background?: "comp" | "transparent" | "checker"; report?: Progress }) {
   const tag = `${Date.now()}-${Math.random().toString(36).slice(2, 7)}`;
   const frames = path.join(bridge.dir, "frames");
   const info = await bridge.call<any>("render_frames", { comp: a.comp, times: a.times, outputDir: frames.split(path.sep).join("/"), prefix: tag, maxSize: a.maxSize, fullRes: !!a.keepPath }, { undo: false, timeoutMs: 180_000 });
   const files: string[] = info.frames.map((f: any) => f.file);
   try {
     try {
-      await waitForFiles(files);
+      await waitForFiles(files, 90_000, a.report);
     } finally {
       if (info.restoreResolution) await bridge.call("restore_resolution", { comp: info.compId, resolution: info.restoreResolution }, { undo: false }).catch(() => undefined);
     }
@@ -192,7 +195,7 @@ async function renderFrames(a: { comp?: string | number; times?: number[]; maxSi
   }
 }
 
-async function nodeTool(name: string, a: any): Promise<CallToolResult> {
+async function nodeTool(name: string, a: any, report?: Progress): Promise<CallToolResult> {
   switch (name) {
     case "bridge_status": {
       const installs = findInstalls();
@@ -243,7 +246,7 @@ async function nodeTool(name: string, a: any): Promise<CallToolResult> {
       const columns = (a.layout ?? "grid") === "grid" ? Math.min(4, times.length) : 0;
       // smaller cells for big sheets keep the image under ~200 KB
       const cell = a.maxSize ?? (times.length > 6 ? 360 : 480);
-      const r = await renderFrames({ comp: comp.id, times, maxSize: cell, format: a.background === "transparent" ? "png" : a.format ?? "jpeg", quality: a.quality ?? (times.length > 6 ? 70 : 80), columns, labels: true, background: a.background });
+      const r = await renderFrames({ comp: comp.id, times, maxSize: cell, format: a.background === "transparent" ? "png" : a.format ?? "jpeg", quality: a.quality ?? (times.length > 6 ? 70 : 80), columns, labels: true, background: a.background, report });
       const content: CallToolResult["content"] = [];
       if (r.images.length === 1) content.push({ type: "image", ...r.images[0] });
       else r.images.forEach((im, i) => content.push({ type: "text", text: `t = ${times[i]}s` }, { type: "image", ...im }));
@@ -280,7 +283,25 @@ async function nodeTool(name: string, a: any): Promise<CallToolResult> {
         job.log.push(String(e));
       });
       jobs.set(id, job);
-      return ok({ jobId: id, status: "running", command: [install.aerender, ...argv].join(" ") });
+      if (!a.wait) return ok({ jobId: id, status: "running", command: [install.aerender, ...argv].join(" ") });
+      // wait: stream progress from aerender's "PROGRESS: 0:00:01:05 (36): ..." lines
+      let total = a.endFrame !== undefined ? a.endFrame - (a.startFrame ?? 0) + 1 : 0;
+      if (!total) {
+        const c = await bridge.call<any>("get_composition", { comp: a.comp, layerLimit: 0 }, { undo: false }).catch(() => null);
+        if (c) total = Math.round(c.workAreaDuration * c.frameRate);
+      }
+      let lastFrame = -1;
+      const deadline = Date.now() + (a.waitSeconds ?? 3600) * 1000;
+      while (job.status === "running" && Date.now() < deadline) {
+        await new Promise((r) => setTimeout(r, 500));
+        const line = [...job.log].reverse().find((l) => /PROGRESS:.*\((\d+)\)/.test(l));
+        const frame = line ? Number(/\((\d+)\)/.exec(line)![1]) : -1;
+        if (frame > lastFrame) {
+          lastFrame = frame;
+          report?.(frame - (a.startFrame ?? 0) + 1, total || undefined, `frame ${frame}`);
+        }
+      }
+      return ok({ jobId: id, status: job.status, exitCode: job.exitCode ?? null, seconds: Math.round((Date.now() - job.started) / 1000), logTail: job.log.slice(-6) });
     }
     case "get_background_render": {
       const list = a.jobId ? [jobs.get(a.jobId)].filter(Boolean) : [...jobs.values()];
@@ -309,7 +330,15 @@ function largeTextIssue(tool: string, a: any): string | null {
 
 let versionChecked = false;
 server.setRequestHandler(CallToolRequestSchema, async (req, extra): Promise<CallToolResult> => {
-  const result = await dispatch(req, extra.signal);
+  // MCP progress: only when the client sent a progressToken
+  const token = (req.params as any)._meta?.progressToken;
+  const report: Progress | undefined =
+    token === undefined
+      ? undefined
+      : (progress, total, message) => {
+          extra.sendNotification({ method: "notifications/progress", params: { progressToken: token, progress, ...(total ? { total } : {}), ...(message ? { message } : {}) } } as any).catch(() => undefined);
+        };
+  const result = await dispatch(req, extra.signal, report);
   // Read tools also return the JSON as structuredContent (their outputSchema documents it).
   if (OUTPUTS[req.params.name] && !result.isError && result.content?.[0]?.type === "text") {
     try {
@@ -326,7 +355,9 @@ server.setRequestHandler(CallToolRequestSchema, async (req, extra): Promise<Call
   return result;
 });
 
-async function dispatch(req: { params: { name: string; arguments?: Record<string, unknown> } }, signal?: AbortSignal): Promise<CallToolResult> {
+type Progress = (progress: number, total?: number, message?: string) => void;
+
+async function dispatch(req: { params: { name: string; arguments?: Record<string, unknown> } }, signal?: AbortSignal, report?: Progress): Promise<CallToolResult> {
   const name = req.params.name;
   const def = TOOLS.find((d) => d.name === name);
   if (!def) return err(`Unknown tool '${name}'`);
@@ -340,7 +371,7 @@ async function dispatch(req: { params: { name: string; arguments?: Record<string
   if (big) return err(big, "Pass allowLargeText: true if you really need it (the default timeout then rises to 120 s), or split the text into several layers.");
   if ((name === "create_text_layer" || name === "set_text") && args.allowLargeText && !args.timeoutSeconds) args.timeoutSeconds = 120;
   try {
-    if (NODE_ONLY.has(name)) return await nodeTool(name, args);
+    if (NODE_ONLY.has(name)) return await nodeTool(name, args, report);
     if (name === "run_extendscript" && process.env.AE_MCP_DISABLE_EVAL === "1") return err("run_extendscript is disabled (AE_MCP_DISABLE_EVAL=1)");
     if (name === "batch") {
       // validate every operation against its own schema before sending anything to AE
@@ -357,7 +388,7 @@ async function dispatch(req: { params: { name: string; arguments?: Record<string
     delete args.timeoutSeconds;
     // read-only tools change nothing: no undo group (it costs time and adds empty undo steps)
     const undo = name === "run_extendscript" ? args.undoable !== false : def.undo !== false && !def.readOnly;
-    const data: any = await bridge.call(def.handler ?? name, args, { timeoutMs, undo, timeoutParam: true, signal });
+    const data: any = await bridge.call(def.handler ?? name, args, { timeoutMs, undo, timeoutParam: true, signal, onProgress: report });
     if (name === "batch" && data?.failed > 0) {
       const first = data.results.find((r: any) => !r.ok);
       return {

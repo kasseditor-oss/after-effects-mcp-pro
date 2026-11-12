@@ -23,6 +23,8 @@ export interface CallOptions {
   undo?: boolean;
   /** The tool accepts timeoutSeconds, so timeout errors can suggest it. */
   timeoutParam?: boolean;
+  /** Called when the AE side reports progress (batch). */
+  onProgress?: (done: number, total: number, message?: string) => void;
   /** Client cancellation (MCP request signal). Only calls that have not started in AE can be cancelled. */
   signal?: AbortSignal;
   /** Internal: this call is the automatic resend after an I/O error. */
@@ -228,7 +230,7 @@ export class Bridge {
 
     const t0 = Date.now();
     this.stats.calls++;
-    const raw = await this.waitForResult(resultPath, timeoutMs, mode, id, !!opts.timeoutParam, opts.signal);
+    const raw = await this.waitForResult(resultPath, timeoutMs, mode, id, !!opts.timeoutParam, opts.signal, opts.onProgress);
     this.stats.latencies.push(Date.now() - t0);
     if (this.stats.latencies.length > 50) this.stats.latencies.shift();
     let res: any;
@@ -276,7 +278,28 @@ export class Bridge {
     });
   }
 
-  private async waitForResult(resultPath: string, timeoutMs: number, mode: Mode, id: string, timeoutParam = false, signal?: AbortSignal): Promise<string> {
+  private async waitForResult(resultPath: string, timeoutMs: number, mode: Mode, id: string, timeoutParam = false, signal?: AbortSignal, onProgress?: CallOptions["onProgress"]): Promise<string> {
+    const progressPath = resultPath.replace(/\.json$/, ".progress.json");
+    let lastDone = -1;
+    try {
+      return await this.waitLoop(resultPath, timeoutMs, mode, id, timeoutParam, signal, () => {
+        if (!onProgress || !fs.existsSync(progressPath)) return;
+        try {
+          const p = JSON.parse(fs.readFileSync(progressPath, "utf8"));
+          if (p.done !== lastDone) {
+            lastDone = p.done;
+            onProgress(p.done, p.total, p.message);
+          }
+        } catch {
+          /* being written */
+        }
+      });
+    } finally {
+      fs.rmSync(progressPath, { force: true });
+    }
+  }
+
+  private async waitLoop(resultPath: string, timeoutMs: number, mode: Mode, id: string, timeoutParam: boolean, signal: AbortSignal | undefined, poll: () => void): Promise<string> {
     const start = Date.now();
     let delay = 15;
     while (Date.now() - start < timeoutMs) {
@@ -290,6 +313,7 @@ export class Bridge {
       }
       await sleep(delay);
       delay = Math.min(100, delay + 10);
+      poll();
       if (signal?.aborted) {
         const qdir = path.join(this.dir, "queue");
         const queued = fs.readdirSync(qdir).filter((f) => f.includes(id) && f.endsWith(".jsx"));

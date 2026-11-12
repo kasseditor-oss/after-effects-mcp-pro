@@ -2038,6 +2038,7 @@
             var op = a.operations[i];
             var h = H[op.tool];
             if (!h || op.tool === "batch") fail("Unknown tool in batch: " + op.tool);
+            if (a.operations.length >= 10) A.progress(i, a.operations.length, op.tool);
             try { out.push({ index: i, tool: op.tool, ok: true, result: h(def(op.args, {})) }); }
             catch (e) {
                 failed++;
@@ -2067,7 +2068,18 @@
         tmp.rename(dst.name);
     }
 
+    // Long operations report progress through <result>.progress.json; the server polls it.
+    A.progress = function (done, total, message) {
+        if (!A._progressPath) return;
+        try {
+            var f = new File(A._progressPath);
+            f.encoding = "UTF-8";
+            if (f.open("w")) { f.write(JSONX.stringify({ done: done, total: total, message: message })); f.close(); }
+        } catch (e) { }
+    };
+
     A.run = function (payloadText, resultPath) {
+        A._progressPath = String(resultPath).replace(/\.json$/, ".progress.json");
         var res;
         var t0 = new Date().getTime();
         var payload = null;
