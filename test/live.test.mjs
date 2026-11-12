@@ -130,6 +130,19 @@ await call("undo", {}, {});
 await call("list_layers", { comp: C }, { check: (d) => (d.count === before - 2 ? true : `undo did not revert batch as one step: ${before} -> ${d.count}`) });
 await call("undo", { action: "redo" });
 
+const nBefore = (await call("list_layers", { comp: C })).data?.total;
+await call("batch", { operations: [
+  { tool: "create_null_layer", args: { comp: C, name: "BP1" } },
+  { tool: "set_property", args: { comp: C, layer: "No Such Layer", property: "Opacity", value: 50 } },
+  { tool: "create_null_layer", args: { comp: C, name: "BP2" } },
+] }, { expectError: true });
+await call("list_layers", { comp: C, query: "BP" }, { check: (d) => (d.total === 1 && d.layers[0].name === "BP1" ? true : "partial batch state " + JSON.stringify(d.layers.map((l) => l.name))) });
+await call("delete_layers", { comp: C, layers: ["BP1"] });
+await call("batch", { atomic: true, operations: [
+  { tool: "create_null_layer", args: { comp: C, name: "AT1" } },
+  { tool: "set_property", args: { comp: C, layer: "No Such Layer", property: "Opacity", value: 50 } },
+] }, { expectError: true });
+await call("list_layers", { comp: C }, { check: (d) => (d.total === nBefore ? true : `atomic batch not reverted: ${nBefore} -> ${d.total}`) });
 await call("delete_layers", { comp: C, layers: ["Grade"] });
 await call("remove_keyframes", { comp: C, layer: "Title", property: "Position", from: 1 });
 await call("remove_masks", { comp: C, layer: "BG" });

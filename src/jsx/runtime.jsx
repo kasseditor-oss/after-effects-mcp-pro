@@ -1899,18 +1899,22 @@
     }
 
     H.batch = function (a) {
-        var out = [];
+        var out = [], failed = 0, stoppedAt = null;
         for (var i = 0; i < a.operations.length; i++) {
             var op = a.operations[i];
             var h = H[op.tool];
             if (!h || op.tool === "batch") fail("Unknown tool in batch: " + op.tool);
-            try { out.push({ tool: op.tool, ok: true, result: h(def(op.args, {})) }); }
+            try { out.push({ index: i, tool: op.tool, ok: true, result: h(def(op.args, {})) }); }
             catch (e) {
-                out.push({ tool: op.tool, ok: false, error: e.toString(), hint: e.aeHint });
-                if (!a.continueOnError) { out.push({ stopped: true, at: i }); break; }
+                failed++;
+                out.push({ index: i, tool: op.tool, ok: false, error: e.toString().replace(/^Error: /, ""), hint: e.aeHint });
+                if (!a.continueOnError) { stoppedAt = i; break; }
             }
         }
-        return { results: out };
+        var res = { ok: failed === 0, failed: failed, stoppedAt: stoppedAt, executed: out.length, total: a.operations.length, results: out };
+        // atomic: ask the runner to undo the whole batch after its undo group closes
+        if (failed && a.atomic) { res.rolledBack = true; A._rollback = true; }
+        return res;
     };
 
     // ---------------------------------------------------------------- runner
@@ -1945,6 +1949,10 @@
             res = { ok: false, error: e.toString().replace(/^Error: /, ""), hint: e.aeHint, line: e.line };
         }
         if (undoOpen) { try { app.endUndoGroup(); } catch (e2) { } }
+        if (A._rollback) {
+            A._rollback = false;
+            try { app.executeCommand(16); } catch (e4) { if (res.data) res.data.rolledBack = false; }
+        }
         try { app.endSuppressDialogs(false); } catch (e3) { }
         res.id = payload ? payload.id : null;
         res.ms = new Date().getTime() - t0;

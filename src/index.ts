@@ -279,7 +279,22 @@ server.setRequestHandler(CallToolRequestSchema, async (req): Promise<CallToolRes
     let timeoutMs = def.timeoutMs ?? 60_000;
     if (args.timeoutSeconds) timeoutMs = args.timeoutSeconds * 1000;
     const undo = name === "run_extendscript" ? args.undoable !== false : def.undo !== false;
-    const data = await bridge.call(def.handler ?? name, args, { timeoutMs, undo });
+    const data: any = await bridge.call(def.handler ?? name, args, { timeoutMs, undo });
+    if (name === "batch" && data?.failed > 0) {
+      const first = data.results.find((r: any) => !r.ok);
+      return {
+        isError: true,
+        content: [{
+          type: "text",
+          text:
+            `Error: batch operation ${first?.index} (${first?.tool}) failed: ${first?.error}` +
+            (first?.hint ? `\nHint: ${first.hint}` : "") +
+            "\n" +
+            (data.rolledBack ? "The whole batch was undone (atomic)." : `${data.executed - data.failed} earlier operation(s) stay applied as one undo step; call undo to revert them.`) +
+            `\n${JSON.stringify(data)}`,
+        }],
+      };
+    }
     return ok(data);
   } catch (e: any) {
     if (e instanceof AEError) return err(e.message, e.hint);
