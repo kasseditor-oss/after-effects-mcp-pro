@@ -49,6 +49,10 @@ The server only talks to the After Effects on your own machine, but it can chang
 | `AE_MCP_EVAL=off` | Removes `run_extendscript` (arbitrary ExtendScript) from the tool list and rejects it, also inside `batch`. Default `on` in 2.x; **the default becomes `off` in 3.0**. `AE_MCP_DISABLE_EVAL=1` is the same as `off`. |
 | `AE_MCP_READONLY=1` | Only tools that read or preview (`list_*`, `get_*`, `preview_*`, `bridge_status`, `check_expressions`). |
 
+| `AE_MCP_ALLOWED_DIRS=C:\\work;D:\\renders` | Every file path a tool receives (imports, presets, projects, render outputs, saved previews) must resolve inside these folders: real paths are compared, `..` and links pointing outside are refused, and the error never reveals whether a file exists. `run_extendscript` is not constrained by it, so combine with `AE_MCP_EVAL=off`. |
+
+Existing output files are never replaced unless the call passes `overwrite: true` (`save_project`, `add_to_render_queue`, `render_in_background`, `render_png_sequence`, `preview_frame` `savePath`).
+
 For shared or audited setups use `AE_MCP_EVAL=off`. `bridge_status` reports the active modes.
 
 ## Limitations

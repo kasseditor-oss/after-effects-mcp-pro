@@ -5508,6 +5508,10 @@
      ],
      "description": "Composition name or numeric item id. Omit to use the active composition."
     },
+    "overwrite": {
+     "type": "boolean",
+     "description": "Replace an existing output file."
+    },
     "time": {
      "type": "number",
      "description": "Seconds. Default: playhead."
@@ -5682,6 +5686,10 @@
       }
      ],
      "description": "Composition name or numeric item id. Omit to use the active composition."
+    },
+    "overwrite": {
+     "type": "boolean",
+     "description": "Replace an existing output file."
     },
     "outputPath": {
      "type": "string"
@@ -5947,6 +5955,10 @@
   "inputSchema": {
    "type": "object",
    "properties": {
+    "overwrite": {
+     "type": "boolean",
+     "description": "Replace an existing output file."
+    },
     "wait": {
      "type": "boolean"
     },

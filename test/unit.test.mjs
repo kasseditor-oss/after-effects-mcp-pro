@@ -440,6 +440,43 @@ test("AE_MCP_EVAL=off hides run_extendscript; AE_MCP_READONLY=1 exposes only rea
   const w = await ro.callTool({ name: "create_composition", arguments: { name: "x" } });
   assert.equal(w.isError, true);
   const st = JSON.parse((await ro.callTool({ name: "bridge_status", arguments: {} })).content[0].text);
-  assert.deepEqual(st.modes, { eval: "on", readOnly: true });
+  assert.deepEqual(st.modes, { eval: "on", readOnly: true, allowedDirs: null });
   await ro.close();
+});
+
+test("AE_MCP_ALLOWED_DIRS refuses outside paths, '..' and links before reaching After Effects", async () => {
+  const base = fs.mkdtempSync(path.join(os.tmpdir(), "aemcp-allow-"));
+  const allowed = path.join(base, "allowed");
+  const outside = path.join(base, "outside");
+  fs.mkdirSync(allowed);
+  fs.mkdirSync(outside);
+  fs.writeFileSync(path.join(outside, "secret.png"), "x");
+  // a directory link inside the allowed folder that points outside it
+  fs.symlinkSync(outside, path.join(allowed, "link"), "junction");
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), "aemcp-allowq-"));
+  let reached = 0;
+  const stop = fakeListener(dir, (p) => { reached++; return { ok: true, id: p.id, data: { imported: [{ id: 1, name: "a" }], errors: [] } }; });
+  await new Promise((r) => setTimeout(r, 60));
+  const client = await connect({ AE_MCP_BRIDGE_DIR: dir, AE_MCP_ALLOWED_DIRS: allowed });
+  const cases = [
+    { paths: [path.join(outside, "secret.png")] },
+    { paths: [path.join(outside, "missing.png")] },
+    { paths: [path.join(allowed, "..", "outside", "secret.png")] },
+    { paths: [path.join(allowed, "link", "secret.png")] },
+  ];
+  const msgs = [];
+  for (const a of cases) {
+    const r = await client.callTool({ name: "import_files", arguments: a });
+    assert.equal(r.isError, true, JSON.stringify(a));
+    msgs.push(r.content[0].text);
+  }
+  assert.equal(new Set(msgs).size, 1, "same message whether or not the file exists");
+  const viaBatch = await client.callTool({ name: "batch", arguments: { operations: [{ tool: "save_project", args: { path: path.join(outside, "p.aep") } }] } });
+  assert.equal(viaBatch.isError, true);
+  assert.equal(reached, 0, "nothing reached After Effects");
+  const okCall = await client.callTool({ name: "import_files", arguments: { paths: [path.join(allowed, "img.png")] } });
+  stop();
+  assert.ok(!okCall.isError, okCall.content[0].text);
+  assert.equal(reached, 1);
+  await client.close();
 });

@@ -22,7 +22,7 @@ import { zodToJsonSchema } from "zod-to-json-schema";
 import { AEError, Bridge, SERVER_VERSION } from "./bridge.js";
 import { findInstalls } from "./env.js";
 import { TOOLS, NODE_ONLY, OUTPUTS, type ToolDef } from "./tools.js";
-import { disabledReason, policySummary } from "./policy.js";
+import { checkPaths, disabledReason, policySummary } from "./policy.js";
 import { compose, type ImageFormat } from "./imaging.js";
 import { WIDGET_MIME, WIDGET_URI, widgetHtml } from "./widget.js";
 
@@ -513,6 +513,14 @@ async function dispatch(req: { params: { name: string; arguments?: Record<string
     return err(`Invalid arguments for ${name}: ${parsed.error.issues.map((i) => `${i.path.join(".") || "(root)"}: ${i.message}`).join("; ")}`);
   }
   const args: any = parsed.data;
+  // File paths: AE_MCP_ALLOWED_DIRS sandbox (also for every batch operation), before anything reaches AE
+  const badPath = checkPaths(name, args) ?? (name === "batch" ? args.operations.map((op: any) => checkPaths(op.tool, op.args ?? {})).find(Boolean) : null);
+  if (badPath) return err(badPath);
+  // never overwrite an existing output file silently
+  const outArg = ({ add_to_render_queue: "outputPath", render_in_background: "outputPath", preview_frame: "savePath" } as Record<string, string>)[name];
+  if (outArg && typeof args[outArg] === "string" && !args.overwrite && !/\[#+\]/.test(args[outArg]) && fs.existsSync(args[outArg])) {
+    return err(`Output file already exists: ${args[outArg]}`, "Pass overwrite:true to replace it, or choose another path.");
+  }
   // Huge texts freeze AE's UI for seconds: refuse them before they reach AE unless asked for.
   const big = largeTextIssue(name, args) ?? (name === "batch" ? args.operations.map((op: any) => largeTextIssue(op.tool, op.args ?? {})).find(Boolean) : null);
   if (big) return err(big, "Pass allowLargeText: true if you really need it (the default timeout then rises to 120 s), or split the text into several layers.");
