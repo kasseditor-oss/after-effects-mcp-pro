@@ -14,6 +14,8 @@ export interface ComposeSpec {
   format: ImageFormat;
   quality: number;
   output: string;
+  /** What shows through transparent pixels: the comp color, a checkerboard, or nothing (PNG alpha). */
+  background?: { type: "color"; rgb: number[] } | { type: "checker" } | { type: "none" };
 }
 
 // One PowerShell process does every resize, the grid and the encoding:
@@ -36,8 +38,24 @@ $g.InterpolationMode = "HighQualityBicubic"; $g.SmoothingMode = "AntiAlias"; $g.
 $g.Clear([System.Drawing.Color]::FromArgb(255, 24, 24, 28))
 $fontSize = [Math]::Max(9, [Math]::Round($ch / 14))
 $font = New-Object System.Drawing.Font("Segoe UI", $fontSize, [System.Drawing.FontStyle]::Bold, [System.Drawing.GraphicsUnit]::Pixel)
+$bgType = if ($spec.background) { $spec.background.type } else { "none" }
+if ($bgType -eq "none" -and $imgs.Count -eq 1) { $g.Clear([System.Drawing.Color]::Transparent) }
 for ($i = 0; $i -lt $imgs.Count; $i++) {
   $x = ($i % $cols) * ($cw + $gap); $y = [Math]::Floor($i / $cols) * ($ch + $gap)
+  if ($bgType -eq "color") {
+    $c = $spec.background.rgb
+    $bb = New-Object System.Drawing.SolidBrush ([System.Drawing.Color]::FromArgb(255, [int]$c[0], [int]$c[1], [int]$c[2]))
+    $g.FillRectangle($bb, $x, $y, $cw, $ch); $bb.Dispose()
+  } elseif ($bgType -eq "checker") {
+    $sq = [Math]::Max(6, [int]($ch / 24))
+    $light = New-Object System.Drawing.SolidBrush ([System.Drawing.Color]::FromArgb(255, 204, 204, 204))
+    $dark = New-Object System.Drawing.SolidBrush ([System.Drawing.Color]::FromArgb(255, 153, 153, 153))
+    for ($yy = 0; $yy -lt $ch; $yy += $sq) { for ($xx = 0; $xx -lt $cw; $xx += $sq) {
+      $br = if ((([int]($xx / $sq) + [int]($yy / $sq)) % 2) -eq 0) { $light } else { $dark }
+      $g.FillRectangle($br, $x + $xx, $y + $yy, [Math]::Min($sq, $cw - $xx), [Math]::Min($sq, $ch - $yy))
+    } }
+    $light.Dispose(); $dark.Dispose()
+  }
   $g.DrawImage($imgs[$i], $x, $y, $cw, $ch)
   if ($spec.labels -and $spec.labels[$i]) {
     $sz = $g.MeasureString($spec.labels[$i], $font)
@@ -67,7 +85,7 @@ let psPath: string | null = null;
 export function compose(spec: ComposeSpec, workDir: string): { width: number; height: number } | null {
   if (process.platform === "win32") {
     if (!psPath) {
-      psPath = path.join(workDir, "compose-v1.ps1");
+      psPath = path.join(workDir, "compose-v2.ps1");
       if (!fs.existsSync(psPath)) fs.writeFileSync(psPath, "﻿" + PS_SCRIPT, "utf8");
     }
     const specPath = path.join(workDir, `compose-${process.pid}-${Date.now()}.json`);

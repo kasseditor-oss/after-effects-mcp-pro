@@ -141,7 +141,7 @@ async function waitForFiles(files: string[], timeoutMs = 90_000) {
  * Render frames in one AE round trip, then resize / tile / encode them in one
  * image process. columns: 0 = return each frame separately.
  */
-async function renderFrames(a: { comp?: string | number; times?: number[]; maxSize: number; format: ImageFormat; quality: number; columns?: number; labels?: boolean; keepPath?: string }) {
+async function renderFrames(a: { comp?: string | number; times?: number[]; maxSize: number; format: ImageFormat; quality: number; columns?: number; labels?: boolean; keepPath?: string; background?: "comp" | "transparent" | "checker" }) {
   const tag = `${Date.now()}-${Math.random().toString(36).slice(2, 7)}`;
   const frames = path.join(bridge.dir, "frames");
   const info = await bridge.call<any>("render_frames", { comp: a.comp, times: a.times, outputDir: frames.split(path.sep).join("/"), prefix: tag, maxSize: a.maxSize, fullRes: !!a.keepPath }, { undo: false, timeoutMs: 180_000 });
@@ -162,7 +162,9 @@ async function renderFrames(a: { comp?: string | number; times?: number[]; maxSi
     if (columns > 0) {
       const out = path.join(frames, `${tag}-out.${ext}`);
       const labels = a.labels ? info.frames.map((f: any) => `${f.time}s`) : undefined;
-      const size = compose({ files, labels, maxSize: a.maxSize, columns, format: a.format, quality: a.quality, output: out }, frames);
+      const bgMode = a.background ?? "comp";
+      const background = bgMode === "checker" ? { type: "checker" as const } : bgMode === "transparent" ? { type: "none" as const } : { type: "color" as const, rgb: info.bgColor };
+      const size = compose({ files, labels, maxSize: a.maxSize, columns, format: a.format, quality: a.quality, output: out, background }, frames);
       if (size) {
         const data = fs.readFileSync(out).toString("base64");
         fs.rmSync(out, { force: true });
@@ -216,7 +218,9 @@ async function nodeTool(name: string, a: any): Promise<CallToolResult> {
       return ok({ ...r, ae: ping });
     }
     case "preview_frame": {
-      const r = await renderFrames({ comp: a.comp, times: a.time === undefined ? undefined : [a.time], maxSize: a.maxSize ?? 960, format: a.format ?? "jpeg", quality: a.quality ?? 85, keepPath: a.savePath });
+      // transparency needs PNG
+      const fmt = a.background === "transparent" ? "png" : a.format ?? "jpeg";
+      const r = await renderFrames({ comp: a.comp, times: a.time === undefined ? undefined : [a.time], maxSize: a.maxSize ?? 960, format: fmt, quality: a.quality ?? 85, keepPath: a.savePath, background: a.background });
       const f = r.info.frames[0];
       const data = { comp: r.info.comp, time: f.time, width: r.info.width, height: r.info.height, previewWidth: r.size?.width ?? r.info.width, previewHeight: r.size?.height ?? r.info.height, savedTo: a.savePath ?? null };
       return { ...ok(data, r.images.map((im) => ({ type: "image" as const, ...im }))), _meta: { "after-effects/summary": `Frame ${f.time}s de ${r.info.comp}` } };
@@ -232,7 +236,7 @@ async function nodeTool(name: string, a: any): Promise<CallToolResult> {
       const columns = (a.layout ?? "grid") === "grid" ? Math.min(4, times.length) : 0;
       // smaller cells for big sheets keep the image under ~200 KB
       const cell = a.maxSize ?? (times.length > 6 ? 360 : 480);
-      const r = await renderFrames({ comp: comp.id, times, maxSize: cell, format: a.format ?? "jpeg", quality: a.quality ?? (times.length > 6 ? 70 : 80), columns, labels: true });
+      const r = await renderFrames({ comp: comp.id, times, maxSize: cell, format: a.background === "transparent" ? "png" : a.format ?? "jpeg", quality: a.quality ?? (times.length > 6 ? 70 : 80), columns, labels: true, background: a.background });
       const content: CallToolResult["content"] = [];
       if (r.images.length === 1) content.push({ type: "image", ...r.images[0] });
       else r.images.forEach((im, i) => content.push({ type: "text", text: `t = ${times[i]}s` }, { type: "image", ...im }));

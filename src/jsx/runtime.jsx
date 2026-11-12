@@ -1872,7 +1872,7 @@
             c.saveFrameToPng(t, f);
             out.push({ time: round(t, 3), file: f.fsName });
         }
-        return { comp: c.name, compId: c.id, width: c.width, height: c.height, factor: factor, restoreResolution: factor > 1 ? [oldRes[0], oldRes[1]] : null, frames: out };
+        return { comp: c.name, compId: c.id, width: c.width, height: c.height, bgColor: [Math.round(c.bgColor[0] * 255), Math.round(c.bgColor[1] * 255), Math.round(c.bgColor[2] * 255)], factor: factor, restoreResolution: factor > 1 ? [oldRes[0], oldRes[1]] : null, frames: out };
     };
 
     H.restore_resolution = function (a) {

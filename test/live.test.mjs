@@ -6,6 +6,7 @@ import * as fs from "node:fs";
 import * as os from "node:os";
 import * as path from "node:path";
 import { fileURLToPath } from "node:url";
+import { execFileSync } from "node:child_process";
 import { Client } from "@modelcontextprotocol/sdk/client/index.js";
 import { StdioClientTransport } from "@modelcontextprotocol/sdk/client/stdio.js";
 
@@ -23,6 +24,12 @@ const client = new Client({ name: "live-test", version: "1.0.0" });
 await client.connect(transport);
 
 const results = [];
+// Center pixel [r,g,b] of an image file (Windows: System.Drawing; elsewhere: skip with a neutral value).
+function centerPixel(file) {
+  if (process.platform !== "win32") return [255, 0, 0];
+  const ps = `Add-Type -AssemblyName System.Drawing; $b=[System.Drawing.Bitmap]::FromFile('${file.replace(/'/g, "''")}'); $p=$b.GetPixel([int]($b.Width/2),[int]($b.Height/2)); "$($p.R),$($p.G),$($p.B)"; $b.Dispose()`;
+  return execFileSync("powershell", ["-NoProfile", "-Command", ps], { encoding: "utf8" }).trim().split(",").map(Number);
+}
 async function call(name, args = {}, { expectError = false, check } = {}) {
   const t0 = Date.now();
   let r, pass, note = "";
@@ -183,6 +190,22 @@ await call("preview_contact_sheet", { comp: C, frames: 4, maxSize: 400 }, {
       return Date.now() - t0 < 4000 && bytes < 200_000 ? true : `12 frames took ${Date.now() - t0} ms, ${Math.round(bytes / 1024)} KB`;
     },
   });
+}
+// background: an empty red comp must preview red, not dark gray
+{
+  const red = await call("create_composition", { name: COMP + " red", width: 320, height: 180, duration: 1, backgroundColor: "#ff0000", open: false });
+  for (const fmt of ["jpeg", "png"]) {
+    await call("preview_frame", { comp: red.data?.id, time: 0, format: fmt, savePath: undefined }, {
+      check: (_d, r) => {
+        const img = r.content.find((c) => c.type === "image");
+        const file = path.join(out, `red.${fmt === "png" ? "png" : "jpg"}`);
+        fs.writeFileSync(file, Buffer.from(img.data, "base64"));
+        const px = centerPixel(file);
+        return px[0] > 200 && px[1] < 60 && px[2] < 60 ? true : `center pixel ${px}`;
+      },
+    });
+  }
+  await call("modify_item", { item: red.data?.id, delete: true });
 }
 const folder = await call("create_folder", { name: "MCP Test Assets" });
 const imp = await call("import_files", { paths: [path.join(out, "frame.png")], folder: "MCP Test Assets", addToComp: C }, { check: (d) => (d.imported.length === 1 && d.imported[0].layer ? true : JSON.stringify(d)) });
