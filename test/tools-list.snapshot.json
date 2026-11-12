@@ -2529,6 +2529,15 @@
       "fill"
      ]
     },
+    "sourceIn": {
+     "type": "number",
+     "minimum": 0,
+     "description": "Trim: first second of the source to use."
+    },
+    "sourceOut": {
+     "type": "number",
+     "description": "Trim: last second of the source; the clip starts at startTime."
+    },
     "name": {
      "type": "string",
      "description": "Layer name."
@@ -2636,6 +2645,119 @@
    },
    "required": [
     "item"
+   ]
+  },
+  "annotations": {
+   "readOnlyHint": false,
+   "destructiveHint": false,
+   "openWorldHint": false
+  },
+  "_meta": {
+   "ui": {
+    "resourceUri": "ui://after-effects/activity.html"
+   },
+   "ui/resourceUri": "ui://after-effects/activity.html"
+  }
+ },
+ {
+  "name": "set_time_remap",
+  "title": "Time remap",
+  "description": "Enable time remap and write its keyframes: speed (2 = twice as fast, out point adjusted), ramp (speed with easing), freeze (hold the frame at comp time 'at'), reverse, or keyframes [{time, sourceTime}].",
+  "inputSchema": {
+   "type": "object",
+   "properties": {
+    "comp": {
+     "anyOf": [
+      {
+       "type": "string"
+      },
+      {
+       "type": "integer"
+      }
+     ],
+     "description": "Composition name or numeric item id. Omit to use the active composition."
+    },
+    "layer": {
+     "anyOf": [
+      {
+       "type": "integer",
+       "exclusiveMinimum": 0
+      },
+      {
+       "type": "string"
+      }
+     ],
+     "description": "Layer: 1-based index, exact name, or 'id:<layerId>' (stable across reordering)."
+    },
+    "mode": {
+     "type": "string",
+     "enum": [
+      "speed",
+      "freeze",
+      "reverse",
+      "ramp",
+      "keyframes"
+     ]
+    },
+    "speed": {
+     "type": "number",
+     "exclusiveMinimum": 0
+    },
+    "at": {
+     "type": "number",
+     "description": "freeze: comp time of the frame to hold."
+    },
+    "duration": {
+     "type": "number",
+     "exclusiveMinimum": 0,
+     "description": "freeze: new layer duration."
+    },
+    "keys": {
+     "type": "array",
+     "items": {
+      "type": "object",
+      "properties": {
+       "time": {
+        "type": "number"
+       },
+       "sourceTime": {
+        "type": "number"
+       }
+      },
+      "required": [
+       "time",
+       "sourceTime"
+      ],
+      "additionalProperties": false
+     }
+    },
+    "easing": {
+     "type": "string",
+     "enum": [
+      "linear",
+      "hold",
+      "easy-ease",
+      "ease-in",
+      "ease-out",
+      "ease-in-out",
+      "smooth",
+      "strong-ease",
+      "expo",
+      "snap",
+      "anticipate"
+     ],
+     "description": "Keyframe easing preset."
+    },
+    "timeoutSeconds": {
+     "type": "integer",
+     "minimum": 1,
+     "maximum": 3600,
+     "description": "AE wait limit in s (default 60)."
+    }
+   },
+   "required": [
+    "layer",
+    "mode"
    ]
   },
   "annotations": {

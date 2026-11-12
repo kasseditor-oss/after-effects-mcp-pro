@@ -1088,6 +1088,13 @@
       "fill"
      ]
     },
+    "sourceIn": {
+     "type": "number",
+     "minimum": 0
+    },
+    "sourceOut": {
+     "type": "number"
+    },
     "name": {
      "type": "string"
     },

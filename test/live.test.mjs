@@ -569,6 +569,36 @@ await call("preview_contact_sheet", { comp: C, frames: 4, maxSize: 400 }, {
     await call("delete_layers", { comp: ec.data?.id, layers: ["FX"] });
   }
 }
+// time remap + trimmed placement on a 4 s clip made by ffmpeg (one color per second)
+{
+  let ffmpeg = null;
+  try { execFileSync("ffmpeg", ["-version"], { stdio: "ignore" }); ffmpeg = "ffmpeg"; } catch { /* not installed */ }
+  if (!ffmpeg) results.push({ tool: "set_time_remap (ffmpeg not installed, skipped)", pass: true, ms: 0, note: "skipped" });
+  else {
+    const clip = path.join(out, "colors.mp4");
+    const seg = (c) => ["-f", "lavfi", "-i", `color=c=${c}:s=160x90:r=30:d=1`];
+    execFileSync(ffmpeg, ["-y", "-v", "error", ...seg("red"), ...seg("lime"), ...seg("blue"), ...seg("white"), "-filter_complex", "[0][1][2][3]concat=n=4:v=1:a=0", "-pix_fmt", "yuv420p", clip]);
+    const tc = await call("create_composition", { name: COMP + " remap", width: 160, height: 90, duration: 4, frameRate: 30, open: false });
+    created.push(tc.data?.id);
+    const imp = await call("import_files", { paths: [clip] });
+    for (const it of imp.data?.imported ?? []) created.push(it.id);
+    const item = imp.data?.imported?.[0]?.id;
+    await call("add_item_to_comp", { comp: tc.data?.id, item, name: "Clip" });
+    await call("set_time_remap", { comp: tc.data?.id, layer: "Clip", mode: "speed", speed: 2 }, { check: (d) => (Math.abs(d.duration - 2) < 0.05 ? true : JSON.stringify(d)) });
+    const st = (await call("get_properties_at_time", { comp: tc.data?.id, time: 1, requests: [{ layer: "Clip", properties: ["Time Remap"] }] })).data?.results?.[0]?.values?.["Time Remap"];
+    await lumaAt(tc.data?.id, 1.25, "remap-t125");
+    const px = pixelAt(path.join(out, "remap-t125.png"), 80, 45);
+    results.push({ tool: "speed 2: t=1 shows source 2 s", pass: Math.abs(st - 2) < 0.04 && px[2] > 180 && px[0] < 80, ms: 0, note: `source time ${st}, pixel at 1.25 s ${px}` });
+    // trimmed placement: source 1..2 s (lime) placed at 0.5 s
+    await call("add_item_to_comp", { comp: tc.data?.id, item, name: "Trim", sourceIn: 1, sourceOut: 2, startTime: 0.5 }, { check: (d) => true });
+    const tl = (await call("get_layer_details", { comp: tc.data?.id, layer: "Trim" })).data;
+    await lumaAt(tc.data?.id, 0.75, "trim-t075");
+    const tp = pixelAt(path.join(out, "trim-t075.png"), 80, 45);
+    results.push({ tool: "add_item_to_comp sourceIn/sourceOut", pass: Math.abs(tl.inPoint - 0.5) < 0.04 && Math.abs(tl.outPoint - 1.5) < 0.04 && tp[1] > 180 && tp[0] < 80, ms: 0, note: `in ${tl.inPoint} out ${tl.outPoint}, pixel ${tp}` });
+    await call("set_time_remap", { comp: tc.data?.id, layer: "Trim", mode: "freeze", at: 0.6, duration: 2 }, { check: (d) => (Math.abs(d.duration - 2) < 0.05 ? true : JSON.stringify(d)) });
+    await call("set_time_remap", { comp: tc.data?.id, layer: "Clip", mode: "reverse" }, { check: (d) => (d.keys === 2 ? true : JSON.stringify(d)) });
+  }
+}
 // text-fade-up must REVEAL the text: invisible before, fully visible after (pixel check)
 {
   const fc = await call("create_composition", { name: COMP + " fade", width: 640, height: 360, duration: 3, backgroundColor: "#000000", open: false });

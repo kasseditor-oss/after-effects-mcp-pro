@@ -1392,6 +1392,14 @@
         if (it === c) fail("Cannot add a composition to itself");
         var l = c.layers.add(it);
         placeLayer(c, l, a);
+        if (has(a, "sourceIn") || has(a, "sourceOut")) {
+            // a trimmed clip: source [sourceIn, sourceOut] placed at startTime (comp seconds)
+            var at = def(a.startTime, 0), si = def(a.sourceIn, 0), so = def(a.sourceOut, it.duration);
+            if (!(so > si)) fail("sourceOut must be after sourceIn");
+            l.startTime = at - si;
+            l.inPoint = at;
+            l.outPoint = at + (so - si);
+        }
         if (a.fitToComp) {
             var s = Math.min(c.width / it.width, c.height / it.height) * 100;
             if (a.fitToComp === "fill") s = Math.max(c.width / it.width, c.height / it.height) * 100;
@@ -1399,6 +1407,48 @@
             l.property("ADBE Transform Group").property("ADBE Position").setValue([c.width / 2, c.height / 2]);
         }
         return summary(l);
+    };
+
+    // ---- Time remap: speed / freeze / reverse / ramp / explicit keyframes
+    H.set_time_remap = function (a) {
+        var t = target(a), l = t.layer, c = t.comp;
+        if (!(l instanceof AVLayer) || !l.canSetTimeRemapEnabled) fail("Layer '" + l.name + "' cannot be time-remapped", "Time remap needs footage with duration or a precomp.");
+        var inP = l.inPoint, D = l.outPoint - l.inPoint, t0 = inP - l.startTime, fd = c.frameDuration;
+        l.timeRemapEnabled = true;
+        var tr = l.property("ADBE Time Remapping");
+        // removing every key hides the property again: keep one until the new keys exist
+        while (tr.numKeys > 1) tr.removeKey(tr.numKeys);
+        var keys = [], easing = def(a.easing, "linear"), end = null;
+        var mode = a.mode;
+        if (mode === "speed" || mode === "ramp") {
+            var s = def(a.speed, mode === "ramp" ? 2 : 1);
+            if (!(s > 0)) fail("speed must be > 0 (use mode 'reverse' to play backwards)");
+            end = inP + D / s;
+            keys = [{ time: inP, value: t0 }, { time: end, value: t0 + D }];
+            if (mode === "ramp") easing = def(a.easing, "easy-ease");
+        } else if (mode === "reverse") {
+            end = inP + D;
+            keys = [{ time: inP, value: t0 + D - fd }, { time: end - fd, value: t0 }];
+        } else if (mode === "freeze") {
+            var at = def(a.at, c.time);
+            var src = t0 + (at - inP);
+            keys = [{ time: inP, value: src }];
+            if (has(a, "duration")) end = inP + a.duration;
+        } else if (mode === "keyframes") {
+            if (!a.keys || !a.keys.length) fail("mode 'keyframes' needs keys: [{time, sourceTime}]");
+            for (var i = 0; i < a.keys.length; i++) keys.push({ time: a.keys[i].time, value: a.keys[i].sourceTime });
+            end = a.keys[a.keys.length - 1].time + fd;
+            if (end < l.outPoint) end = null;
+        } else fail("Unknown time remap mode '" + mode + "'");
+        setKeys(tr, keys, easing);
+        for (var r = tr.numKeys; r >= 1 && tr.numKeys > keys.length; r--) {
+            var keep = false;
+            for (var q = 0; q < keys.length; q++) if (Math.abs(tr.keyTime(r) - keys[q].time) < 1e-4) keep = true;
+            if (!keep) tr.removeKey(r);
+        }
+        if (mode === "freeze") tr.setInterpolationTypeAtKey(1, KeyframeInterpolationType.HOLD, KeyframeInterpolationType.HOLD);
+        if (end !== null) l.outPoint = end;
+        return { layer: l.name, mode: mode, keys: tr.numKeys, inPoint: round(l.inPoint), outPoint: round(l.outPoint), duration: round(l.outPoint - l.inPoint) };
     };
 
     H.list_layers = function (a) {
