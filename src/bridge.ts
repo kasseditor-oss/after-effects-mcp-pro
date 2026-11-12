@@ -7,7 +7,7 @@ import { platform } from "./platform/index.js";
 
 const here = path.dirname(fileURLToPath(import.meta.url));
 
-export const SERVER_VERSION = "2.1.0";
+export const SERVER_VERSION = "2.2.0";
 /** Version of bridge/ae-mcp-pro-listener.jsx this server expects (bump both together). */
 export const LISTENER_VERSION = "2.0.4";
 

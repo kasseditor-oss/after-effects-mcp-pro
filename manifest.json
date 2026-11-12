@@ -2,7 +2,7 @@
   "manifest_version": "0.3",
   "name": "after-effects-mcp-pro",
   "display_name": "After Effects MCP Pro",
-  "version": "2.1.0",
+  "version": "2.2.0",
   "description": "Drive Adobe After Effects from Claude: comps, layers, text, shapes, keyframes, effects, layer styles, previews and rendering.",
   "long_description": "MCP server for Adobe After Effects (2022 or newer, Windows and macOS). Builds comps, layers, text, shapes, masks, keyframes, expressions, effects and layer styles; previews frames and contact sheets so Claude can look at the result; renders in the background with aerender. Run the setup once (`npx after-effects-mcp-pro setup`) to install the fast listener inside After Effects; without it the server uses direct mode.",
   "author": {
