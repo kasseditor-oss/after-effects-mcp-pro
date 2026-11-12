@@ -1,5 +1,6 @@
 // Live end-to-end test against a running After Effects.
-// Usage: node test/live.test.mjs [outDir]
+// Usage: node test/live.test.mjs [outDir] [--cleanup]
+//   --cleanup removes everything the test created from the project at the end.
 // Uses only a fresh comp named "MCP Test *"; it never touches other project content.
 import * as fs from "node:fs";
 import * as os from "node:os";
@@ -9,7 +10,11 @@ import { Client } from "@modelcontextprotocol/sdk/client/index.js";
 import { StdioClientTransport } from "@modelcontextprotocol/sdk/client/stdio.js";
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
-const out = path.resolve(process.argv[2] || fs.mkdtempSync(path.join(os.tmpdir(), "aemcp-live-")));
+const argv = process.argv.slice(2);
+const CLEANUP = argv.includes("--cleanup");
+const outArg = argv.find((a) => !a.startsWith("--"));
+const out = path.resolve(outArg || fs.mkdtempSync(path.join(os.tmpdir(), "aemcp-live-")));
+const created = []; // project item ids this test created (removed with --cleanup)
 fs.mkdirSync(out, { recursive: true });
 const fwd = (p) => p.replace(/\\/g, "/");
 
@@ -109,7 +114,8 @@ const matte = await call("create_text_layer", { comp: C, text: "MATTE", fontSize
 await call("create_solid_layer", { comp: C, name: "Gradient fill", color: "#ff8800" });
 await call("set_track_matte", { comp: C, layer: "Gradient fill", matteLayer: "MatteText", type: "alpha" }, { check: (d) => (d.trackMatte === "alpha" ? true : JSON.stringify(d.trackMatte)) });
 await call("split_layer", { comp: C, layer: "Hex 3", time: 3 });
-await call("precompose_layers", { comp: C, layers: ["MatteText", "Gradient fill"], name: "Matte Precomp" });
+const pre = await call("precompose_layers", { comp: C, layers: ["MatteText", "Gradient fill"], name: "Matte Precomp" });
+if (pre.data?.precomp?.id) created.push(pre.data.precomp.id);
 await call("get_layer_details", { comp: C, layer: "Title", onlyAnimated: true }, { check: (d) => (d.properties.length ? true : "no animated props") });
 await call("get_composition", { comp: C });
 await call("get_selection");
@@ -177,8 +183,10 @@ await call("preview_contact_sheet", { comp: C, frames: 4, maxSize: 400 }, {
     },
   });
 }
-await call("create_folder", { name: "MCP Test Assets" });
-await call("import_files", { paths: [path.join(out, "frame.png")], folder: "MCP Test Assets", addToComp: C }, { check: (d) => (d.imported.length === 1 && d.imported[0].layer ? true : JSON.stringify(d)) });
+const folder = await call("create_folder", { name: "MCP Test Assets" });
+const imp = await call("import_files", { paths: [path.join(out, "frame.png")], folder: "MCP Test Assets", addToComp: C }, { check: (d) => (d.imported.length === 1 && d.imported[0].layer ? true : JSON.stringify(d)) });
+for (const it of imp.data?.imported ?? []) created.push(it.id);
+if (folder.data?.id) created.push(folder.data.id);
 const items = await call("list_project_items", { type: "still" });
 await call("add_item_to_comp", { comp: C, item: items.data?.items?.[0]?.id, fitToComp: "fit", opacity: 20, name: "Ref" });
 await call("duplicate_composition", { comp: C, newName: COMP + " copy" });
@@ -204,6 +212,18 @@ if (job.data?.jobId) {
       break;
     }
   }
+}
+
+if (CLEANUP) {
+  // comp first (it uses the precomp and footage), then the rest; folder last
+  for (const id of [C, ...created]) {
+    if (!id) continue;
+    await client.callTool({ name: "modify_item", arguments: { item: id, delete: true } }).catch(() => undefined);
+  }
+  const left = await client.callTool({ name: "list_project_items", arguments: { query: "MCP Test" } });
+  const items = JSON.parse(left.content[0].text).items.filter((i) => i.name === COMP || i.name === "MCP Test Assets");
+  results.push({ tool: "cleanup", pass: items.length === 0, ms: 0, note: items.length ? JSON.stringify(items) : "" });
+  console.log(`${items.length ? "FAIL" : "PASS"} cleanup removed ${created.length + 1} items`);
 }
 
 const passed = results.filter((r) => r.pass).length;
