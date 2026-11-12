@@ -87,7 +87,10 @@ export class Bridge {
     for (const sub of ["queue", "results", "direct", "frames", "runtime"]) fs.mkdirSync(path.join(this.dir, sub), { recursive: true });
     const src = loadRuntimeSource();
     this.runtimeHash = crypto.createHash("sha1").update(src).update(SERVER_VERSION).digest("hex").slice(0, 12);
-    this.runtimePath = path.join(this.dir, "runtime", `runtime-${this.runtimeHash}.jsx`);
+    // One folder per server version: servers of different versions running at the same
+    // time (e.g. two Claude sessions) must never overwrite each other's runtime.
+    fs.mkdirSync(path.join(this.dir, "runtime", SERVER_VERSION), { recursive: true });
+    this.runtimePath = path.join(this.dir, "runtime", SERVER_VERSION, `runtime-${this.runtimeHash}.jsx`);
     if (!fs.existsSync(this.runtimePath)) {
       const body = src.replace(/__AEMCP_VERSION__/g, SERVER_VERSION).replace(/__AEMCP_HASH__/g, this.runtimeHash);
       fs.writeFileSync(this.runtimePath, body, "utf8");
@@ -119,13 +122,17 @@ export class Bridge {
         /* ignore */
       }
     }
-    for (const f of fs.readdirSync(path.join(this.dir, "runtime"))) {
-      if (f !== path.basename(this.runtimePath)) {
-        try {
-          fs.unlinkSync(path.join(this.dir, "runtime", f));
-        } catch {
-          /* ignore */
-        }
+    // Old runtimes: only delete files untouched for 7 days (another server may be using them).
+    const week = Date.now() - 7 * 24 * 3600_000;
+    const rt = path.join(this.dir, "runtime");
+    for (const entry of fs.readdirSync(rt)) {
+      const p = path.join(rt, entry);
+      try {
+        const files = fs.statSync(p).isDirectory() ? fs.readdirSync(p).map((f) => path.join(p, f)) : [p];
+        for (const f of files) if (f !== this.runtimePath && fs.statSync(f).mtimeMs < week) fs.unlinkSync(f);
+        if (fs.statSync(p).isDirectory() && !fs.readdirSync(p).length) fs.rmdirSync(p);
+      } catch {
+        /* ignore */
       }
     }
   }

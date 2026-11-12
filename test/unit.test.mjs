@@ -398,3 +398,25 @@ test("long single calls send heartbeat progress when a progressToken is given", 
   assert.match(seen[0].message, /After Effects is working/);
   await client.close();
 });
+
+test("servers of different versions keep separate runtimes", async () => {
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), "aemcp-rt-"));
+  // a runtime written by another (older) server, still recent: must survive
+  const other = path.join(dir, "runtime", "2.0.1");
+  fs.mkdirSync(other, { recursive: true });
+  fs.writeFileSync(path.join(other, "runtime-abc.jsx"), "// other server");
+  const stale = path.join(dir, "runtime", "1.0.0");
+  fs.mkdirSync(stale, { recursive: true });
+  fs.writeFileSync(path.join(stale, "runtime-old.jsx"), "// 8 days old");
+  const old = Date.now() / 1000 - 8 * 24 * 3600;
+  fs.utimesSync(path.join(stale, "runtime-old.jsx"), old, old);
+  // two servers starting in parallel
+  const a = await connect({ AE_MCP_BRIDGE_DIR: dir });
+  const b = await connect({ AE_MCP_BRIDGE_DIR: dir });
+  const { SERVER_VERSION } = await import(new URL("../build/bridge.js", import.meta.url).href);
+  assert.ok(fs.existsSync(path.join(other, "runtime-abc.jsx")), "a recent runtime of another version is kept");
+  assert.ok(!fs.existsSync(path.join(stale, "runtime-old.jsx")), "runtimes untouched for 7+ days are removed");
+  assert.equal(fs.readdirSync(path.join(dir, "runtime", SERVER_VERSION)).filter((f) => f.endsWith(".jsx")).length, 1);
+  await a.close();
+  await b.close();
+});
