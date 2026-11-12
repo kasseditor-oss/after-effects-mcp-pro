@@ -95,7 +95,8 @@ const LISTED = TOOLS.filter((d) => !(d.name === "run_extendscript" && process.en
     idempotentHint: !!d.readOnly,
     openWorldHint: false,
   },
-  ...(ICONS.length ? { icons: ICONS } : {}),
+  // No per-tool icons: 79 copies of a 14 KB data URI made tools/list 1.2 MB. The icon
+  // lives in serverInfo, and the activity card embeds its own copy.
   // MCP Apps: Claude renders the After Effects activity card for every call
   _meta: { ui: { resourceUri: WIDGET_URI, visibility: ["model", "app"] }, "ui/resourceUri": WIDGET_URI },
 }));

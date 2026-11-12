@@ -67,7 +67,7 @@ test("server lists tools with schemas, annotations and the After Effects icon", 
     assert.equal(t.inputSchema.type, "object", t.name);
     assert.ok(t.description.length > 20, t.name);
     assert.ok(t.annotations && typeof t.annotations.readOnlyHint === "boolean", t.name);
-    assert.ok(t.icons?.length, `${t.name} icon`);
+    assert.equal(t.icons, undefined, `${t.name}: the icon belongs in serverInfo only`);
   }
   await client.close();
 });
@@ -343,4 +343,12 @@ test("platform selection and bridge folder per OS", async () => {
   process.env.AE_MCP_PLATFORM = "windows";
   assert.equal(platform().name, "windows");
   if (prev === undefined) delete process.env.AE_MCP_PLATFORM; else process.env.AE_MCP_PLATFORM = prev;
+});
+
+test("tools/list stays small (no per-tool icons)", async () => {
+  const client = await connect();
+  const { tools } = await client.listTools();
+  await client.close();
+  const bytes = Buffer.byteLength(JSON.stringify({ tools }));
+  assert.ok(bytes < 120_000, `tools/list is ${bytes} bytes`);
 });
