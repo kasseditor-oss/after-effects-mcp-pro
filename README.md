@@ -17,9 +17,11 @@ It started from the most-starred After Effects MCP on GitHub ([Dakkshin/after-ef
 | Non-English AE | Uses display names ("Transform", "Position") | Uses match names internally, so it works in any AE language |
 | Undo | No undo groups | Every call is one undo step, `batch` included. There is an `undo` tool. |
 | Errors | Modal `alert()` dialogs can freeze AE | Dialogs are suppressed. Errors come back with hints (for example, available layer names, or "did you mean" for effects). |
-| Seeing the work | No | `preview_frame` and `preview_contact_sheet` return PNG images to the model |
+| Seeing the work | No | `preview_frame` returns the frame as an image; `preview_contact_sheet` returns one labelled grid of up to 12 frames (JPEG, ~1.5-3 s) |
 | Rendering | No | Render queue, plus background `aerender` jobs with progress |
-| Icon | No | The After Effects icon in server info and on every tool (MCP `icons`) |
+| Visible in Claude | No | Every call shows an After Effects activity card in Claude Desktop / claude.ai (MCP Apps): Ae icon, action, status, result and previews |
+| Big projects | Full layer lists and texts in every answer | Long texts cut to 200 characters in summaries, paginated `list_layers` / `list_project_items`, compact JSON |
+| Long operations | Fixed wait, then a misleading error | `timeoutSeconds` on every tool, honest timeout messages, queued calls can be cancelled |
 
 ## Tools (70)
 
@@ -32,6 +34,8 @@ It started from the most-starred After Effects MCP on GitHub ([Dakkshin/after-ef
 - **Masks and markers:** `add_mask`, `remove_masks`, `add_marker`, `list_markers`, `remove_markers`
 - **Render and preview:** `preview_frame`, `preview_contact_sheet`, `add_to_render_queue`, `get_render_queue`, `clear_render_queue`, `render_queue`, `render_in_background`, `get_background_render`
 - **Utility:** `list_fonts`, `get_selection`, `select_layers`, `undo`, `execute_menu_command`, `run_extendscript`, `batch`
+
+Every tool that runs inside After Effects accepts `timeoutSeconds`. `batch` runs up to 200 operations in one round trip and one undo step: a failure returns an error with the partial results, and `atomic: true` undoes the whole batch. Batches over 20 operations move the viewer off the comp while they run, which makes them several times faster.
 
 The server also has 3 resources (`aftereffects://project`, `aftereffects://compositions`, `aftereffects://selection`) and 3 prompts (`lower-third`, `kinetic-title`, `analyze-comp`).
 
@@ -63,7 +67,11 @@ claude mcp add after-effects -- node "/path/to/build/index.js"
 1. **Listener mode** (after `install-ae`): a startup script inside After Effects watches `%APPDATA%/ae-mcp-pro/queue` every 120 ms. The optional panel **Window > AE MCP Pro.jsx** shows status and recent commands, and has a pause button.
 2. **Direct mode** (no install): the server runs `AfterFX.exe -r <script>` on Windows, or AppleScript `DoScriptFile` on macOS.
 
-The server picks the mode for each call based on the listener's heartbeat.
+The server picks the mode for each call based on the listener's heartbeat. `bridge_status` shows the mode, latency (avg/p50/p95), timeouts, and warns when the installed listener is older than the server (run `npm run install-ae` again after updating).
+
+### Activity card
+
+Each tool links to the MCP App resource `ui://after-effects/activity.html`. Clients that support MCP Apps (Claude Desktop, claude.ai) show it under the tool call: the After Effects icon, what Claude is doing, a live status, a short summary and any preview frames. Clients without MCP Apps simply ignore it.
 
 ### Environment variables
 
@@ -73,12 +81,15 @@ The server picks the mode for each call based on the listener's heartbeat.
 | `AE_MCP_MODE` | Force `listener` or `direct` |
 | `AE_MCP_BRIDGE_DIR` | Use a different bridge folder |
 | `AE_MCP_DISABLE_EVAL=1` | Turn off `run_extendscript` |
+| `AE_MCP_PRETTY=1` | Indented JSON in responses (default is compact, fewer tokens) |
 
 ## Tests
 
 ```bash
-npm test               # 9 unit tests, no After Effects needed
-npm run test:live      # end-to-end against a running After Effects (creates a "MCP Test" comp)
+npm test               # 13 unit tests, no After Effects needed (also run in CI)
+npm run test:live      # ~100 end-to-end checks against a running After Effects; removes what it created
+npm run test:live:keep # same, but keeps the "MCP Test" comp for inspection
+npm run test:stress    # latency, parallel calls, unicode, huge text, big batches, timeouts
 ```
 
 ## License
