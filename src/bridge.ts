@@ -21,6 +21,8 @@ export interface CallOptions {
   timeoutMs?: number;
   /** Wrap the call in one After Effects undo group (default true). */
   undo?: boolean;
+  /** The tool accepts timeoutSeconds, so timeout errors can suggest it. */
+  timeoutParam?: boolean;
   /** Internal: this call is the automatic resend after an I/O error. */
   isRetry?: boolean;
 }
@@ -69,6 +71,7 @@ export class Bridge {
   private chain: Promise<unknown> = Promise.resolve();
   lastMode: Mode | null = null;
   private readyAt = 0;
+  private lastAliveCheck = 0;
   readonly stats = { calls: 0, timeouts: 0, ioErrors: 0, latencies: [] as number[] };
 
   constructor() {
@@ -196,7 +199,7 @@ export class Bridge {
       await this.runDirect(file);
     }
 
-    const raw = await this.waitForResult(resultPath, timeoutMs, mode, id);
+    const raw = await this.waitForResult(resultPath, timeoutMs, mode, id, !!opts.timeoutParam);
     let res: any;
     try {
       res = JSON.parse(raw);
@@ -242,7 +245,7 @@ export class Bridge {
     });
   }
 
-  private async waitForResult(resultPath: string, timeoutMs: number, mode: Mode, id: string): Promise<string> {
+  private async waitForResult(resultPath: string, timeoutMs: number, mode: Mode, id: string, timeoutParam = false): Promise<string> {
     const start = Date.now();
     let delay = 15;
     while (Date.now() - start < timeoutMs) {
@@ -256,18 +259,33 @@ export class Bridge {
       }
       await sleep(delay);
       delay = Math.min(100, delay + 10);
-      // listener died mid-wait: fall back to a clear error instead of a long hang
-      if (mode === "listener" && Date.now() - start > 5000) {
-        const hb = this.heartbeat();
-        const queued = fs.readdirSync(path.join(this.dir, "queue")).some((f) => f.includes(id) && !f.endsWith(".run"));
-        if ((!hb || hb.ageMs > 8000) && queued) {
+      // AE closed mid-wait: fail fast. A stale heartbeat alone is NOT death: the listener
+      // cannot beat while AE executes a long command (ExtendScript is single-threaded).
+      if (Date.now() - start > 3000 && Date.now() - this.lastAliveCheck > 2000) {
+        this.lastAliveCheck = Date.now();
+        this.runningCache.at = 0;
+        if (!this.aeRunning()) {
           for (const f of fs.readdirSync(path.join(this.dir, "queue"))) if (f.includes(id)) fs.rmSync(path.join(this.dir, "queue", f), { force: true });
-          throw new AEError("After Effects stopped responding to the bridge", "AE may be busy (rendering, modal dialog) or closed. Try again.", "TIMEOUT");
+          throw new AEError("After Effects was closed while waiting for this command", "Reopen After Effects (or call launch_after_effects), check what was applied, then retry.", "AE_CLOSED");
         }
       }
     }
-    for (const f of fs.readdirSync(path.join(this.dir, "queue"))) if (f.includes(id) && !f.endsWith(".run")) fs.rmSync(path.join(this.dir, "queue", f), { force: true });
-    throw new AEError(`Timed out after ${Math.round(timeoutMs / 1000)}s waiting for After Effects`, "AE may be busy rendering or showing a dialog. Increase timeoutSeconds for long operations.", "TIMEOUT");
+    this.stats.timeouts++;
+    const qdir = path.join(this.dir, "queue");
+    const files = fs.readdirSync(qdir).filter((f) => f.includes(id));
+    const running = files.some((f) => f.endsWith(".run"));
+    // not started yet: drop it so it can never run later
+    for (const f of files) if (!f.endsWith(".run")) fs.rmSync(path.join(qdir, f), { force: true });
+    const secs = Math.round(timeoutMs / 1000);
+    let message: string, hint: string;
+    if (mode === "listener" && files.length && !running) {
+      message = `Timed out after ${secs}s: After Effects never started this command (it was removed from the queue)`;
+      hint = "AE is busy with an earlier operation or a dialog. Nothing was changed by this call.";
+    } else {
+      message = `Timed out after ${secs}s waiting for After Effects` + (running ? " - the command is still running in AE" : "");
+      hint = "After Effects may still be running this operation and apply it later. Call get_project_info / list_layers before retrying to avoid duplicates." + (timeoutParam ? " Pass timeoutSeconds for long operations." : "");
+    }
+    throw new AEError(message, hint, "TIMEOUT");
   }
 
   /** Launch After Effects (if needed) and wait until it accepts scripts. */

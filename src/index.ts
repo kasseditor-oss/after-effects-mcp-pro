@@ -278,8 +278,9 @@ server.setRequestHandler(CallToolRequestSchema, async (req): Promise<CallToolRes
     }
     let timeoutMs = def.timeoutMs ?? 60_000;
     if (args.timeoutSeconds) timeoutMs = args.timeoutSeconds * 1000;
+    delete args.timeoutSeconds;
     const undo = name === "run_extendscript" ? args.undoable !== false : def.undo !== false;
-    const data: any = await bridge.call(def.handler ?? name, args, { timeoutMs, undo });
+    const data: any = await bridge.call(def.handler ?? name, args, { timeoutMs, undo, timeoutParam: true });
     if (name === "batch" && data?.failed > 0) {
       const first = data.results.find((r: any) => !r.ok);
       return {

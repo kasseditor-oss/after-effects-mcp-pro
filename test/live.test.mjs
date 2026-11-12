@@ -150,6 +150,14 @@ await call("remove_markers", { comp: C, comment: "Title in" });
 
 await call("run_extendscript", { code: "var c = AEMCP.getComp(args.c); return { layers: c.numLayers, name: c.name };", args: { c: C } }, { check: (d) => (d.result.name === COMP ? true : JSON.stringify(d)) });
 await call("run_extendscript", { code: "throw new Error('boom')" }, { expectError: true });
+// timeoutSeconds: AE keeps running the 8 s loop after the client gives up; the next call must still work
+{
+  const t0 = Date.now();
+  const r = await call("run_extendscript", { code: "var t = new Date().getTime(); while (new Date().getTime() - t < 8000) {} return 1;", timeoutSeconds: 3 }, { expectError: true });
+  const txt = r.r?.content?.[0]?.text ?? "";
+  results.push({ tool: "timeout_hint", pass: Date.now() - t0 < 6000 && /still be running|still running/.test(txt) && /timeoutSeconds/.test(txt), ms: Date.now() - t0, note: txt.slice(0, 200) });
+  await call("get_project_info", { timeoutSeconds: 30 }, { check: () => true });
+}
 
 const frame = await call("preview_frame", { comp: C, time: 2.5, maxSize: 960, savePath: path.join(out, "frame.png") }, { check: (d, r) => (r.content.some((c) => c.type === "image" && c.data.length > 1000) && d.previewWidth === 960 ? true : "no image / not resized " + JSON.stringify(d)) });
 await call("preview_contact_sheet", { comp: C, frames: 4, maxSize: 400 }, {

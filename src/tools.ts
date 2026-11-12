@@ -86,7 +86,9 @@ export interface ToolDef {
   category: string;
 }
 
-const t = (d: ToolDef) => d;
+/** Every tool that runs inside AE accepts timeoutSeconds (consumed by the server, never sent to AE). */
+const TimeoutSeconds = z.number().int().min(1).max(3600).optional().describe("Max seconds to wait for After Effects (default 60, long tools 300+).");
+const t = (d: ToolDef) => (d.handler === null && !["preview_frame", "preview_contact_sheet"].includes(d.name) ? d : { ...d, shape: { ...d.shape, timeoutSeconds: TimeoutSeconds } });
 
 export const TOOLS: ToolDef[] = [
   // ------------------------------------------------------------- session
@@ -166,7 +168,7 @@ export const TOOLS: ToolDef[] = [
   t({ category: "render", name: "add_to_render_queue", title: "Add to render queue", description: "Queue a comp for rendering with an output path and format (h264/mp4, mov/prores, png sequence, lossless) or explicit templates. Returns available output templates.", shape: { comp: Comp, outputPath: z.string().optional(), format: z.enum(["h264", "mp4", "mov", "prores", "png", "lossless"]).optional(), outputModuleTemplate: z.string().optional(), renderSettingsTemplate: z.string().optional(), start: z.number().optional(), duration: z.number().optional(), workAreaOnly: z.boolean().optional() } }),
   t({ category: "render", name: "get_render_queue", readOnly: true, title: "Render queue", description: "List render queue items, status and output files.", shape: {} }),
   t({ category: "render", name: "clear_render_queue", destructive: true, title: "Clear render queue", description: "Remove render queue items (all, or only finished ones).", shape: { onlyDone: z.boolean().optional() } }),
-  t({ category: "render", name: "render_queue", undo: false, title: "Render (blocking)", description: "Render the queue inside After Effects. AE is blocked until done; prefer render_in_background for long renders.", timeoutMs: 3600_000, shape: { timeoutSeconds: z.number().int().optional() } }),
+  t({ category: "render", name: "render_queue", undo: false, title: "Render (blocking)", description: "Render the queue inside After Effects. AE is blocked until done; prefer render_in_background for long renders.", timeoutMs: 3600_000, shape: {} }),
   t({ category: "render", name: "render_in_background", handler: null, title: "Render in background (aerender)", description: "Render a comp with aerender in a separate process while you keep working in AE. Saves the project first. Track with get_background_render.", shape: { comp: z.string().describe("Composition name."), outputPath: z.string(), outputModuleTemplate: z.string().optional(), renderSettingsTemplate: z.string().optional(), startFrame: z.number().int().optional(), endFrame: z.number().int().optional() } }),
   t({ category: "render", name: "get_background_render", handler: null, readOnly: true, title: "Background render status", description: "Status, progress and log tail of background renders.", shape: { jobId: z.string().optional() } }),
 

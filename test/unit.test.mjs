@@ -92,9 +92,11 @@ test("listener mode times out cleanly when AE is not answering", async () => {
   fs.writeFileSync(path.join(tmpBridge, "heartbeat.json"), JSON.stringify({ time: Date.now(), version: "x", ae: "x", paused: false, executed: 0, project: "" }));
   const client = await connect();
   const t0 = Date.now();
-  const r = await client.callTool({ name: "get_project_info", arguments: {} });
+  const r = await client.callTool({ name: "get_project_info", arguments: { timeoutSeconds: 3 } });
   assert.equal(r.isError, true);
-  assert.ok(Date.now() - t0 < 20_000);
+  assert.ok(Date.now() - t0 < 10_000, "timeoutSeconds respected");
+  // works whether or not a real After Effects happens to be open on this machine
+  assert.match(r.content[0].text, /never started this command|was closed/);
   // queue must be cleaned so a stale command never runs later
   const left = fs.readdirSync(path.join(tmpBridge, "queue"));
   assert.equal(left.length, 0, `queue not cleaned: ${left}`);
