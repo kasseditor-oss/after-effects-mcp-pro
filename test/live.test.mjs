@@ -469,6 +469,42 @@ if (job.data?.jobId) {
   console.log(`${d.status === "done" && seen.length >= 1 ? "PASS" : "FAIL"} render_in_background wait: ${seen.length} progress notifications`);
 }
 
+// QA task A2 (kinetic type 9:16) with ONLY the "core" toolset
+{
+  const cc = new Client({ name: "live-core", version: "1.0.0" });
+  await cc.connect(new StdioClientTransport({ command: process.execPath, args: [path.join(root, "build", "index.js")], env: { ...process.env, AE_MCP_TOOLSET: "core" }, stderr: "pipe" }));
+  const listedCore = new Set((await cc.listTools()).tools.map((t) => t.name));
+  const used = [];
+  const callCore = async (name, args) => {
+    used.push(name);
+    const r = await cc.callTool({ name, arguments: args }, undefined, { timeout: 600_000 });
+    if (r.isError) throw new Error(`${name}: ${r.content[0].text}`);
+    return r;
+  };
+  let pass = true, note = "";
+  try {
+    const comp = JSON.parse((await callCore("create_composition", { name: COMP + " core 9x16", preset: "vertical", duration: 4, backgroundColor: "#111111", open: false })).content[0].text);
+    created.push(comp.id);
+    const words = ["Faça", "mais", "com", "menos", "agora", "mesmo"];
+    const presets = ["pop", "slide-in", "blur-in", "rotate-in", "scale-in", "typewriter"];
+    const ops = [];
+    words.forEach((w, i) => {
+      ops.push({ tool: "create_text_layer", args: { comp: comp.id, text: w, fontSize: 140, position: [540, 420 + i * 200], name: `W${i}` } });
+      ops.push({ tool: "animate_layer", args: { comp: comp.id, layer: `W${i}`, preset: presets[i], startTime: i * 0.4 } });
+    });
+    await callCore("batch", { operations: ops });
+    await callCore("set_layer_properties", { comp: comp.id, layers: words.map((_, i) => `W${i}`), motionBlur: true });
+    await callCore("markers", { action: "add", comp: comp.id, time: 2, comment: "beat" });
+    const sheet = await callCore("preview_contact_sheet", { comp: comp.id, frames: 6 });
+    fs.writeFileSync(path.join(out, "core-a2.jpg"), Buffer.from(sheet.content.find((c) => c.type === "image").data, "base64"));
+    const outside = used.filter((n) => !listedCore.has(n));
+    if (outside.length) { pass = false; note = "used tools outside core: " + outside.join(","); }
+    else note = `${used.length} calls: ${used.join(", ")}`;
+  } catch (e) { pass = false; note = e.message.slice(0, 200); }
+  results.push({ tool: "A2 with core toolset", pass, ms: 0, note });
+  console.log(`${pass ? "PASS" : "FAIL"} A2 with core toolset: ${note}`);
+  await cc.close();
+}
 // structuredContent of the read tools must validate against their own output schemas
 {
   const { OUTPUTS } = await import(new URL("../build/tools.js", import.meta.url).href);

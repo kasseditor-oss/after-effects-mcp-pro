@@ -2196,11 +2196,23 @@
         for (var i = rq.numItems; i >= 1; i--) { if (a.onlyDone && rq.item(i).status !== RQItemStatus.DONE) continue; rq.item(i).remove(); n++; }
         return { removed: n };
     };
-    H.render_queue = function () {
+    // One tool for the whole queue: action render (default, blocking) | list | clear | add
+    H.render_queue = function (a) {
+        a = a || {};
+        var action = def(a.action, "render");
+        if (action === "list") return H.get_render_queue(a);
+        if (action === "clear") return H.clear_render_queue(a);
+        if (action === "add") return H.add_to_render_queue(a);
         var rq = app.project.renderQueue;
-        if (!rq.numItems) fail("Render queue is empty", "Use add_to_render_queue first.");
+        if (!rq.numItems) fail("Render queue is empty", "Use render_queue {action:'add'} or add_to_render_queue first.");
         rq.render();
         return rqSummary(rq);
+    };
+    // One tool for markers: action add | list | remove
+    H.markers = function (a) {
+        if (a.action === "add") return H.add_marker(a);
+        if (a.action === "remove") return H.remove_markers(a);
+        return H.list_markers(a);
     };
 
     // Frame capture: saves a full-size PNG of the comp at a time. saveFrameToPng is

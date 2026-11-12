@@ -71,6 +71,7 @@ export const TOOL_LABELS: Record<string, string> = {
   add_mask: "Criando máscara",
   remove_masks: "Removendo máscaras",
   add_marker: "Adicionando marcador",
+  markers: "Marcadores",
   list_markers: "Listando marcadores",
   remove_markers: "Removendo marcadores",
   preview_frame: "Renderizando preview",

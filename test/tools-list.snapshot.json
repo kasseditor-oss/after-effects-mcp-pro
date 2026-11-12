@@ -80,7 +80,7 @@
  {
   "name": "get_project_info",
   "title": "Project info",
-  "description": "Fast project overview: name, path, unsaved changes, item counts by type, composition count, the first 50 comps (id, size, duration, fps), active comp, bit depth, render queue size. detail:true lists every comp with layer count and folder.",
+  "description": "Fast project overview: counts by type, first 50 comps, active comp. detail:true lists every comp. Details: ae://docs/get_project_info",
   "inputSchema": {
    "type": "object",
    "properties": {
@@ -457,7 +457,7 @@
  {
   "name": "remove_unused_footage",
   "title": "Remove unused footage",
-  "description": "Delete footage no layer uses (like File > Dependencies > Remove Unused Footage). type:'solid' only removes unused solid/null sources (the Solids folder clutter left after deleting layers); keep lists item ids to preserve. Empty folders left behind are removed.",
+  "description": "Delete footage no layer uses. type:'solid' only clears unused null/solid sources; keep: ids to preserve. Details: ae://docs/remove_unused_footage",
   "inputSchema": {
    "type": "object",
    "properties": {
@@ -871,7 +871,7 @@
  {
   "name": "create_composition",
   "title": "Create composition",
-  "description": "Create a composition. Use preset for common sizes (1080p, 4k, vertical/reels/tiktok, square, portrait-4x5...). Opens it in the viewer unless open:false - use open:false when you will add many layers before looking (much faster).",
+  "description": "Create a comp (preset 1080p|4k|vertical|square... or width/height). open:false is faster when you add many layers first. Details: ae://docs/create_composition",
   "inputSchema": {
    "type": "object",
    "properties": {
@@ -4026,7 +4026,7 @@
  {
   "name": "get_property",
   "title": "Read property",
-  "description": "Read any property by path, e.g. 'Position', 'Transform/Opacity', 'Effects/Gaussian Blur/Blurriness', 'Contents/Rectangle 1/Fill 1/Color', or match names. Returns value, keyframes, expression; for groups, lists children.",
+  "description": "Read any property by path ('Position', 'Effects/Gaussian Blur/Blurriness', 'Contents/Group 1/...'): value, keyframes, expression. Details: ae://docs/get_property",
   "inputSchema": {
    "type": "object",
    "properties": {
@@ -4505,7 +4505,7 @@
  {
   "name": "animate_layer",
   "title": "Animation preset",
-  "description": "One-call motion design presets: fade-in/out, slide-in/out (direction), slide-up-fade, scale-in/out, pop (overshoot), rotate-in, spin, blur-in, typewriter, text-fade-up (per-character), wiggle, wiggle-rotation, pulse, float, rotate-continuous, blink, bounce (inertial overshoot after keys), loop (loopOut).",
+  "description": "One-call animation preset: fade-in/out, slide-in/out, pop, scale-in, blur-in, typewriter, text-fade-up, wiggle, pulse, float, bounce, loop... e.g. {layer:'Title', preset:'pop', startTime:0.5}. Details: ae://docs/animate_layer",
   "inputSchema": {
    "type": "object",
    "properties": {
@@ -4927,7 +4927,7 @@
  {
   "name": "apply_effect_template",
   "title": "Effect look template",
-  "description": "Apply a ready-made look: gaussian-blur, directional-blur, glow, soft-glow, neon, drop-shadow, long-shadow, brightness-contrast, vibrance, black-and-white, sepia, vignette, cinematic-look, text-pop, film-grain, chromatic-aberration, sharpen, posterize-time.",
+  "description": "Apply a ready-made look (glow, neon, drop-shadow, cinematic-look, film-grain, vignette...) to layers. Details: ae://docs/apply_effect_template",
   "inputSchema": {
    "type": "object",
    "properties": {
@@ -5308,6 +5308,94 @@
   }
  },
  {
+  "name": "markers",
+  "title": "Markers",
+  "description": "Comp or layer markers in one tool: action add {time, comment, duration...} | list {includeLayers} | remove {time?, comment?}. With layer: that layer's markers.",
+  "inputSchema": {
+   "type": "object",
+   "properties": {
+    "action": {
+     "type": "string",
+     "enum": [
+      "add",
+      "list",
+      "remove"
+     ]
+    },
+    "comp": {
+     "anyOf": [
+      {
+       "type": "string"
+      },
+      {
+       "type": "integer"
+      }
+     ],
+     "description": "Composition name or numeric item id. Omit to use the active composition."
+    },
+    "layer": {
+     "anyOf": [
+      {
+       "type": "integer",
+       "exclusiveMinimum": 0
+      },
+      {
+       "type": "string"
+      }
+     ],
+     "description": "Layer: 1-based index, exact name, or 'id:<layerId>' (stable across reordering)."
+    },
+    "time": {
+     "type": "number"
+    },
+    "comment": {
+     "type": "string"
+    },
+    "duration": {
+     "type": "number"
+    },
+    "chapter": {
+     "type": "string"
+    },
+    "url": {
+     "type": "string"
+    },
+    "label": {
+     "type": "integer"
+    },
+    "includeLayers": {
+     "type": "boolean"
+    },
+    "timeoutSeconds": {
+     "type": "integer",
+     "minimum": 1,
+     "maximum": 3600,
+     "description": "Max seconds to wait for After Effects (default 60, long tools 300+)."
+    }
+   },
+   "required": [
+    "action"
+   ]
+  },
+  "annotations": {
+   "title": "Markers",
+   "readOnlyHint": false,
+   "destructiveHint": false,
+   "idempotentHint": false,
+   "openWorldHint": false
+  },
+  "_meta": {
+   "ui": {
+    "resourceUri": "ui://after-effects/activity.html",
+    "visibility": [
+     "model",
+     "app"
+    ]
+   },
+   "ui/resourceUri": "ui://after-effects/activity.html"
+  }
+ },
+ {
   "name": "add_marker",
   "title": "Add marker",
   "description": "Add a comp marker (or a layer marker when layer is given) with comment, duration, chapter, URL and label.",
@@ -5576,7 +5664,7 @@
  {
   "name": "preview_contact_sheet",
   "title": "Preview several frames",
-  "description": "Render N evenly spaced frames (or given times) of a comp and return ONE grid image (up to 4 columns, time written on each cell): a quick way to check an animation over time. layout:'separate' returns one image per frame.",
+  "description": "Render N frames (or given times) as ONE labelled grid image to check an animation over time. Details: ae://docs/preview_contact_sheet",
   "inputSchema": {
    "type": "object",
    "properties": {
@@ -5672,7 +5760,7 @@
  {
   "name": "add_to_render_queue",
   "title": "Add to render queue",
-  "description": "Queue a comp for rendering with an output path and format (h264/mp4, mov/prores = QuickTime ProRes, prores-alpha, lossless = AVI, tiff sequence) or an explicit outputModuleTemplate. Fails (and adds nothing) when the format cannot be produced; checks the final container and extension. For PNG frames use render_png_sequence.",
+  "description": "Queue a comp for rendering: format h264|prores|prores-alpha|lossless|tiff or outputModuleTemplate, outputPath, start/duration. PNG frames: render_png_sequence. Details: ae://docs/add_to_render_queue",
   "inputSchema": {
    "type": "object",
    "properties": {
@@ -5751,7 +5839,7 @@
  {
   "name": "render_png_sequence",
   "title": "Render PNG sequence",
-  "description": "Write numbered PNG frames of a comp directly (no render queue): outputPath like 'C:/out/frame_[####].png' ([####] = zero-padded frame number). Range by start/duration in seconds or startFrame/endFrame; defaults to the work area. Reports progress per frame.",
+  "description": "Write numbered PNG frames of a comp directly: outputPath 'C:/out/frame_[####].png', range by start/duration or startFrame/endFrame. Details: ae://docs/render_png_sequence",
   "inputSchema": {
    "type": "object",
    "properties": {
@@ -5917,11 +6005,68 @@
  },
  {
   "name": "render_queue",
-  "title": "Render (blocking)",
-  "description": "Render the queue inside After Effects. AE is blocked until done; prefer render_in_background for long renders.",
+  "title": "Render queue",
+  "description": "The render queue in one tool: action render (default: renders the queue, blocking AE until done) | list | clear | add (same arguments as add_to_render_queue). Prefer render_in_background for long renders.",
   "inputSchema": {
    "type": "object",
    "properties": {
+    "action": {
+     "type": "string",
+     "enum": [
+      "render",
+      "list",
+      "clear",
+      "add"
+     ]
+    },
+    "onlyDone": {
+     "type": "boolean"
+    },
+    "comp": {
+     "anyOf": [
+      {
+       "type": "string"
+      },
+      {
+       "type": "integer"
+      }
+     ],
+     "description": "Composition name or numeric item id. Omit to use the active composition."
+    },
+    "outputPath": {
+     "type": "string"
+    },
+    "format": {
+     "type": "string",
+     "enum": [
+      "h264",
+      "mp4",
+      "mov",
+      "prores",
+      "prores-alpha",
+      "png",
+      "lossless",
+      "tiff"
+     ]
+    },
+    "outputModuleTemplate": {
+     "type": "string"
+    },
+    "renderSettingsTemplate": {
+     "type": "string"
+    },
+    "start": {
+     "type": "number"
+    },
+    "duration": {
+     "type": "number"
+    },
+    "workAreaOnly": {
+     "type": "boolean"
+    },
+    "overwrite": {
+     "type": "boolean"
+    },
     "timeoutSeconds": {
      "type": "integer",
      "minimum": 1,
@@ -5931,7 +6076,7 @@
    }
   },
   "annotations": {
-   "title": "Render (blocking)",
+   "title": "Render queue",
    "readOnlyHint": false,
    "destructiveHint": false,
    "idempotentHint": false,
@@ -5951,7 +6096,7 @@
  {
   "name": "render_in_background",
   "title": "Render in background (aerender)",
-  "description": "Render a comp with aerender in a separate process while you keep working in AE. Saves the project first. Returns at once (track with get_background_render), or with wait:true waits until done and reports progress per frame.",
+  "description": "Render a comp with aerender in a separate process (project is saved first). wait:true waits with per-frame progress. Details: ae://docs/render_in_background",
   "inputSchema": {
    "type": "object",
    "properties": {
@@ -6148,7 +6293,7 @@
  {
   "name": "get_properties_at_time",
   "title": "Read properties at a time",
-  "description": "Read many properties of many layers at one time in a single call, e.g. [{layer:'Title', properties:['Position','Opacity']}, {layer:2, properties:['Effects/Gaussian Blur/Blurriness']}]. Errors are reported per property.",
+  "description": "Read many properties of many layers at one time in one call: requests [{layer, properties:[...]}]. Details: ae://docs/get_properties_at_time",
   "inputSchema": {
    "type": "object",
    "properties": {
@@ -6562,7 +6707,7 @@
  {
   "name": "begin_undo_group",
   "title": "Begin undo group",
-  "description": "Start grouping the following calls so ONE undo call reverts them all (e.g. 10 calls that build one idea). Closes automatically after 120 s without calls or at the next begin_undo_group. After Effects' own Ctrl+Z still undoes one call at a time.",
+  "description": "Group the following calls so ONE undo call reverts them all. Close with end_undo_group. Details: ae://docs/begin_undo_group",
   "inputSchema": {
    "type": "object",
    "properties": {
@@ -6702,7 +6847,7 @@
  {
   "name": "run_extendscript",
   "title": "Run ExtendScript",
-  "description": "Escape hatch: run custom ExtendScript in After Effects. Code is a function body; use `return` to send back a value (comps/layers/properties are serialized). `AEMCP` helpers (getComp, getLayer, resolveProp, color...) and `args` are available. Disabled when AE_MCP_DISABLE_EVAL=1.",
+  "description": "Run custom ExtendScript (ES3 function body; `return` a value). AEMCP helpers and `args` are available. Disabled with AE_MCP_EVAL=off. Details: ae://docs/run_extendscript",
   "inputSchema": {
    "type": "object",
    "properties": {
@@ -6752,7 +6897,7 @@
  {
   "name": "batch",
   "title": "Batch operations",
-  "description": "Run several tools in ONE round trip and ONE undo step, e.g. create 10 layers and animate them. Each operation is {tool, args} using the same names/args as the individual tools (AE-side tools only). If an operation fails the call returns isError with failed/stoppedAt; operations before the failure STAY applied (one undo step: call undo to revert all) unless atomic:true, which reverts the whole batch automatically. Batches over 20 operations temporarily move the viewer off the comp (2-3x faster); in big comps prefer chunks of ~100 operations.",
+  "description": "Run many AE tools in ONE call and ONE undo step, e.g. [{tool:'create_text_layer',args:{...}},{tool:'animate_layer',args:{...}}]. Fails with isError + partial results; atomic:true reverts all. Details: ae://docs/batch",
   "inputSchema": {
    "type": "object",
    "properties": {

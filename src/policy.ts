@@ -19,6 +19,29 @@ export function isReadTool(d: ToolDef): boolean {
   return !!d.readOnly || /^(list_|get_|preview_)/.test(d.name) || READ_EXTRA.has(d.name);
 }
 
+// ------------------------------------------------------------------ toolsets
+/** AE_MCP_TOOLSET=full|core|minimal: how many tools are LISTED (smaller = less model context).
+ *  Unlisted tools still work when called by name or inside batch. */
+export const TOOLSETS: Record<string, string[]> = {
+  core: [
+    "bridge_status", "get_project_info", "list_compositions", "get_composition", "create_composition", "set_composition_settings",
+    "import_files", "add_item_to_comp", "create_text_layer", "create_shape_layer", "create_solid_layer", "create_null_layer", "create_camera",
+    "list_layers", "get_layer_details", "set_layer_properties", "set_text", "get_property", "set_property", "set_keyframes",
+    "animate_layer", "apply_effect", "apply_effect_template", "set_expression", "markers", "preview_frame", "preview_contact_sheet",
+    "batch", "undo", "render_in_background", "save_project",
+  ],
+  minimal: ["bridge_status", "get_project_info", "list_layers", "get_property", "set_property", "set_keyframes", "batch", "preview_frame", "undo", "run_extendscript"],
+};
+export function toolset(): string {
+  const v = (process.env.AE_MCP_TOOLSET ?? "full").toLowerCase();
+  return TOOLSETS[v] ? v : "full";
+}
+export function listed(d: ToolDef): boolean {
+  if (disabledReason(d)) return false;
+  const set = TOOLSETS[toolset()];
+  return !set || set.includes(d.name);
+}
+
 /** null when the tool may be used, otherwise the reason it is disabled. */
 export function disabledReason(d: ToolDef): string | null {
   if (d.name === "run_extendscript" && !evalEnabled()) return "run_extendscript is disabled (AE_MCP_EVAL=off)";
@@ -27,7 +50,7 @@ export function disabledReason(d: ToolDef): string | null {
 }
 
 export function policySummary() {
-  return { eval: evalEnabled() ? "on" : "off", readOnly: readOnlyMode(), allowedDirs: process.env.AE_MCP_ALLOWED_DIRS ? process.env.AE_MCP_ALLOWED_DIRS.split(";").filter(Boolean).length : null };
+  return { toolset: toolset(), eval: evalEnabled() ? "on" : "off", readOnly: readOnlyMode(), allowedDirs: process.env.AE_MCP_ALLOWED_DIRS ? process.env.AE_MCP_ALLOWED_DIRS.split(";").filter(Boolean).length : null };
 }
 
 // ------------------------------------------------------------------ file paths

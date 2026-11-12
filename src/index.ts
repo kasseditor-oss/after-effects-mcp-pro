@@ -22,7 +22,7 @@ import { zodToJsonSchema } from "zod-to-json-schema";
 import { AEError, Bridge, SERVER_VERSION } from "./bridge.js";
 import { findInstalls } from "./env.js";
 import { TOOLS, NODE_ONLY, OUTPUTS, type ToolDef } from "./tools.js";
-import { checkPaths, disabledReason, policySummary } from "./policy.js";
+import { checkPaths, disabledReason, listed, policySummary, toolset } from "./policy.js";
 import { compose, type ImageFormat } from "./imaging.js";
 import { WIDGET_MIME, WIDGET_URI, widgetHtml } from "./widget.js";
 
@@ -83,14 +83,40 @@ function jsonSchema(d: ToolDef) {
   return js;
 }
 
-const LISTED = TOOLS.filter((d) => !disabledReason(d)).map((d) => ({
+// core / minimal profiles trade argument prose for context: long parameter descriptions,
+// duplicate keys and output schemas are left out of tools/list (full docs: ae://docs/<tool>).
+const COMPACT = toolset() !== "full";
+function compactSchema(js: any, toolName: string): any {
+  const strip = (o: any): any => {
+    if (Array.isArray(o)) return o.map(strip);
+    if (!o || typeof o !== "object") return o;
+    const out: any = {};
+    for (const [k, v] of Object.entries(o)) {
+      if (k === "description" && typeof v === "string") continue;
+      out[k] = strip(v);
+    }
+    return out;
+  };
+  const c = strip(js);
+  // rarely needed fields are not listed (still accepted: validation uses the full schema)
+  for (const k of ["inPoint", "outPoint", "label", "anchorPoint", "threeD", "blendMode", "timeoutSeconds"]) if (c.properties && k in c.properties && !(c.required ?? []).includes(k)) delete c.properties[k];
+  // create_shape_layer: list only the shapes[] form (the single-shape top-level form still works)
+  if (toolName === "create_shape_layer" && c.properties) {
+    const keep = new Set(["comp", "shapes", "name", "position", "anchor", "scale", "rotation", "opacity", "startTime", "duration", "parent"]);
+    for (const k of Object.keys(c.properties)) if (!keep.has(k)) delete c.properties[k];
+    const item = c.properties.shapes?.items?.properties;
+    if (item) for (const k of ["fillOpacity", "strokeOpacity", "lineCap", "inTangents", "outTangents", "outerRadius", "innerRadius", "repeater", "rotation", "gradient"]) delete item[k];
+  }
+  return c;
+}
+const LISTED = TOOLS.filter((d) => listed(d)).map((d) => ({
   name: d.name,
-  title: d.title,
-  description: d.description,
-  inputSchema: jsonSchema(d),
-  ...(OUTPUTS[d.name] ? { outputSchema: outSchema(OUTPUTS[d.name]) } : {}),
+  ...(COMPACT ? {} : { title: d.title }),
+  description: d.docs ? `${d.description} Details: ae://docs/${d.name}` : d.description,
+  inputSchema: COMPACT ? compactSchema(jsonSchema(d), d.name) : jsonSchema(d),
+  ...(OUTPUTS[d.name] && !COMPACT ? { outputSchema: outSchema(OUTPUTS[d.name]) } : {}),
   annotations: {
-    title: d.title,
+    ...(COMPACT ? {} : { title: d.title }),
     readOnlyHint: !!d.readOnly,
     destructiveHint: !!d.destructive,
     idempotentHint: !!d.readOnly,
@@ -99,7 +125,7 @@ const LISTED = TOOLS.filter((d) => !disabledReason(d)).map((d) => ({
   // No per-tool icons: 79 copies of a 14 KB data URI made tools/list 1.2 MB. The icon
   // lives in serverInfo, and the activity card embeds its own copy.
   // MCP Apps: Claude renders the After Effects activity card for every call
-  _meta: { ui: { resourceUri: WIDGET_URI, visibility: ["model", "app"] }, "ui/resourceUri": WIDGET_URI },
+  _meta: COMPACT ? { ui: { resourceUri: WIDGET_URI } } : { ui: { resourceUri: WIDGET_URI, visibility: ["model", "app"] }, "ui/resourceUri": WIDGET_URI },
 }));
 const CARD_ICON = (ICONS.find((i) => i.sizes?.includes("64x64")) ?? ICONS.find((i) => i.mimeType === "image/svg+xml") ?? ICONS[0])?.src ?? "";
 
@@ -616,11 +642,19 @@ server.setRequestHandler(ListResourcesRequestSchema, async () => ({
     { uri: "aftereffects://project", name: "Project info", mimeType: "application/json", description: "Current project overview" },
     { uri: "aftereffects://compositions", name: "Compositions", mimeType: "application/json", description: "All compositions" },
     { uri: "aftereffects://selection", name: "Selection", mimeType: "application/json", description: "Active comp and selected layers" },
+    // full documentation of every tool (long descriptions live here, not in tools/list)
+    ...TOOLS.filter((d) => !disabledReason(d)).map((d) => ({ uri: `ae://docs/${d.name}`, name: `docs: ${d.name}`, mimeType: "text/markdown", description: d.title })),
   ],
 }));
 server.setRequestHandler(ReadResourceRequestSchema, async (req) => {
   if (req.params.uri === WIDGET_URI) {
     return { contents: [{ uri: WIDGET_URI, mimeType: WIDGET_MIME, text: widgetHtml(CARD_ICON), _meta: { ui: { prefersBorder: false, csp: { connectDomains: [], resourceDomains: [] } } } } as any] };
+  }
+  if (req.params.uri.startsWith("ae://docs/")) {
+    const d = TOOLS.find((t) => t.name === req.params.uri.slice("ae://docs/".length));
+    if (!d) throw new Error(`Unknown tool ${req.params.uri}`);
+    const md = `# ${d.name}: ${d.title}\n\n${d.docs ?? d.description}\n\n## Arguments\n\n\`\`\`json\n${JSON.stringify(jsonSchema(d), null, 1)}\n\`\`\`\n`;
+    return { contents: [{ uri: req.params.uri, mimeType: "text/markdown", text: md }] };
   }
   const map: Record<string, string> = { "aftereffects://project": "get_project_info", "aftereffects://compositions": "list_compositions", "aftereffects://selection": "get_selection" };
   const tool = map[req.params.uri];

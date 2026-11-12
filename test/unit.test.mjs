@@ -186,7 +186,7 @@ test("every tool opens the After Effects activity card (MCP Apps)", async () => 
 test("an outdated listener is reported on the first call and in bridge_status", async () => {
   const dir = fs.mkdtempSync(path.join(os.tmpdir(), "aemcp-ver-"));
   const stop = fakeListener(dir, (p) => ({ ok: true, id: p.id, data: { ok: true } }), "1.0.0");
-  await new Promise((r) => setTimeout(r, 60));
+  while (!fs.existsSync(path.join(dir, "heartbeat.json"))) await new Promise((r) => setTimeout(r, 20));
   const client = await connect({ AE_MCP_BRIDGE_DIR: dir });
   const r1 = await client.callTool({ name: "list_compositions", arguments: {} });
   assert.match(r1.content.at(-1).text, /listener is version 1\.0\.0.*install-ae/);
@@ -440,7 +440,7 @@ test("AE_MCP_EVAL=off hides run_extendscript; AE_MCP_READONLY=1 exposes only rea
   const w = await ro.callTool({ name: "create_composition", arguments: { name: "x" } });
   assert.equal(w.isError, true);
   const st = JSON.parse((await ro.callTool({ name: "bridge_status", arguments: {} })).content[0].text);
-  assert.deepEqual(st.modes, { eval: "on", readOnly: true, allowedDirs: null });
+  assert.deepEqual(st.modes, { toolset: "full", eval: "on", readOnly: true, allowedDirs: null });
   await ro.close();
 });
 
@@ -480,3 +480,20 @@ test("AE_MCP_ALLOWED_DIRS refuses outside paths, '..' and links before reaching 
   assert.equal(reached, 1);
   await client.close();
 });
+
+for (const profile of ["core", "minimal"]) {
+  test(`AE_MCP_TOOLSET=${profile}: small tools/list, matching its snapshot`, async () => {
+    const client = await connect({ AE_MCP_TOOLSET: profile });
+    const { tools } = await client.listTools();
+    const docs = await client.readResource({ uri: "ae://docs/batch" });
+    await client.close();
+    const bytes = Buffer.byteLength(JSON.stringify({ tools }));
+    const limit = profile === "core" ? 30_000 : 12_000;
+    assert.ok(bytes < limit, `${profile} tools/list is ${bytes} bytes (limit ${limit})`);
+    assert.match(docs.contents[0].text, /ONE undo step/);
+    const current = tools.map(({ icons, ...t }) => t);
+    const file = path.join(root, "test", `tools-list.${profile}.snapshot.json`);
+    if (process.env.UPDATE_SNAPSHOT === "1" || !fs.existsSync(file)) fs.writeFileSync(file, JSON.stringify(current, null, 1) + String.fromCharCode(10));
+    assert.deepEqual(current, JSON.parse(fs.readFileSync(file, "utf8")));
+  });
+}

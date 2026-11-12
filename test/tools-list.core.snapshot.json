@@ -1,0 +1,2539 @@
+[
+ {
+  "name": "bridge_status",
+  "description": "Check the connection to After Effects: install found, AE running, bridge mode (listener/direct), AE version, open project. Call this first if anything fails.",
+  "inputSchema": {
+   "type": "object",
+   "properties": {}
+  },
+  "annotations": {
+   "readOnlyHint": true,
+   "destructiveHint": false,
+   "idempotentHint": true,
+   "openWorldHint": false
+  },
+  "_meta": {
+   "ui": {
+    "resourceUri": "ui://after-effects/activity.html"
+   }
+  }
+ },
+ {
+  "name": "get_project_info",
+  "description": "Fast project overview: counts by type, first 50 comps, active comp. detail:true lists every comp. Details: ae://docs/get_project_info",
+  "inputSchema": {
+   "type": "object",
+   "properties": {
+    "detail": {
+     "type": "boolean"
+    }
+   }
+  },
+  "annotations": {
+   "readOnlyHint": true,
+   "destructiveHint": false,
+   "idempotentHint": true,
+   "openWorldHint": false
+  },
+  "_meta": {
+   "ui": {
+    "resourceUri": "ui://after-effects/activity.html"
+   }
+  }
+ },
+ {
+  "name": "save_project",
+  "description": "Save the project, or 'Save As' when path is given.",
+  "inputSchema": {
+   "type": "object",
+   "properties": {
+    "path": {
+     "type": "string"
+    },
+    "overwrite": {
+     "type": "boolean"
+    }
+   }
+  },
+  "annotations": {
+   "readOnlyHint": false,
+   "destructiveHint": false,
+   "idempotentHint": false,
+   "openWorldHint": false
+  },
+  "_meta": {
+   "ui": {
+    "resourceUri": "ui://after-effects/activity.html"
+   }
+  }
+ },
+ {
+  "name": "import_files",
+  "description": "Import footage/images/audio/PSD/AI files (optionally as image sequence) into the project, into a folder, and optionally straight into a comp.",
+  "inputSchema": {
+   "type": "object",
+   "properties": {
+    "paths": {
+     "type": "array",
+     "items": {
+      "type": "string"
+     },
+     "minItems": 1
+    },
+    "folder": {
+     "type": "string"
+    },
+    "sequence": {
+     "type": "boolean"
+    },
+    "forceAlphabetical": {
+     "type": "boolean"
+    },
+    "importAs": {
+     "type": "string",
+     "enum": [
+      "footage",
+      "composition",
+      "comp_cropped_layers",
+      "project"
+     ]
+    },
+    "addToComp": {
+     "type": [
+      "string",
+      "number"
+     ]
+    },
+    "startTime": {
+     "type": "number"
+    }
+   },
+   "required": [
+    "paths"
+   ]
+  },
+  "annotations": {
+   "readOnlyHint": false,
+   "destructiveHint": false,
+   "idempotentHint": false,
+   "openWorldHint": false
+  },
+  "_meta": {
+   "ui": {
+    "resourceUri": "ui://after-effects/activity.html"
+   }
+  }
+ },
+ {
+  "name": "list_compositions",
+  "description": "All compositions with id, size, duration, fps, layer count, work area.",
+  "inputSchema": {
+   "type": "object",
+   "properties": {}
+  },
+  "annotations": {
+   "readOnlyHint": true,
+   "destructiveHint": false,
+   "idempotentHint": true,
+   "openWorldHint": false
+  },
+  "_meta": {
+   "ui": {
+    "resourceUri": "ui://after-effects/activity.html"
+   }
+  }
+ },
+ {
+  "name": "get_composition",
+  "description": "Full composition details: settings, markers, selection and a summary of each layer (type, timing, transform, effects, parent, matte). At most layerLimit (default 200) layers; use list_layers to page through more.",
+  "inputSchema": {
+   "type": "object",
+   "properties": {
+    "comp": {
+     "anyOf": [
+      {
+       "type": "string"
+      },
+      {
+       "type": "integer"
+      }
+     ]
+    },
+    "compact": {
+     "type": "boolean"
+    },
+    "fields": {
+     "type": "array",
+     "items": {
+      "type": "string"
+     }
+    },
+    "layerLimit": {
+     "type": "integer",
+     "minimum": 0,
+     "maximum": 1000
+    }
+   }
+  },
+  "annotations": {
+   "readOnlyHint": true,
+   "destructiveHint": false,
+   "idempotentHint": true,
+   "openWorldHint": false
+  },
+  "_meta": {
+   "ui": {
+    "resourceUri": "ui://after-effects/activity.html"
+   }
+  }
+ },
+ {
+  "name": "create_composition",
+  "description": "Create a comp (preset 1080p|4k|vertical|square... or width/height). open:false is faster when you add many layers first. Details: ae://docs/create_composition",
+  "inputSchema": {
+   "type": "object",
+   "properties": {
+    "name": {
+     "type": "string"
+    },
+    "preset": {
+     "type": "string",
+     "enum": [
+      "hd",
+      "1080p",
+      "720p",
+      "4k",
+      "uhd",
+      "2k",
+      "vertical",
+      "story",
+      "reels",
+      "tiktok",
+      "shorts",
+      "square",
+      "instagram",
+      "portrait-4x5",
+      "youtube-thumbnail",
+      "twitter"
+     ]
+    },
+    "width": {
+     "type": "integer",
+     "minimum": 4,
+     "maximum": 30000
+    },
+    "height": {
+     "type": "integer",
+     "minimum": 4,
+     "maximum": 30000
+    },
+    "duration": {
+     "type": "number",
+     "exclusiveMinimum": 0
+    },
+    "frameRate": {
+     "type": "number",
+     "exclusiveMinimum": 0,
+     "maximum": 999
+    },
+    "pixelAspect": {
+     "type": "number",
+     "exclusiveMinimum": 0
+    },
+    "backgroundColor": {
+     "anyOf": [
+      {
+       "type": "string"
+      },
+      {
+       "type": "array",
+       "items": {
+        "type": "number"
+       },
+       "minItems": 3,
+       "maxItems": 4
+      }
+     ]
+    },
+    "folder": {
+     "type": "string"
+    },
+    "open": {
+     "type": "boolean"
+    }
+   },
+   "required": [
+    "name"
+   ]
+  },
+  "annotations": {
+   "readOnlyHint": false,
+   "destructiveHint": false,
+   "idempotentHint": false,
+   "openWorldHint": false
+  },
+  "_meta": {
+   "ui": {
+    "resourceUri": "ui://after-effects/activity.html"
+   }
+  }
+ },
+ {
+  "name": "set_composition_settings",
+  "description": "Change composition name, size, duration, fps, background, work area, motion blur, shutter, renderer, current time, resolution.",
+  "inputSchema": {
+   "type": "object",
+   "properties": {
+    "comp": {
+     "anyOf": [
+      {
+       "type": "string"
+      },
+      {
+       "type": "integer"
+      }
+     ]
+    },
+    "name": {
+     "type": "string"
+    },
+    "width": {
+     "type": "integer"
+    },
+    "height": {
+     "type": "integer"
+    },
+    "duration": {
+     "type": "number",
+     "exclusiveMinimum": 0
+    },
+    "frameRate": {
+     "type": "number",
+     "exclusiveMinimum": 0
+    },
+    "pixelAspect": {
+     "type": "number"
+    },
+    "backgroundColor": {
+     "anyOf": [
+      {
+       "type": "string"
+      },
+      {
+       "type": "array",
+       "items": {
+        "type": "number"
+       },
+       "minItems": 3,
+       "maxItems": 4
+      }
+     ]
+    },
+    "workAreaStart": {
+     "type": "number"
+    },
+    "workAreaDuration": {
+     "type": "number"
+    },
+    "motionBlur": {
+     "type": "boolean"
+    },
+    "shutterAngle": {
+     "type": "number"
+    },
+    "shutterPhase": {
+     "type": "number"
+    },
+    "currentTime": {
+     "type": "number"
+    },
+    "renderer": {
+     "type": "string"
+    },
+    "hideShyLayers": {
+     "type": "boolean"
+    },
+    "resolutionFactor": {
+     "type": "array",
+     "items": {
+      "type": "integer"
+     },
+     "minItems": 2,
+     "maxItems": 2
+    },
+    "open": {
+     "type": "boolean"
+    }
+   }
+  },
+  "annotations": {
+   "readOnlyHint": false,
+   "destructiveHint": false,
+   "idempotentHint": false,
+   "openWorldHint": false
+  },
+  "_meta": {
+   "ui": {
+    "resourceUri": "ui://after-effects/activity.html"
+   }
+  }
+ },
+ {
+  "name": "create_text_layer",
+  "description": "Create a text layer with full styling (font, size, color, stroke, tracking, leading, alignment, caps). Anchor is centered on the text. Returns the font AE actually used.",
+  "inputSchema": {
+   "type": "object",
+   "properties": {
+    "comp": {
+     "anyOf": [
+      {
+       "type": "string"
+      },
+      {
+       "type": "integer"
+      }
+     ]
+    },
+    "text": {
+     "type": "string"
+    },
+    "allowLargeText": {
+     "type": "boolean"
+    },
+    "font": {
+     "type": "string"
+    },
+    "fontSize": {
+     "type": "number"
+    },
+    "color": {
+     "anyOf": [
+      {
+       "type": "string"
+      },
+      {
+       "type": "array",
+       "items": {
+        "type": "number"
+       },
+       "minItems": 3,
+       "maxItems": 4
+      }
+     ]
+    },
+    "strokeColor": {
+     "anyOf": [
+      {
+       "type": "string"
+      },
+      {
+       "type": "array",
+       "items": {
+        "type": "number"
+       },
+       "minItems": 3,
+       "maxItems": 4
+      }
+     ]
+    },
+    "strokeWidth": {
+     "type": "number"
+    },
+    "tracking": {
+     "type": "number"
+    },
+    "leading": {
+     "type": "number"
+    },
+    "justification": {
+     "type": "string",
+     "enum": [
+      "left",
+      "center",
+      "right",
+      "justify"
+     ]
+    },
+    "caps": {
+     "type": "string",
+     "enum": [
+      "normal",
+      "all",
+      "small",
+      "all-small"
+     ]
+    },
+    "allCaps": {
+     "type": "boolean"
+    },
+    "fauxBold": {
+     "type": "boolean"
+    },
+    "fauxItalic": {
+     "type": "boolean"
+    },
+    "boxSize": {
+     "type": "array",
+     "items": {
+      "type": "number"
+     },
+     "minItems": 2,
+     "maxItems": 2
+    },
+    "centerAnchor": {
+     "type": "boolean"
+    },
+    "name": {
+     "type": "string"
+    },
+    "position": {
+     "type": "array",
+     "items": {
+      "type": "number"
+     },
+     "minItems": 1,
+     "maxItems": 3
+    },
+    "anchor": {
+     "type": "string",
+     "enum": [
+      "center",
+      "left",
+      "right",
+      "top",
+      "bottom",
+      "top-left",
+      "top-right",
+      "bottom-left",
+      "bottom-right",
+      "baseline-left",
+      "baseline-center",
+      "baseline-right",
+      "origin"
+     ]
+    },
+    "scale": {
+     "anyOf": [
+      {
+       "type": "number"
+      },
+      {
+       "type": "array",
+       "items": {
+        "type": "number"
+       },
+       "minItems": 1,
+       "maxItems": 3
+      }
+     ]
+    },
+    "rotation": {
+     "type": "number"
+    },
+    "opacity": {
+     "type": "number",
+     "minimum": 0,
+     "maximum": 100
+    },
+    "startTime": {
+     "type": "number"
+    },
+    "duration": {
+     "type": "number",
+     "exclusiveMinimum": 0
+    },
+    "parent": {
+     "type": [
+      "number",
+      "string"
+     ]
+    }
+   },
+   "required": [
+    "text"
+   ]
+  },
+  "annotations": {
+   "readOnlyHint": false,
+   "destructiveHint": false,
+   "idempotentHint": false,
+   "openWorldHint": false
+  },
+  "_meta": {
+   "ui": {
+    "resourceUri": "ui://after-effects/activity.html"
+   }
+  }
+ },
+ {
+  "name": "create_shape_layer",
+  "description": "Create a shape layer with one or many shapes (rectangle, ellipse, polygon, star, custom path), fill/stroke, rounded corners, Trim Paths and Repeater.",
+  "inputSchema": {
+   "type": "object",
+   "properties": {
+    "comp": {
+     "anyOf": [
+      {
+       "type": "string"
+      },
+      {
+       "type": "integer"
+      }
+     ]
+    },
+    "shapes": {
+     "type": "array",
+     "items": {
+      "type": "object",
+      "properties": {
+       "type": {
+        "type": "string",
+        "enum": [
+         "rectangle",
+         "ellipse",
+         "polygon",
+         "star",
+         "path"
+        ],
+        "default": "rectangle"
+       },
+       "name": {
+        "type": "string"
+       },
+       "size": {
+        "anyOf": [
+         {
+          "type": "number"
+         },
+         {
+          "type": "array",
+          "items": {
+           "type": "number"
+          },
+          "minItems": 2,
+          "maxItems": 2
+         }
+        ]
+       },
+       "roundness": {
+        "type": "number"
+       },
+       "points": {
+        "type": "integer"
+       },
+       "vertices": {
+        "type": "array",
+        "items": {
+         "type": "array",
+         "items": {
+          "type": "number"
+         },
+         "minItems": 2,
+         "maxItems": 2
+        }
+       },
+       "closed": {
+        "type": "boolean"
+       },
+       "fill": {
+        "anyOf": [
+         {
+          "anyOf": [
+           {
+            "type": "string"
+           },
+           {
+            "type": "array",
+            "items": {
+             "type": "number"
+            },
+            "minItems": 3,
+            "maxItems": 4
+           }
+          ]
+         },
+         {
+          "type": "boolean",
+          "const": false
+         }
+        ]
+       },
+       "stroke": {
+        "anyOf": [
+         {
+          "type": "string"
+         },
+         {
+          "type": "array",
+          "items": {
+           "type": "number"
+          },
+          "minItems": 3,
+          "maxItems": 4
+         }
+        ]
+       },
+       "strokeWidth": {
+        "type": "number"
+       },
+       "trimPaths": {
+        "type": "object",
+        "properties": {
+         "start": {
+          "type": "number"
+         },
+         "end": {
+          "type": "number"
+         },
+         "offset": {
+          "type": "number"
+         }
+        },
+        "additionalProperties": false
+       },
+       "offset": {
+        "type": "array",
+        "items": {
+         "type": "number"
+        }
+       }
+      },
+      "additionalProperties": false
+     }
+    },
+    "name": {
+     "type": "string"
+    },
+    "rotation": {
+     "type": "number"
+    },
+    "position": {
+     "type": "array",
+     "items": {
+      "type": "number"
+     },
+     "minItems": 1,
+     "maxItems": 3
+    },
+    "anchor": {
+     "type": "string",
+     "enum": [
+      "center",
+      "left",
+      "right",
+      "top",
+      "bottom",
+      "top-left",
+      "top-right",
+      "bottom-left",
+      "bottom-right",
+      "baseline-left",
+      "baseline-center",
+      "baseline-right",
+      "origin"
+     ]
+    },
+    "scale": {
+     "anyOf": [
+      {
+       "type": "number"
+      },
+      {
+       "type": "array",
+       "items": {
+        "type": "number"
+       },
+       "minItems": 1,
+       "maxItems": 3
+      }
+     ]
+    },
+    "opacity": {
+     "type": "number",
+     "minimum": 0,
+     "maximum": 100
+    },
+    "startTime": {
+     "type": "number"
+    },
+    "duration": {
+     "type": "number",
+     "exclusiveMinimum": 0
+    },
+    "parent": {
+     "type": [
+      "number",
+      "string"
+     ]
+    }
+   }
+  },
+  "annotations": {
+   "readOnlyHint": false,
+   "destructiveHint": false,
+   "idempotentHint": false,
+   "openWorldHint": false
+  },
+  "_meta": {
+   "ui": {
+    "resourceUri": "ui://after-effects/activity.html"
+   }
+  }
+ },
+ {
+  "name": "create_solid_layer",
+  "description": "Create a solid color layer, or an adjustment layer (adjustment: true).",
+  "inputSchema": {
+   "type": "object",
+   "properties": {
+    "comp": {
+     "anyOf": [
+      {
+       "type": "string"
+      },
+      {
+       "type": "integer"
+      }
+     ]
+    },
+    "color": {
+     "anyOf": [
+      {
+       "type": "string"
+      },
+      {
+       "type": "array",
+       "items": {
+        "type": "number"
+       },
+       "minItems": 3,
+       "maxItems": 4
+      }
+     ]
+    },
+    "width": {
+     "type": "integer"
+    },
+    "height": {
+     "type": "integer"
+    },
+    "adjustment": {
+     "type": "boolean"
+    },
+    "name": {
+     "type": "string"
+    },
+    "position": {
+     "type": "array",
+     "items": {
+      "type": "number"
+     },
+     "minItems": 1,
+     "maxItems": 3
+    },
+    "anchor": {
+     "type": "string",
+     "enum": [
+      "center",
+      "left",
+      "right",
+      "top",
+      "bottom",
+      "top-left",
+      "top-right",
+      "bottom-left",
+      "bottom-right",
+      "baseline-left",
+      "baseline-center",
+      "baseline-right",
+      "origin"
+     ]
+    },
+    "scale": {
+     "anyOf": [
+      {
+       "type": "number"
+      },
+      {
+       "type": "array",
+       "items": {
+        "type": "number"
+       },
+       "minItems": 1,
+       "maxItems": 3
+      }
+     ]
+    },
+    "rotation": {
+     "type": "number"
+    },
+    "opacity": {
+     "type": "number",
+     "minimum": 0,
+     "maximum": 100
+    },
+    "startTime": {
+     "type": "number"
+    },
+    "duration": {
+     "type": "number",
+     "exclusiveMinimum": 0
+    },
+    "parent": {
+     "type": [
+      "number",
+      "string"
+     ]
+    }
+   }
+  },
+  "annotations": {
+   "readOnlyHint": false,
+   "destructiveHint": false,
+   "idempotentHint": false,
+   "openWorldHint": false
+  },
+  "_meta": {
+   "ui": {
+    "resourceUri": "ui://after-effects/activity.html"
+   }
+  }
+ },
+ {
+  "name": "create_null_layer",
+  "description": "Create a null object, optionally parenting layers to it.",
+  "inputSchema": {
+   "type": "object",
+   "properties": {
+    "comp": {
+     "anyOf": [
+      {
+       "type": "string"
+      },
+      {
+       "type": "integer"
+      }
+     ]
+    },
+    "childLayers": {
+     "type": "array",
+     "items": {
+      "anyOf": [
+       {
+        "type": "integer",
+        "exclusiveMinimum": 0
+       },
+       {
+        "type": "string"
+       }
+      ]
+     }
+    },
+    "name": {
+     "type": "string"
+    },
+    "position": {
+     "type": "array",
+     "items": {
+      "type": "number"
+     },
+     "minItems": 1,
+     "maxItems": 3
+    },
+    "anchor": {
+     "type": "string",
+     "enum": [
+      "center",
+      "left",
+      "right",
+      "top",
+      "bottom",
+      "top-left",
+      "top-right",
+      "bottom-left",
+      "bottom-right",
+      "baseline-left",
+      "baseline-center",
+      "baseline-right",
+      "origin"
+     ]
+    },
+    "scale": {
+     "anyOf": [
+      {
+       "type": "number"
+      },
+      {
+       "type": "array",
+       "items": {
+        "type": "number"
+       },
+       "minItems": 1,
+       "maxItems": 3
+      }
+     ]
+    },
+    "rotation": {
+     "type": "number"
+    },
+    "opacity": {
+     "type": "number",
+     "minimum": 0,
+     "maximum": 100
+    },
+    "startTime": {
+     "type": "number"
+    },
+    "duration": {
+     "type": "number",
+     "exclusiveMinimum": 0
+    },
+    "parent": {
+     "type": [
+      "number",
+      "string"
+     ]
+    }
+   }
+  },
+  "annotations": {
+   "readOnlyHint": false,
+   "destructiveHint": false,
+   "idempotentHint": false,
+   "openWorldHint": false
+  },
+  "_meta": {
+   "ui": {
+    "resourceUri": "ui://after-effects/activity.html"
+   }
+  }
+ },
+ {
+  "name": "create_camera",
+  "description": "Create a 3D camera (two-node). Set zoom or focal length (mm), depth of field, focus distance, aperture.",
+  "inputSchema": {
+   "type": "object",
+   "properties": {
+    "comp": {
+     "anyOf": [
+      {
+       "type": "string"
+      },
+      {
+       "type": "integer"
+      }
+     ]
+    },
+    "name": {
+     "type": "string"
+    },
+    "position": {
+     "type": "array",
+     "items": {
+      "type": "number"
+     },
+     "minItems": 3,
+     "maxItems": 3
+    },
+    "pointOfInterest": {
+     "type": "array",
+     "items": {
+      "type": "number"
+     },
+     "minItems": 3,
+     "maxItems": 3
+    },
+    "zoom": {
+     "type": "number"
+    },
+    "focalLength": {
+     "type": "number"
+    },
+    "depthOfField": {
+     "type": "boolean"
+    },
+    "focusDistance": {
+     "type": "number"
+    },
+    "aperture": {
+     "type": "number"
+    },
+    "blurLevel": {
+     "type": "number"
+    }
+   }
+  },
+  "annotations": {
+   "readOnlyHint": false,
+   "destructiveHint": false,
+   "idempotentHint": false,
+   "openWorldHint": false
+  },
+  "_meta": {
+   "ui": {
+    "resourceUri": "ui://after-effects/activity.html"
+   }
+  }
+ },
+ {
+  "name": "add_item_to_comp",
+  "description": "Add a project item (footage, image, audio, or another comp) as a layer. fitToComp scales it to fit or fill the frame.",
+  "inputSchema": {
+   "type": "object",
+   "properties": {
+    "comp": {
+     "anyOf": [
+      {
+       "type": "string"
+      },
+      {
+       "type": "integer"
+      }
+     ]
+    },
+    "item": {
+     "type": [
+      "string",
+      "number"
+     ]
+    },
+    "fitToComp": {
+     "type": "string",
+     "enum": [
+      "fit",
+      "fill"
+     ]
+    },
+    "name": {
+     "type": "string"
+    },
+    "position": {
+     "type": "array",
+     "items": {
+      "type": "number"
+     },
+     "minItems": 1,
+     "maxItems": 3
+    },
+    "anchor": {
+     "type": "string",
+     "enum": [
+      "center",
+      "left",
+      "right",
+      "top",
+      "bottom",
+      "top-left",
+      "top-right",
+      "bottom-left",
+      "bottom-right",
+      "baseline-left",
+      "baseline-center",
+      "baseline-right",
+      "origin"
+     ]
+    },
+    "scale": {
+     "anyOf": [
+      {
+       "type": "number"
+      },
+      {
+       "type": "array",
+       "items": {
+        "type": "number"
+       },
+       "minItems": 1,
+       "maxItems": 3
+      }
+     ]
+    },
+    "rotation": {
+     "type": "number"
+    },
+    "opacity": {
+     "type": "number",
+     "minimum": 0,
+     "maximum": 100
+    },
+    "startTime": {
+     "type": "number"
+    },
+    "duration": {
+     "type": "number",
+     "exclusiveMinimum": 0
+    },
+    "parent": {
+     "type": [
+      "number",
+      "string"
+     ]
+    }
+   },
+   "required": [
+    "item"
+   ]
+  },
+  "annotations": {
+   "readOnlyHint": false,
+   "destructiveHint": false,
+   "idempotentHint": false,
+   "openWorldHint": false
+  },
+  "_meta": {
+   "ui": {
+    "resourceUri": "ui://after-effects/activity.html"
+   }
+  }
+ },
+ {
+  "name": "list_layers",
+  "description": "List layers of a comp with type, timing, transform, parent, matte and effects (text cut to 200 chars). Paginated: limit (default 200, max 1000) and offset; the response has total and truncated.",
+  "inputSchema": {
+   "type": "object",
+   "properties": {
+    "comp": {
+     "anyOf": [
+      {
+       "type": "string"
+      },
+      {
+       "type": "integer"
+      }
+     ]
+    },
+    "compact": {
+     "type": "boolean"
+    },
+    "fields": {
+     "type": "array",
+     "items": {
+      "type": "string"
+     }
+    },
+    "limit": {
+     "type": "integer",
+     "minimum": 1,
+     "maximum": 1000
+    },
+    "offset": {
+     "type": "integer",
+     "minimum": 0
+    },
+    "type": {
+     "type": "string",
+     "enum": [
+      "text",
+      "shape",
+      "solid",
+      "adjustment",
+      "null",
+      "camera",
+      "light",
+      "precomp",
+      "image",
+      "video",
+      "audio"
+     ]
+    },
+    "query": {
+     "type": "string"
+    }
+   }
+  },
+  "annotations": {
+   "readOnlyHint": true,
+   "destructiveHint": false,
+   "idempotentHint": true,
+   "openWorldHint": false
+  },
+  "_meta": {
+   "ui": {
+    "resourceUri": "ui://after-effects/activity.html"
+   }
+  }
+ },
+ {
+  "name": "get_layer_details",
+  "description": "Deep inspection of a layer: modified/animated property tree with keyframes and expressions, markers, bounding box.",
+  "inputSchema": {
+   "type": "object",
+   "properties": {
+    "comp": {
+     "anyOf": [
+      {
+       "type": "string"
+      },
+      {
+       "type": "integer"
+      }
+     ]
+    },
+    "layer": {
+     "anyOf": [
+      {
+       "type": "integer",
+       "exclusiveMinimum": 0
+      },
+      {
+       "type": "string"
+      }
+     ]
+    },
+    "depth": {
+     "type": "integer",
+     "minimum": 1,
+     "maximum": 8
+    },
+    "includeKeyframes": {
+     "type": "boolean"
+    },
+    "onlyAnimated": {
+     "type": "boolean"
+    }
+   },
+   "required": [
+    "layer"
+   ]
+  },
+  "annotations": {
+   "readOnlyHint": true,
+   "destructiveHint": false,
+   "idempotentHint": true,
+   "openWorldHint": false
+  },
+  "_meta": {
+   "ui": {
+    "resourceUri": "ui://after-effects/activity.html"
+   }
+  }
+ },
+ {
+  "name": "set_layer_properties",
+  "description": "Change transform, timing, switches (enabled, solo, shy, lock, 3D, motion blur, adjustment, collapse), blend mode, quality, parent, label or name on one or many layers.",
+  "inputSchema": {
+   "type": "object",
+   "properties": {
+    "comp": {
+     "anyOf": [
+      {
+       "type": "string"
+      },
+      {
+       "type": "integer"
+      }
+     ]
+    },
+    "layer": {
+     "anyOf": [
+      {
+       "type": "integer",
+       "exclusiveMinimum": 0
+      },
+      {
+       "type": "string"
+      }
+     ]
+    },
+    "layers": {
+     "type": "array",
+     "items": {
+      "anyOf": [
+       {
+        "type": "integer",
+        "exclusiveMinimum": 0
+       },
+       {
+        "type": "string"
+       }
+      ]
+     }
+    },
+    "newName": {
+     "type": "string"
+    },
+    "enabled": {
+     "type": "boolean"
+    },
+    "locked": {
+     "type": "boolean"
+    },
+    "shy": {
+     "type": "boolean"
+    },
+    "solo": {
+     "type": "boolean"
+    },
+    "motionBlur": {
+     "type": "boolean"
+    },
+    "adjustmentLayer": {
+     "type": "boolean"
+    },
+    "collapseTransformation": {
+     "type": "boolean"
+    },
+    "quality": {
+     "type": "string",
+     "enum": [
+      "best",
+      "draft",
+      "wireframe"
+     ]
+    },
+    "audioEnabled": {
+     "type": "boolean"
+    },
+    "timeRemapEnabled": {
+     "type": "boolean"
+    },
+    "stretch": {
+     "type": "number"
+    },
+    "autoOrient": {
+     "type": "boolean"
+    },
+    "centerAnchor": {
+     "type": "boolean"
+    },
+    "name": {
+     "type": "string"
+    },
+    "position": {
+     "type": "array",
+     "items": {
+      "type": "number"
+     },
+     "minItems": 1,
+     "maxItems": 3
+    },
+    "anchor": {
+     "type": "string",
+     "enum": [
+      "center",
+      "left",
+      "right",
+      "top",
+      "bottom",
+      "top-left",
+      "top-right",
+      "bottom-left",
+      "bottom-right",
+      "baseline-left",
+      "baseline-center",
+      "baseline-right",
+      "origin"
+     ]
+    },
+    "scale": {
+     "anyOf": [
+      {
+       "type": "number"
+      },
+      {
+       "type": "array",
+       "items": {
+        "type": "number"
+       },
+       "minItems": 1,
+       "maxItems": 3
+      }
+     ]
+    },
+    "rotation": {
+     "type": "number"
+    },
+    "opacity": {
+     "type": "number",
+     "minimum": 0,
+     "maximum": 100
+    },
+    "startTime": {
+     "type": "number"
+    },
+    "duration": {
+     "type": "number",
+     "exclusiveMinimum": 0
+    },
+    "parent": {
+     "type": [
+      "number",
+      "string"
+     ]
+    }
+   }
+  },
+  "annotations": {
+   "readOnlyHint": false,
+   "destructiveHint": false,
+   "idempotentHint": false,
+   "openWorldHint": false
+  },
+  "_meta": {
+   "ui": {
+    "resourceUri": "ui://after-effects/activity.html"
+   }
+  }
+ },
+ {
+  "name": "set_text",
+  "description": "Change the text and/or style of a text layer (font, size, color, stroke, tracking, leading, justification).",
+  "inputSchema": {
+   "type": "object",
+   "properties": {
+    "comp": {
+     "anyOf": [
+      {
+       "type": "string"
+      },
+      {
+       "type": "integer"
+      }
+     ]
+    },
+    "layer": {
+     "anyOf": [
+      {
+       "type": "integer",
+       "exclusiveMinimum": 0
+      },
+      {
+       "type": "string"
+      }
+     ]
+    },
+    "text": {
+     "type": "string"
+    },
+    "allowLargeText": {
+     "type": "boolean"
+    },
+    "font": {
+     "type": "string"
+    },
+    "fontSize": {
+     "type": "number"
+    },
+    "fillColor": {
+     "anyOf": [
+      {
+       "type": "string"
+      },
+      {
+       "type": "array",
+       "items": {
+        "type": "number"
+       },
+       "minItems": 3,
+       "maxItems": 4
+      }
+     ]
+    },
+    "strokeColor": {
+     "anyOf": [
+      {
+       "type": "string"
+      },
+      {
+       "type": "array",
+       "items": {
+        "type": "number"
+       },
+       "minItems": 3,
+       "maxItems": 4
+      }
+     ]
+    },
+    "strokeWidth": {
+     "type": "number"
+    },
+    "tracking": {
+     "type": "number"
+    },
+    "leading": {
+     "type": "number"
+    },
+    "justification": {
+     "type": "string",
+     "enum": [
+      "left",
+      "center",
+      "right",
+      "justify"
+     ]
+    },
+    "caps": {
+     "type": "string",
+     "enum": [
+      "normal",
+      "all",
+      "small",
+      "all-small"
+     ]
+    },
+    "allCaps": {
+     "type": "boolean"
+    },
+    "fauxBold": {
+     "type": "boolean"
+    },
+    "fauxItalic": {
+     "type": "boolean"
+    },
+    "baselineShift": {
+     "type": "number"
+    },
+    "time": {
+     "type": "number"
+    }
+   },
+   "required": [
+    "layer"
+   ]
+  },
+  "annotations": {
+   "readOnlyHint": false,
+   "destructiveHint": false,
+   "idempotentHint": false,
+   "openWorldHint": false
+  },
+  "_meta": {
+   "ui": {
+    "resourceUri": "ui://after-effects/activity.html"
+   }
+  }
+ },
+ {
+  "name": "get_property",
+  "description": "Read any property by path ('Position', 'Effects/Gaussian Blur/Blurriness', 'Contents/Group 1/...'): value, keyframes, expression. Details: ae://docs/get_property",
+  "inputSchema": {
+   "type": "object",
+   "properties": {
+    "comp": {
+     "anyOf": [
+      {
+       "type": "string"
+      },
+      {
+       "type": "integer"
+      }
+     ]
+    },
+    "layer": {
+     "anyOf": [
+      {
+       "type": "integer",
+       "exclusiveMinimum": 0
+      },
+      {
+       "type": "string"
+      }
+     ]
+    },
+    "property": {
+     "type": "string"
+    },
+    "time": {
+     "type": "number"
+    }
+   },
+   "required": [
+    "layer",
+    "property"
+   ]
+  },
+  "annotations": {
+   "readOnlyHint": true,
+   "destructiveHint": false,
+   "idempotentHint": true,
+   "openWorldHint": false
+  },
+  "_meta": {
+   "ui": {
+    "resourceUri": "ui://after-effects/activity.html"
+   }
+  }
+ },
+ {
+  "name": "set_property",
+  "description": "Set any property's value by path. If the property is animated, sets a keyframe at 'time' (or the playhead).",
+  "inputSchema": {
+   "type": "object",
+   "properties": {
+    "comp": {
+     "anyOf": [
+      {
+       "type": "string"
+      },
+      {
+       "type": "integer"
+      }
+     ]
+    },
+    "layer": {
+     "anyOf": [
+      {
+       "type": "integer",
+       "exclusiveMinimum": 0
+      },
+      {
+       "type": "string"
+      }
+     ]
+    },
+    "property": {
+     "type": "string"
+    },
+    "value": {},
+    "time": {
+     "type": "number"
+    }
+   },
+   "required": [
+    "layer",
+    "property"
+   ]
+  },
+  "annotations": {
+   "readOnlyHint": false,
+   "destructiveHint": false,
+   "idempotentHint": false,
+   "openWorldHint": false
+  },
+  "_meta": {
+   "ui": {
+    "resourceUri": "ui://after-effects/activity.html"
+   }
+  }
+ },
+ {
+  "name": "set_keyframes",
+  "description": "Add many keyframes to any property in one call, with easing presets or custom ease per key. Use replace:true to clear existing keys first.",
+  "inputSchema": {
+   "type": "object",
+   "properties": {
+    "comp": {
+     "anyOf": [
+      {
+       "type": "string"
+      },
+      {
+       "type": "integer"
+      }
+     ]
+    },
+    "layer": {
+     "anyOf": [
+      {
+       "type": "integer",
+       "exclusiveMinimum": 0
+      },
+      {
+       "type": "string"
+      }
+     ]
+    },
+    "property": {
+     "type": "string"
+    },
+    "keyframes": {
+     "type": "array",
+     "items": {
+      "type": "object",
+      "properties": {
+       "time": {
+        "type": "number"
+       },
+       "value": {},
+       "easing": {
+        "type": "string",
+        "enum": [
+         "linear",
+         "hold",
+         "easy-ease",
+         "ease-in",
+         "ease-out",
+         "ease-in-out",
+         "smooth",
+         "strong-ease",
+         "expo",
+         "snap",
+         "anticipate"
+        ]
+       },
+       "easeIn": {
+        "type": "object",
+        "properties": {
+         "speed": {
+          "type": "number"
+         },
+         "influence": {
+          "type": "number",
+          "minimum": 0.1,
+          "maximum": 100
+         }
+        },
+        "additionalProperties": false
+       },
+       "easeOut": {
+        "type": "object",
+        "properties": {
+         "speed": {
+          "type": "number"
+         },
+         "influence": {
+          "type": "number",
+          "minimum": 0.1,
+          "maximum": 100
+         }
+        },
+        "additionalProperties": false
+       },
+       "roving": {
+        "type": "boolean"
+       }
+      },
+      "required": [
+       "time"
+      ],
+      "additionalProperties": false
+     },
+     "minItems": 1
+    },
+    "easing": {
+     "type": "string",
+     "enum": [
+      "linear",
+      "hold",
+      "easy-ease",
+      "ease-in",
+      "ease-out",
+      "ease-in-out",
+      "smooth",
+      "strong-ease",
+      "expo",
+      "snap",
+      "anticipate"
+     ]
+    },
+    "replace": {
+     "type": "boolean"
+    },
+    "separateDimensions": {
+     "type": "boolean"
+    }
+   },
+   "required": [
+    "layer",
+    "property",
+    "keyframes"
+   ]
+  },
+  "annotations": {
+   "readOnlyHint": false,
+   "destructiveHint": false,
+   "idempotentHint": false,
+   "openWorldHint": false
+  },
+  "_meta": {
+   "ui": {
+    "resourceUri": "ui://after-effects/activity.html"
+   }
+  }
+ },
+ {
+  "name": "set_expression",
+  "description": "Set or clear (empty string) an expression on any property. Returns the expression error right away if AE reports one.",
+  "inputSchema": {
+   "type": "object",
+   "properties": {
+    "comp": {
+     "anyOf": [
+      {
+       "type": "string"
+      },
+      {
+       "type": "integer"
+      }
+     ]
+    },
+    "layer": {
+     "anyOf": [
+      {
+       "type": "integer",
+       "exclusiveMinimum": 0
+      },
+      {
+       "type": "string"
+      }
+     ]
+    },
+    "property": {
+     "type": "string"
+    },
+    "expression": {
+     "type": "string"
+    },
+    "enabled": {
+     "type": "boolean"
+    },
+    "failOnError": {
+     "type": "boolean"
+    }
+   },
+   "required": [
+    "layer",
+    "property",
+    "expression"
+   ]
+  },
+  "annotations": {
+   "readOnlyHint": false,
+   "destructiveHint": false,
+   "idempotentHint": false,
+   "openWorldHint": false
+  },
+  "_meta": {
+   "ui": {
+    "resourceUri": "ui://after-effects/activity.html"
+   }
+  }
+ },
+ {
+  "name": "animate_layer",
+  "description": "One-call animation preset: fade-in/out, slide-in/out, pop, scale-in, blur-in, typewriter, text-fade-up, wiggle, pulse, float, bounce, loop... e.g. {layer:'Title', preset:'pop', startTime:0.5}. Details: ae://docs/animate_layer",
+  "inputSchema": {
+   "type": "object",
+   "properties": {
+    "comp": {
+     "anyOf": [
+      {
+       "type": "string"
+      },
+      {
+       "type": "integer"
+      }
+     ]
+    },
+    "layer": {
+     "anyOf": [
+      {
+       "type": "integer",
+       "exclusiveMinimum": 0
+      },
+      {
+       "type": "string"
+      }
+     ]
+    },
+    "preset": {
+     "type": "string",
+     "enum": [
+      "fade-in",
+      "fade-out",
+      "slide-in",
+      "slide-out",
+      "slide-up-fade",
+      "scale-in",
+      "scale-out",
+      "pop",
+      "rotate-in",
+      "spin",
+      "blur-in",
+      "typewriter",
+      "text-fade-up",
+      "wiggle",
+      "wiggle-rotation",
+      "pulse",
+      "float",
+      "rotate-continuous",
+      "blink",
+      "bounce",
+      "loop"
+     ]
+    },
+    "startTime": {
+     "type": "number"
+    },
+    "duration": {
+     "type": "number",
+     "exclusiveMinimum": 0
+    },
+    "easing": {
+     "type": "string",
+     "enum": [
+      "linear",
+      "hold",
+      "easy-ease",
+      "ease-in",
+      "ease-out",
+      "ease-in-out",
+      "smooth",
+      "strong-ease",
+      "expo",
+      "snap",
+      "anticipate"
+     ]
+    },
+    "direction": {
+     "type": "string",
+     "enum": [
+      "left",
+      "right",
+      "top",
+      "bottom"
+     ]
+    },
+    "amount": {
+     "type": "number"
+    },
+    "frequency": {
+     "type": "number"
+    },
+    "decay": {
+     "type": "number"
+    },
+    "property": {
+     "type": "string"
+    },
+    "loopType": {
+     "type": "string",
+     "enum": [
+      "cycle",
+      "pingpong",
+      "offset",
+      "continue"
+     ]
+    },
+    "targetValue": {
+     "type": "number"
+    }
+   },
+   "required": [
+    "layer",
+    "preset"
+   ]
+  },
+  "annotations": {
+   "readOnlyHint": false,
+   "destructiveHint": false,
+   "idempotentHint": false,
+   "openWorldHint": false
+  },
+  "_meta": {
+   "ui": {
+    "resourceUri": "ui://after-effects/activity.html"
+   }
+  }
+ },
+ {
+  "name": "apply_effect",
+  "description": "Apply any effect by display name or match name to one or many layers and set parameters by name/match name/index. Param value can be {keyframes:[...]} or {expression:'...'}. Returns all parameters with their values.",
+  "inputSchema": {
+   "type": "object",
+   "properties": {
+    "comp": {
+     "anyOf": [
+      {
+       "type": "string"
+      },
+      {
+       "type": "integer"
+      }
+     ]
+    },
+    "layer": {
+     "anyOf": [
+      {
+       "type": "integer",
+       "exclusiveMinimum": 0
+      },
+      {
+       "type": "string"
+      }
+     ]
+    },
+    "layers": {
+     "type": "array",
+     "items": {
+      "anyOf": [
+       {
+        "type": "integer",
+        "exclusiveMinimum": 0
+       },
+       {
+        "type": "string"
+       }
+      ]
+     }
+    },
+    "effect": {
+     "type": "string"
+    },
+    "name": {
+     "type": "string"
+    },
+    "params": {
+     "type": "object",
+     "additionalProperties": {}
+    },
+    "returnParams": {
+     "type": "boolean"
+    }
+   },
+   "required": [
+    "effect"
+   ]
+  },
+  "annotations": {
+   "readOnlyHint": false,
+   "destructiveHint": false,
+   "idempotentHint": false,
+   "openWorldHint": false
+  },
+  "_meta": {
+   "ui": {
+    "resourceUri": "ui://after-effects/activity.html"
+   }
+  }
+ },
+ {
+  "name": "apply_effect_template",
+  "description": "Apply a ready-made look (glow, neon, drop-shadow, cinematic-look, film-grain, vignette...) to layers. Details: ae://docs/apply_effect_template",
+  "inputSchema": {
+   "type": "object",
+   "properties": {
+    "comp": {
+     "anyOf": [
+      {
+       "type": "string"
+      },
+      {
+       "type": "integer"
+      }
+     ]
+    },
+    "layer": {
+     "anyOf": [
+      {
+       "type": "integer",
+       "exclusiveMinimum": 0
+      },
+      {
+       "type": "string"
+      }
+     ]
+    },
+    "layers": {
+     "type": "array",
+     "items": {
+      "anyOf": [
+       {
+        "type": "integer",
+        "exclusiveMinimum": 0
+       },
+       {
+        "type": "string"
+       }
+      ]
+     }
+    },
+    "template": {
+     "type": "string",
+     "enum": [
+      "gaussian-blur",
+      "directional-blur",
+      "glow",
+      "soft-glow",
+      "neon",
+      "drop-shadow",
+      "long-shadow",
+      "brightness-contrast",
+      "vibrance",
+      "black-and-white",
+      "sepia",
+      "vignette",
+      "cinematic-look",
+      "text-pop",
+      "film-grain",
+      "chromatic-aberration",
+      "sharpen",
+      "posterize-time"
+     ]
+    },
+    "params": {
+     "type": "object",
+     "additionalProperties": {}
+    }
+   },
+   "required": [
+    "template"
+   ]
+  },
+  "annotations": {
+   "readOnlyHint": false,
+   "destructiveHint": false,
+   "idempotentHint": false,
+   "openWorldHint": false
+  },
+  "_meta": {
+   "ui": {
+    "resourceUri": "ui://after-effects/activity.html"
+   }
+  }
+ },
+ {
+  "name": "markers",
+  "description": "Comp or layer markers in one tool: action add {time, comment, duration...} | list {includeLayers} | remove {time?, comment?}. With layer: that layer's markers.",
+  "inputSchema": {
+   "type": "object",
+   "properties": {
+    "action": {
+     "type": "string",
+     "enum": [
+      "add",
+      "list",
+      "remove"
+     ]
+    },
+    "comp": {
+     "anyOf": [
+      {
+       "type": "string"
+      },
+      {
+       "type": "integer"
+      }
+     ]
+    },
+    "layer": {
+     "anyOf": [
+      {
+       "type": "integer",
+       "exclusiveMinimum": 0
+      },
+      {
+       "type": "string"
+      }
+     ]
+    },
+    "time": {
+     "type": "number"
+    },
+    "comment": {
+     "type": "string"
+    },
+    "duration": {
+     "type": "number"
+    },
+    "chapter": {
+     "type": "string"
+    },
+    "url": {
+     "type": "string"
+    },
+    "includeLayers": {
+     "type": "boolean"
+    }
+   },
+   "required": [
+    "action"
+   ]
+  },
+  "annotations": {
+   "readOnlyHint": false,
+   "destructiveHint": false,
+   "idempotentHint": false,
+   "openWorldHint": false
+  },
+  "_meta": {
+   "ui": {
+    "resourceUri": "ui://after-effects/activity.html"
+   }
+  }
+ },
+ {
+  "name": "preview_frame",
+  "description": "Render one frame of a composition and return it as an image, so you can SEE the result and check your work. maxSize downscales (default 960px). JPEG by default (3-5x smaller than PNG).",
+  "inputSchema": {
+   "type": "object",
+   "properties": {
+    "comp": {
+     "anyOf": [
+      {
+       "type": "string"
+      },
+      {
+       "type": "integer"
+      }
+     ]
+    },
+    "overwrite": {
+     "type": "boolean"
+    },
+    "time": {
+     "type": "number"
+    },
+    "maxSize": {
+     "type": "integer",
+     "minimum": 64,
+     "maximum": 4096
+    },
+    "background": {
+     "type": "string",
+     "enum": [
+      "comp",
+      "transparent",
+      "checker"
+     ]
+    },
+    "format": {
+     "type": "string",
+     "enum": [
+      "jpeg",
+      "png"
+     ]
+    },
+    "quality": {
+     "type": "integer",
+     "minimum": 30,
+     "maximum": 100
+    },
+    "savePath": {
+     "type": "string"
+    }
+   }
+  },
+  "annotations": {
+   "readOnlyHint": true,
+   "destructiveHint": false,
+   "idempotentHint": true,
+   "openWorldHint": false
+  },
+  "_meta": {
+   "ui": {
+    "resourceUri": "ui://after-effects/activity.html"
+   }
+  }
+ },
+ {
+  "name": "preview_contact_sheet",
+  "description": "Render N frames (or given times) as ONE labelled grid image to check an animation over time. Details: ae://docs/preview_contact_sheet",
+  "inputSchema": {
+   "type": "object",
+   "properties": {
+    "comp": {
+     "anyOf": [
+      {
+       "type": "string"
+      },
+      {
+       "type": "integer"
+      }
+     ]
+    },
+    "frames": {
+     "type": "integer",
+     "minimum": 2,
+     "maximum": 12
+    },
+    "times": {
+     "type": "array",
+     "items": {
+      "type": "number"
+     },
+     "maxItems": 12
+    },
+    "maxSize": {
+     "type": "integer",
+     "minimum": 64,
+     "maximum": 2048
+    },
+    "sheetMaxSize": {
+     "type": "integer",
+     "minimum": 256,
+     "maximum": 8192
+    },
+    "background": {
+     "type": "string",
+     "enum": [
+      "comp",
+      "transparent",
+      "checker"
+     ]
+    },
+    "layout": {
+     "type": "string",
+     "enum": [
+      "grid",
+      "separate"
+     ]
+    },
+    "format": {
+     "type": "string",
+     "enum": [
+      "jpeg",
+      "png"
+     ]
+    },
+    "quality": {
+     "type": "integer",
+     "minimum": 30,
+     "maximum": 100
+    }
+   }
+  },
+  "annotations": {
+   "readOnlyHint": true,
+   "destructiveHint": false,
+   "idempotentHint": true,
+   "openWorldHint": false
+  },
+  "_meta": {
+   "ui": {
+    "resourceUri": "ui://after-effects/activity.html"
+   }
+  }
+ },
+ {
+  "name": "render_in_background",
+  "description": "Render a comp with aerender in a separate process (project is saved first). wait:true waits with per-frame progress. Details: ae://docs/render_in_background",
+  "inputSchema": {
+   "type": "object",
+   "properties": {
+    "overwrite": {
+     "type": "boolean"
+    },
+    "wait": {
+     "type": "boolean"
+    },
+    "waitSeconds": {
+     "type": "integer",
+     "minimum": 10,
+     "maximum": 86400
+    },
+    "comp": {
+     "type": "string"
+    },
+    "outputPath": {
+     "type": "string"
+    },
+    "outputModuleTemplate": {
+     "type": "string"
+    },
+    "renderSettingsTemplate": {
+     "type": "string"
+    },
+    "startFrame": {
+     "type": "integer"
+    },
+    "endFrame": {
+     "type": "integer"
+    }
+   },
+   "required": [
+    "comp",
+    "outputPath"
+   ]
+  },
+  "annotations": {
+   "readOnlyHint": false,
+   "destructiveHint": false,
+   "idempotentHint": false,
+   "openWorldHint": false
+  },
+  "_meta": {
+   "ui": {
+    "resourceUri": "ui://after-effects/activity.html"
+   }
+  }
+ },
+ {
+  "name": "undo",
+  "description": "Undo or redo the last After Effects steps. Every MCP call is a single undo step; right after end_undo_group, undo without steps reverts the whole group.",
+  "inputSchema": {
+   "type": "object",
+   "properties": {
+    "action": {
+     "type": "string",
+     "enum": [
+      "undo",
+      "redo"
+     ]
+    },
+    "steps": {
+     "type": "integer",
+     "minimum": 1,
+     "maximum": 50
+    }
+   }
+  },
+  "annotations": {
+   "readOnlyHint": false,
+   "destructiveHint": false,
+   "idempotentHint": false,
+   "openWorldHint": false
+  },
+  "_meta": {
+   "ui": {
+    "resourceUri": "ui://after-effects/activity.html"
+   }
+  }
+ },
+ {
+  "name": "batch",
+  "description": "Run many AE tools in ONE call and ONE undo step, e.g. [{tool:'create_text_layer',args:{...}},{tool:'animate_layer',args:{...}}]. Fails with isError + partial results; atomic:true reverts all. Details: ae://docs/batch",
+  "inputSchema": {
+   "type": "object",
+   "properties": {
+    "operations": {
+     "type": "array",
+     "items": {
+      "type": "object",
+      "properties": {
+       "tool": {
+        "type": "string"
+       },
+       "args": {
+        "type": "object",
+        "additionalProperties": {}
+       }
+      },
+      "required": [
+       "tool"
+      ],
+      "additionalProperties": false
+     },
+     "minItems": 1,
+     "maxItems": 200
+    },
+    "continueOnError": {
+     "type": "boolean"
+    },
+    "atomic": {
+     "type": "boolean"
+    },
+    "verbose": {
+     "type": "boolean"
+    },
+    "parkViewer": {
+     "type": "boolean"
+    }
+   },
+   "required": [
+    "operations"
+   ]
+  },
+  "annotations": {
+   "readOnlyHint": false,
+   "destructiveHint": false,
+   "idempotentHint": false,
+   "openWorldHint": false
+  },
+  "_meta": {
+   "ui": {
+    "resourceUri": "ui://after-effects/activity.html"
+   }
+  }
+ }
+]
