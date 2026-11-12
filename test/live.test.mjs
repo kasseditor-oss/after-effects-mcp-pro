@@ -157,6 +157,9 @@ await call("modify_effect", { comp: C, layer: "Title", effect: "Gaussian Blur", 
 await call("get_property", { comp: C, layer: "Title", property: "Effects/Gaussian Blur/Blurriness" }, { check: (d) => (d.numKeys === 2 ? true : "numKeys " + d.numKeys) });
 await call("get_property", { comp: C, layer: "Shapes", property: "Contents/1" }, { check: (d) => (d.children?.length ? true : "children") });
 await call("set_property", { comp: C, layer: "Hex", property: "Contents/1/Contents/Fill 1/Color", value: "#00ff99" });
+await call("set_keyframes", { comp: C, layer: "Hex", property: "Rotation", keyframes: [{ time: 0, value: -180 }, { time: 3, value: 0 }] });
+await call("set_property", { comp: C, layer: "Hex", property: "Rotation", value: 15, time: 2 }, { check: (d) => (d.valueSet === 15 && d.time === 2 && typeof d.valueAtPlayhead === "number" ? true : JSON.stringify(d)) });
+await call("remove_keyframes", { comp: C, layer: "Hex", property: "Rotation" });
 await call("get_property", { comp: C, layer: "Nope", property: "Position" }, { expectError: true });
 
 await call("add_mask", { comp: C, layer: "BG", shape: "ellipse", rect: [160, 90, 1600, 900], feather: 300, mode: "add" });

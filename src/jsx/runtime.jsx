@@ -1589,7 +1589,16 @@
             if (e.aeHint) throw e;
             fail("Cannot set '" + propPath(p) + "': " + String(e).replace(/^Error: /, ""), "Expected " + expectedType(p) + ". Current value: " + A.JSON.stringify(serValue(p.value)));
         }
-        return propInfo(p, false);
+        var info = propInfo(p, false);
+        // with a time (or keyframes) the playhead value can differ from what was written
+        var at = has(a, "time") ? a.time : (p.numKeys > 0 ? t.comp.time : null);
+        if (at !== null) {
+            info.time = round(at);
+            info.valueSet = serValue(p.valueAtTime(at, true));
+            info.valueAtPlayhead = serValue(p.valueAtTime(t.comp.time, false));
+            delete info.value;
+        }
+        return info;
     };
 
     H.set_keyframes = function (a) {
