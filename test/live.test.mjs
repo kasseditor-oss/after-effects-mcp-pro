@@ -531,6 +531,22 @@ await call("preview_contact_sheet", { comp: C, frames: 4, maxSize: 400 }, {
   const styled = await lumaAt(ls.data?.id, 0, "style-after");
   results.push({ tool: "layer styles change the frame", pass: styled > plain + 1, ms: 0, note: `luma ${plain} -> ${styled}` });
 }
+// modify_mask: mode + feather on an existing mask, then animate its path between two shapes
+{
+  const mc = await call("create_composition", { name: COMP + " masks", width: 640, height: 360, duration: 2, backgroundColor: "#000000", open: false });
+  created.push(mc.data?.id);
+  await call("create_solid_layer", { comp: mc.data?.id, name: "M", color: "#ffffff" });
+  await call("add_mask", { comp: mc.data?.id, layer: "M", rect: [40, 40, 120, 120], name: "Hole" });
+  await call("modify_mask", { comp: mc.data?.id, layer: "M", mask: "Hole", mode: "subtract", feather: 10 }, { check: (d) => (d.mode === "subtract" && d.feather[0] === 10 ? true : JSON.stringify(d)) });
+  await call("modify_mask", { comp: mc.data?.id, layer: "M", mask: 1, mode: "add", keyframes: { property: "path", keys: [{ time: 0, value: { rect: [0, 0, 160, 360] } }, { time: 1, value: { shape: "ellipse", rect: [480, 0, 160, 360] } }] } }, { check: (d) => (d.pathKeys === 2 ? true : JSON.stringify(d)) });
+  await lumaAt(mc.data?.id, 0, "mask-t0");
+  await lumaAt(mc.data?.id, 1, "mask-t1");
+  const left0 = pixelAt(path.join(out, "mask-t0.png"), 80, 180)[0];
+  const left1 = pixelAt(path.join(out, "mask-t1.png"), 80, 180)[0];
+  const right1 = pixelAt(path.join(out, "mask-t1.png"), 560, 180)[0];
+  results.push({ tool: "modify_mask animates the path", pass: left0 > 200 && left1 < 30 && right1 > 200, ms: 0, note: `left t0 ${left0}, left t1 ${left1}, right t1 ${right1}` });
+  await call("modify_mask", { comp: mc.data?.id, layer: "M", mask: "Nope" }, { expectError: true });
+}
 // text-fade-up must REVEAL the text: invisible before, fully visible after (pixel check)
 {
   const fc = await call("create_composition", { name: COMP + " fade", width: 640, height: 360, duration: 3, backgroundColor: "#000000", open: false });

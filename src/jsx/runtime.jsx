@@ -2261,32 +2261,95 @@
     };
 
     // ---- Masks
-    H.add_mask = function (a) {
-        var t = target(a);
-        var l = t.layer;
-        var masks = l.property("ADBE Mask Parade");
-        var m = masks.addProperty("ADBE Mask Atom");
-        var shape;
-        var type = lower(def(a.shape, "rectangle"));
+    // {shape, rect} or {vertices, inTangents, outTangents, closed} -> shape description
+    function maskShape(a, l, comp) {
+        var type = a.vertices ? "path" : lower(def(a.shape, "rectangle"));
+        if (type === "path") {
+            if (!a.vertices) fail("shape 'path' needs vertices");
+            return { vertices: a.vertices, inTangents: a.inTangents, outTangents: a.outTangents, closed: def(a.closed, true) };
+        }
         var r;
-        try { r = l.sourceRectAtTime(t.comp.time, false); } catch (e) { r = { left: 0, top: 0, width: t.comp.width, height: t.comp.height }; }
+        try { r = l.sourceRectAtTime(comp.time, false); } catch (e) { r = { left: 0, top: 0, width: comp.width, height: comp.height }; }
         var rect = def(a.rect, [r.left, r.top, r.width, r.height]);
         var x = rect[0], y = rect[1], w = rect[2], h = rect[3];
-        if (type === "rectangle") shape = { vertices: [[x, y], [x + w, y], [x + w, y + h], [x, y + h]], closed: true };
-        else if (type === "ellipse") {
+        if (type === "rectangle") return { vertices: [[x, y], [x + w, y], [x + w, y + h], [x, y + h]], closed: true };
+        if (type === "ellipse") {
             var kx = w / 2 * 0.5523, ky = h / 2 * 0.5523, cx = x + w / 2, cy = y + h / 2;
-            shape = { vertices: [[cx, y], [x + w, cy], [cx, y + h], [x, cy]], inTangents: [[-kx, 0], [0, -ky], [kx, 0], [0, ky]], outTangents: [[kx, 0], [0, ky], [-kx, 0], [0, -ky]], closed: true };
-        } else if (type === "path") shape = { vertices: a.vertices, inTangents: a.inTangents, outTangents: a.outTangents, closed: def(a.closed, true) };
-        else fail("Unknown mask shape '" + a.shape + "'");
-        m.property("ADBE Mask Shape").setValue(toShape(shape));
-        var modes = { add: MaskMode.ADD, subtract: MaskMode.SUBTRACT, intersect: MaskMode.INTERSECT, lighten: MaskMode.LIGHTEN, darken: MaskMode.DARKEN, difference: MaskMode.DIFFERENCE, none: MaskMode.NONE };
-        if (a.mode) m.maskMode = modes[lower(a.mode)];
+            return { vertices: [[cx, y], [x + w, cy], [cx, y + h], [x, cy]], inTangents: [[-kx, 0], [0, -ky], [kx, 0], [0, ky]], outTangents: [[kx, 0], [0, ky], [-kx, 0], [0, -ky]], closed: true };
+        }
+        fail("Unknown mask shape '" + a.shape + "'");
+    }
+    var MASK_MODES = { add: MaskMode.ADD, subtract: MaskMode.SUBTRACT, intersect: MaskMode.INTERSECT, lighten: MaskMode.LIGHTEN, darken: MaskMode.DARKEN, difference: MaskMode.DIFFERENCE, none: MaskMode.NONE };
+    function maskSettings(m, a) {
+        if (a.mode) {
+            if (!MASK_MODES.hasOwnProperty(lower(a.mode))) fail("Unknown mask mode '" + a.mode + "'");
+            m.maskMode = MASK_MODES[lower(a.mode)];
+        }
         if (has(a, "inverted")) m.inverted = !!a.inverted;
         if (has(a, "feather")) m.property("ADBE Mask Feather").setValue(typeof a.feather === "number" ? [a.feather, a.feather] : a.feather);
         if (has(a, "opacity")) m.property("ADBE Mask Opacity").setValue(a.opacity);
         if (has(a, "expansion")) m.property("ADBE Mask Offset").setValue(a.expansion);
         if (a.name) m.name = a.name;
+    }
+    function maskInfo(m) {
+        var mode = "add";
+        for (var k in MASK_MODES) if (MASK_MODES.hasOwnProperty(k) && MASK_MODES[k] === m.maskMode) mode = k;
+        var sh = m.property("ADBE Mask Shape");
+        return {
+            mask: m.name, index: m.propertyIndex, mode: mode, inverted: m.inverted,
+            feather: m.property("ADBE Mask Feather").value, opacity: m.property("ADBE Mask Opacity").value, expansion: m.property("ADBE Mask Offset").value,
+            vertices: sh.value.vertices.length, pathKeys: sh.numKeys
+        };
+    }
+    H.add_mask = function (a) {
+        var t = target(a);
+        var l = t.layer;
+        var masks = l.property("ADBE Mask Parade");
+        var m = masks.addProperty("ADBE Mask Atom");
+        m.property("ADBE Mask Shape").setValue(toShape(maskShape(a, l, t.comp)));
+        maskSettings(m, a);
         return { layer: l.name, mask: m.name, index: m.propertyIndex, numMasks: masks.numProperties };
+    };
+
+    var MASK_PROPS = { path: "ADBE Mask Shape", feather: "ADBE Mask Feather", expansion: "ADBE Mask Offset", opacity: "ADBE Mask Opacity" };
+    H.modify_mask = function (a) {
+        var t = target(a), l = t.layer;
+        var masks = l.property("ADBE Mask Parade");
+        if (!masks.numProperties) fail("Layer '" + l.name + "' has no masks");
+        var m = null;
+        for (var i = 1; i <= masks.numProperties; i++) if (masks.property(i).name === a.mask || i === a.mask) m = masks.property(i);
+        if (!m) {
+            var names = []; for (var j = 1; j <= masks.numProperties; j++) names.push(masks.property(j).name);
+            fail("Mask '" + a.mask + "' not found on '" + l.name + "'", "Masks: " + names.join(", "));
+        }
+        if (a.rect || a.vertices || a.shape) {
+            var sp = m.property("ADBE Mask Shape");
+            var sh = toShape(maskShape(a, l, t.comp));
+            if (sp.numKeys) sp.setValueAtTime(t.comp.time, sh); else sp.setValue(sh);
+        }
+        maskSettings(m, a);
+        var kf = a.keyframes;
+        if (kf) {
+            var list = kf instanceof Array ? kf : [kf];
+            for (var q = 0; q < list.length; q++) {
+                var pn = MASK_PROPS[list[q].property];
+                if (!pn) fail("keyframes.property must be path, feather, expansion or opacity");
+                var p = m.property(pn), keys = [];
+                for (var k = 0; k < list[q].keys.length; k++) {
+                    var kv = list[q].keys[k], v = kv.value;
+                    if (list[q].property === "path") v = maskShape(v, l, t.comp);
+                    else if (list[q].property === "feather" && typeof v === "number") v = [v, v];
+                    var o = {}; for (var f in kv) if (kv.hasOwnProperty(f)) o[f] = kv[f];
+                    o.value = v;
+                    keys.push(o);
+                }
+                if (list[q].replace !== false) while (p.numKeys > 0) p.removeKey(1);
+                setKeys(p, keys, def(list[q].easing, def(a.easing, "easy-ease")));
+            }
+        }
+        var info = maskInfo(m);
+        info.layer = l.name;
+        return info;
     };
 
     H.remove_masks = function (a) {

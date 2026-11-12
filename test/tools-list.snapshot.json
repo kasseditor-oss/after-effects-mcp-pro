@@ -29,7 +29,6 @@
   },
   "annotations": {
    "readOnlyHint": true,
-   "destructiveHint": false,
    "idempotentHint": true,
    "openWorldHint": false
   },
@@ -57,7 +56,6 @@
   "annotations": {
    "readOnlyHint": false,
    "destructiveHint": false,
-   "idempotentHint": false,
    "openWorldHint": false
   },
   "_meta": {
@@ -81,7 +79,7 @@
      "type": "integer",
      "minimum": 1,
      "maximum": 3600,
-     "description": "Max seconds to wait for After Effects (default 60, long tools 300+)."
+     "description": "AE wait limit in s (default 60)."
     }
    }
   },
@@ -130,7 +128,6 @@
   },
   "annotations": {
    "readOnlyHint": true,
-   "destructiveHint": false,
    "idempotentHint": true,
    "openWorldHint": false
   },
@@ -180,7 +177,7 @@
      "type": "integer",
      "minimum": 1,
      "maximum": 3600,
-     "description": "Max seconds to wait for After Effects (default 60, long tools 300+)."
+     "description": "AE wait limit in s (default 60)."
     }
    }
   },
@@ -234,7 +231,6 @@
   },
   "annotations": {
    "readOnlyHint": true,
-   "destructiveHint": false,
    "idempotentHint": true,
    "openWorldHint": false
   },
@@ -263,14 +259,13 @@
      "type": "integer",
      "minimum": 1,
      "maximum": 3600,
-     "description": "Max seconds to wait for After Effects (default 60, long tools 300+)."
+     "description": "AE wait limit in s (default 60)."
     }
    }
   },
   "annotations": {
    "readOnlyHint": false,
    "destructiveHint": false,
-   "idempotentHint": false,
    "openWorldHint": false
   },
   "_meta": {
@@ -297,7 +292,7 @@
      "type": "integer",
      "minimum": 1,
      "maximum": 3600,
-     "description": "Max seconds to wait for After Effects (default 60, long tools 300+)."
+     "description": "AE wait limit in s (default 60)."
     }
    },
    "required": [
@@ -306,8 +301,6 @@
   },
   "annotations": {
    "readOnlyHint": false,
-   "destructiveHint": true,
-   "idempotentHint": false,
    "openWorldHint": false
   },
   "_meta": {
@@ -331,14 +324,12 @@
      "type": "integer",
      "minimum": 1,
      "maximum": 3600,
-     "description": "Max seconds to wait for After Effects (default 60, long tools 300+)."
+     "description": "AE wait limit in s (default 60)."
     }
    }
   },
   "annotations": {
    "readOnlyHint": false,
-   "destructiveHint": true,
-   "idempotentHint": false,
    "openWorldHint": false
   },
   "_meta": {
@@ -394,7 +385,7 @@
      "type": "integer",
      "minimum": 1,
      "maximum": 3600,
-     "description": "Max seconds to wait for After Effects (default 60, long tools 300+)."
+     "description": "AE wait limit in s (default 60)."
     }
    },
    "required": [
@@ -404,7 +395,6 @@
   "annotations": {
    "readOnlyHint": false,
    "destructiveHint": false,
-   "idempotentHint": false,
    "openWorldHint": false
   },
   "_meta": {
@@ -441,14 +431,12 @@
      "type": "integer",
      "minimum": 1,
      "maximum": 3600,
-     "description": "Max seconds to wait for After Effects (default 60, long tools 300+)."
+     "description": "AE wait limit in s (default 60)."
     }
    }
   },
   "annotations": {
    "readOnlyHint": false,
-   "destructiveHint": true,
-   "idempotentHint": false,
    "openWorldHint": false
   },
   "_meta": {
@@ -475,7 +463,7 @@
      "type": "integer",
      "minimum": 1,
      "maximum": 3600,
-     "description": "Max seconds to wait for After Effects (default 60, long tools 300+)."
+     "description": "AE wait limit in s (default 60)."
     }
    },
    "required": [
@@ -485,7 +473,6 @@
   "annotations": {
    "readOnlyHint": false,
    "destructiveHint": false,
-   "idempotentHint": false,
    "openWorldHint": false
   },
   "_meta": {
@@ -522,7 +509,7 @@
      "type": "integer",
      "minimum": 1,
      "maximum": 3600,
-     "description": "Max seconds to wait for After Effects (default 60, long tools 300+)."
+     "description": "AE wait limit in s (default 60)."
     }
    },
    "required": [
@@ -533,7 +520,6 @@
   "annotations": {
    "readOnlyHint": false,
    "destructiveHint": false,
-   "idempotentHint": false,
    "openWorldHint": false
   },
   "_meta": {
@@ -583,7 +569,7 @@
      "type": "integer",
      "minimum": 1,
      "maximum": 3600,
-     "description": "Max seconds to wait for After Effects (default 60, long tools 300+)."
+     "description": "AE wait limit in s (default 60)."
     }
    },
    "required": [
@@ -593,7 +579,6 @@
   "annotations": {
    "readOnlyHint": false,
    "destructiveHint": false,
-   "idempotentHint": false,
    "openWorldHint": false
   },
   "_meta": {
@@ -614,7 +599,7 @@
      "type": "integer",
      "minimum": 1,
      "maximum": 3600,
-     "description": "Max seconds to wait for After Effects (default 60, long tools 300+)."
+     "description": "AE wait limit in s (default 60)."
     }
    }
   },
@@ -668,7 +653,6 @@
   },
   "annotations": {
    "readOnlyHint": true,
-   "destructiveHint": false,
    "idempotentHint": true,
    "openWorldHint": false
   },
@@ -717,7 +701,7 @@
      "type": "integer",
      "minimum": 1,
      "maximum": 3600,
-     "description": "Max seconds to wait for After Effects (default 60, long tools 300+)."
+     "description": "AE wait limit in s (default 60)."
     }
    }
   },
@@ -787,7 +771,6 @@
   },
   "annotations": {
    "readOnlyHint": true,
-   "destructiveHint": false,
    "idempotentHint": true,
    "openWorldHint": false
   },
@@ -880,7 +863,7 @@
      "type": "integer",
      "minimum": 1,
      "maximum": 3600,
-     "description": "Max seconds to wait for After Effects (default 60, long tools 300+)."
+     "description": "AE wait limit in s (default 60)."
     }
    },
    "required": [
@@ -890,7 +873,6 @@
   "annotations": {
    "readOnlyHint": false,
    "destructiveHint": false,
-   "idempotentHint": false,
    "openWorldHint": false
   },
   "_meta": {
@@ -993,14 +975,13 @@
      "type": "integer",
      "minimum": 1,
      "maximum": 3600,
-     "description": "Max seconds to wait for After Effects (default 60, long tools 300+)."
+     "description": "AE wait limit in s (default 60)."
     }
    }
   },
   "annotations": {
    "readOnlyHint": false,
    "destructiveHint": false,
-   "idempotentHint": false,
    "openWorldHint": false
   },
   "_meta": {
@@ -1039,14 +1020,13 @@
      "type": "integer",
      "minimum": 1,
      "maximum": 3600,
-     "description": "Max seconds to wait for After Effects (default 60, long tools 300+)."
+     "description": "AE wait limit in s (default 60)."
     }
    }
   },
   "annotations": {
    "readOnlyHint": false,
    "destructiveHint": false,
-   "idempotentHint": false,
    "openWorldHint": false
   },
   "_meta": {
@@ -1081,14 +1061,13 @@
      "type": "integer",
      "minimum": 1,
      "maximum": 3600,
-     "description": "Max seconds to wait for After Effects (default 60, long tools 300+)."
+     "description": "AE wait limit in s (default 60)."
     }
    }
   },
   "annotations": {
    "readOnlyHint": false,
    "destructiveHint": false,
-   "idempotentHint": false,
    "openWorldHint": false
   },
   "_meta": {
@@ -1146,7 +1125,7 @@
      "type": "integer",
      "minimum": 1,
      "maximum": 3600,
-     "description": "Max seconds to wait for After Effects (default 60, long tools 300+)."
+     "description": "AE wait limit in s (default 60)."
     }
    },
    "required": [
@@ -1156,7 +1135,6 @@
   "annotations": {
    "readOnlyHint": false,
    "destructiveHint": false,
-   "idempotentHint": false,
    "openWorldHint": false
   },
   "_meta": {
@@ -1382,7 +1360,7 @@
      "type": "integer",
      "minimum": 1,
      "maximum": 3600,
-     "description": "Max seconds to wait for After Effects (default 60, long tools 300+)."
+     "description": "AE wait limit in s (default 60)."
     }
    },
    "required": [
@@ -1392,7 +1370,6 @@
   "annotations": {
    "readOnlyHint": false,
    "destructiveHint": false,
-   "idempotentHint": false,
    "openWorldHint": false
   },
   "_meta": {
@@ -2022,14 +1999,13 @@
      "type": "integer",
      "minimum": 1,
      "maximum": 3600,
-     "description": "Max seconds to wait for After Effects (default 60, long tools 300+)."
+     "description": "AE wait limit in s (default 60)."
     }
    }
   },
   "annotations": {
    "readOnlyHint": false,
    "destructiveHint": false,
-   "idempotentHint": false,
    "openWorldHint": false
   },
   "_meta": {
@@ -2184,14 +2160,13 @@
      "type": "integer",
      "minimum": 1,
      "maximum": 3600,
-     "description": "Max seconds to wait for After Effects (default 60, long tools 300+)."
+     "description": "AE wait limit in s (default 60)."
     }
    }
   },
   "annotations": {
    "readOnlyHint": false,
    "destructiveHint": false,
-   "idempotentHint": false,
    "openWorldHint": false
   },
   "_meta": {
@@ -2337,14 +2312,13 @@
      "type": "integer",
      "minimum": 1,
      "maximum": 3600,
-     "description": "Max seconds to wait for After Effects (default 60, long tools 300+)."
+     "description": "AE wait limit in s (default 60)."
     }
    }
   },
   "annotations": {
    "readOnlyHint": false,
    "destructiveHint": false,
-   "idempotentHint": false,
    "openWorldHint": false
   },
   "_meta": {
@@ -2413,14 +2387,13 @@
      "type": "integer",
      "minimum": 1,
      "maximum": 3600,
-     "description": "Max seconds to wait for After Effects (default 60, long tools 300+)."
+     "description": "AE wait limit in s (default 60)."
     }
    }
   },
   "annotations": {
    "readOnlyHint": false,
    "destructiveHint": false,
-   "idempotentHint": false,
    "openWorldHint": false
   },
   "_meta": {
@@ -2508,14 +2481,13 @@
      "type": "integer",
      "minimum": 1,
      "maximum": 3600,
-     "description": "Max seconds to wait for After Effects (default 60, long tools 300+)."
+     "description": "AE wait limit in s (default 60)."
     }
    }
   },
   "annotations": {
    "readOnlyHint": false,
    "destructiveHint": false,
-   "idempotentHint": false,
    "openWorldHint": false
   },
   "_meta": {
@@ -2659,7 +2631,7 @@
      "type": "integer",
      "minimum": 1,
      "maximum": 3600,
-     "description": "Max seconds to wait for After Effects (default 60, long tools 300+)."
+     "description": "AE wait limit in s (default 60)."
     }
    },
    "required": [
@@ -2669,7 +2641,6 @@
   "annotations": {
    "readOnlyHint": false,
    "destructiveHint": false,
-   "idempotentHint": false,
    "openWorldHint": false
   },
   "_meta": {
@@ -2740,7 +2711,7 @@
      "type": "integer",
      "minimum": 1,
      "maximum": 3600,
-     "description": "Max seconds to wait for After Effects (default 60, long tools 300+)."
+     "description": "AE wait limit in s (default 60)."
     }
    }
   },
@@ -2802,7 +2773,6 @@
   },
   "annotations": {
    "readOnlyHint": true,
-   "destructiveHint": false,
    "idempotentHint": true,
    "openWorldHint": false
   },
@@ -2858,7 +2828,7 @@
      "type": "integer",
      "minimum": 1,
      "maximum": 3600,
-     "description": "Max seconds to wait for After Effects (default 60, long tools 300+)."
+     "description": "AE wait limit in s (default 60)."
     }
    },
    "required": [
@@ -2895,7 +2865,6 @@
   },
   "annotations": {
    "readOnlyHint": true,
-   "destructiveHint": false,
    "idempotentHint": true,
    "openWorldHint": false
   },
@@ -3143,14 +3112,13 @@
      "type": "integer",
      "minimum": 1,
      "maximum": 3600,
-     "description": "Max seconds to wait for After Effects (default 60, long tools 300+)."
+     "description": "AE wait limit in s (default 60)."
     }
    }
   },
   "annotations": {
    "readOnlyHint": false,
    "destructiveHint": false,
-   "idempotentHint": false,
    "openWorldHint": false
   },
   "_meta": {
@@ -3213,7 +3181,7 @@
      "type": "integer",
      "minimum": 1,
      "maximum": 3600,
-     "description": "Max seconds to wait for After Effects (default 60, long tools 300+)."
+     "description": "AE wait limit in s (default 60)."
     }
    },
    "required": [
@@ -3223,7 +3191,6 @@
   "annotations": {
    "readOnlyHint": false,
    "destructiveHint": false,
-   "idempotentHint": false,
    "openWorldHint": false
   },
   "_meta": {
@@ -3274,7 +3241,7 @@
      "type": "integer",
      "minimum": 1,
      "maximum": 3600,
-     "description": "Max seconds to wait for After Effects (default 60, long tools 300+)."
+     "description": "AE wait limit in s (default 60)."
     }
    },
    "required": [
@@ -3283,8 +3250,6 @@
   },
   "annotations": {
    "readOnlyHint": false,
-   "destructiveHint": true,
-   "idempotentHint": false,
    "openWorldHint": false
   },
   "_meta": {
@@ -3353,7 +3318,7 @@
      "type": "integer",
      "minimum": 1,
      "maximum": 3600,
-     "description": "Max seconds to wait for After Effects (default 60, long tools 300+)."
+     "description": "AE wait limit in s (default 60)."
     }
    },
    "required": [
@@ -3364,7 +3329,6 @@
   "annotations": {
    "readOnlyHint": false,
    "destructiveHint": false,
-   "idempotentHint": false,
    "openWorldHint": false
   },
   "_meta": {
@@ -3419,7 +3383,7 @@
      "type": "integer",
      "minimum": 1,
      "maximum": 3600,
-     "description": "Max seconds to wait for After Effects (default 60, long tools 300+)."
+     "description": "AE wait limit in s (default 60)."
     }
    },
    "required": [
@@ -3430,7 +3394,6 @@
   "annotations": {
    "readOnlyHint": false,
    "destructiveHint": false,
-   "idempotentHint": false,
    "openWorldHint": false
   },
   "_meta": {
@@ -3496,7 +3459,7 @@
      "type": "integer",
      "minimum": 1,
      "maximum": 3600,
-     "description": "Max seconds to wait for After Effects (default 60, long tools 300+)."
+     "description": "AE wait limit in s (default 60)."
     }
    },
    "required": [
@@ -3506,7 +3469,6 @@
   "annotations": {
    "readOnlyHint": false,
    "destructiveHint": false,
-   "idempotentHint": false,
    "openWorldHint": false
   },
   "_meta": {
@@ -3553,7 +3515,7 @@
      "type": "integer",
      "minimum": 1,
      "maximum": 3600,
-     "description": "Max seconds to wait for After Effects (default 60, long tools 300+)."
+     "description": "AE wait limit in s (default 60)."
     }
    },
    "required": [
@@ -3563,7 +3525,6 @@
   "annotations": {
    "readOnlyHint": false,
    "destructiveHint": false,
-   "idempotentHint": false,
    "openWorldHint": false
   },
   "_meta": {
@@ -3632,7 +3593,7 @@
      "type": "integer",
      "minimum": 1,
      "maximum": 3600,
-     "description": "Max seconds to wait for After Effects (default 60, long tools 300+)."
+     "description": "AE wait limit in s (default 60)."
     }
    },
    "required": [
@@ -3642,7 +3603,6 @@
   "annotations": {
    "readOnlyHint": false,
    "destructiveHint": false,
-   "idempotentHint": false,
    "openWorldHint": false
   },
   "_meta": {
@@ -3711,7 +3671,7 @@
      "type": "integer",
      "minimum": 1,
      "maximum": 3600,
-     "description": "Max seconds to wait for After Effects (default 60, long tools 300+)."
+     "description": "AE wait limit in s (default 60)."
     }
    },
    "required": [
@@ -3721,7 +3681,6 @@
   "annotations": {
    "readOnlyHint": false,
    "destructiveHint": false,
-   "idempotentHint": false,
    "openWorldHint": false
   },
   "_meta": {
@@ -3853,7 +3812,7 @@
      "type": "integer",
      "minimum": 1,
      "maximum": 3600,
-     "description": "Max seconds to wait for After Effects (default 60, long tools 300+)."
+     "description": "AE wait limit in s (default 60)."
     }
    },
    "required": [
@@ -3863,7 +3822,6 @@
   "annotations": {
    "readOnlyHint": false,
    "destructiveHint": false,
-   "idempotentHint": false,
    "openWorldHint": false
   },
   "_meta": {
@@ -3913,7 +3871,7 @@
      "type": "integer",
      "minimum": 1,
      "maximum": 3600,
-     "description": "Max seconds to wait for After Effects (default 60, long tools 300+)."
+     "description": "AE wait limit in s (default 60)."
     }
    },
    "required": [
@@ -3923,7 +3881,6 @@
   },
   "annotations": {
    "readOnlyHint": true,
-   "destructiveHint": false,
    "idempotentHint": true,
    "openWorldHint": false
   },
@@ -3977,7 +3934,7 @@
      "type": "integer",
      "minimum": 1,
      "maximum": 3600,
-     "description": "Max seconds to wait for After Effects (default 60, long tools 300+)."
+     "description": "AE wait limit in s (default 60)."
     }
    },
    "required": [
@@ -3988,7 +3945,6 @@
   "annotations": {
    "readOnlyHint": false,
    "destructiveHint": false,
-   "idempotentHint": false,
    "openWorldHint": false
   },
   "_meta": {
@@ -4164,7 +4120,7 @@
      "type": "integer",
      "minimum": 1,
      "maximum": 3600,
-     "description": "Max seconds to wait for After Effects (default 60, long tools 300+)."
+     "description": "AE wait limit in s (default 60)."
     }
    },
    "required": [
@@ -4176,7 +4132,6 @@
   "annotations": {
    "readOnlyHint": false,
    "destructiveHint": false,
-   "idempotentHint": false,
    "openWorldHint": false
   },
   "_meta": {
@@ -4229,7 +4184,7 @@
      "type": "integer",
      "minimum": 1,
      "maximum": 3600,
-     "description": "Max seconds to wait for After Effects (default 60, long tools 300+)."
+     "description": "AE wait limit in s (default 60)."
     }
    },
    "required": [
@@ -4239,8 +4194,6 @@
   },
   "annotations": {
    "readOnlyHint": false,
-   "destructiveHint": true,
-   "idempotentHint": false,
    "openWorldHint": false
   },
   "_meta": {
@@ -4297,7 +4250,7 @@
      "type": "integer",
      "minimum": 1,
      "maximum": 3600,
-     "description": "Max seconds to wait for After Effects (default 60, long tools 300+)."
+     "description": "AE wait limit in s (default 60)."
     }
    },
    "required": [
@@ -4309,7 +4262,6 @@
   "annotations": {
    "readOnlyHint": false,
    "destructiveHint": false,
-   "idempotentHint": false,
    "openWorldHint": false
   },
   "_meta": {
@@ -4341,13 +4293,12 @@
      "type": "integer",
      "minimum": 1,
      "maximum": 3600,
-     "description": "Max seconds to wait for After Effects (default 60, long tools 300+)."
+     "description": "AE wait limit in s (default 60)."
     }
    }
   },
   "annotations": {
    "readOnlyHint": true,
-   "destructiveHint": false,
    "idempotentHint": true,
    "openWorldHint": false
   },
@@ -4601,7 +4552,7 @@
      "type": "integer",
      "minimum": 1,
      "maximum": 3600,
-     "description": "Max seconds to wait for After Effects (default 60, long tools 300+)."
+     "description": "AE wait limit in s (default 60)."
     }
    },
    "required": [
@@ -4612,7 +4563,6 @@
   "annotations": {
    "readOnlyHint": false,
    "destructiveHint": false,
-   "idempotentHint": false,
    "openWorldHint": false
   },
   "_meta": {
@@ -4678,7 +4628,7 @@
      "type": "integer",
      "minimum": 1,
      "maximum": 3600,
-     "description": "Max seconds to wait for After Effects (default 60, long tools 300+)."
+     "description": "AE wait limit in s (default 60)."
     }
    },
    "required": [
@@ -4689,7 +4639,6 @@
   "annotations": {
    "readOnlyHint": false,
    "destructiveHint": false,
-   "idempotentHint": false,
    "openWorldHint": false
   },
   "_meta": {
@@ -4777,7 +4726,7 @@
      "type": "integer",
      "minimum": 1,
      "maximum": 3600,
-     "description": "Max seconds to wait for After Effects (default 60, long tools 300+)."
+     "description": "AE wait limit in s (default 60)."
     }
    },
    "required": [
@@ -4789,7 +4738,6 @@
   "annotations": {
    "readOnlyHint": false,
    "destructiveHint": false,
-   "idempotentHint": false,
    "openWorldHint": false
   },
   "_meta": {
@@ -4862,7 +4810,7 @@
      "type": "integer",
      "minimum": 1,
      "maximum": 3600,
-     "description": "Max seconds to wait for After Effects (default 60, long tools 300+)."
+     "description": "AE wait limit in s (default 60)."
     }
    },
    "required": [
@@ -4873,7 +4821,6 @@
   "annotations": {
    "readOnlyHint": false,
    "destructiveHint": false,
-   "idempotentHint": false,
    "openWorldHint": false
   },
   "_meta": {
@@ -5003,7 +4950,7 @@
      "type": "integer",
      "minimum": 1,
      "maximum": 3600,
-     "description": "Max seconds to wait for After Effects (default 60, long tools 300+)."
+     "description": "AE wait limit in s (default 60)."
     }
    },
    "required": [
@@ -5014,7 +4961,6 @@
   "annotations": {
    "readOnlyHint": false,
    "destructiveHint": false,
-   "idempotentHint": false,
    "openWorldHint": false
   },
   "_meta": {
@@ -5044,13 +4990,12 @@
      "type": "integer",
      "minimum": 1,
      "maximum": 3600,
-     "description": "Max seconds to wait for After Effects (default 60, long tools 300+)."
+     "description": "AE wait limit in s (default 60)."
     }
    }
   },
   "annotations": {
    "readOnlyHint": true,
-   "destructiveHint": false,
    "idempotentHint": true,
    "openWorldHint": false
   },
@@ -5125,7 +5070,7 @@
      "type": "integer",
      "minimum": 1,
      "maximum": 3600,
-     "description": "Max seconds to wait for After Effects (default 60, long tools 300+)."
+     "description": "AE wait limit in s (default 60)."
     }
    },
    "required": [
@@ -5135,7 +5080,6 @@
   "annotations": {
    "readOnlyHint": false,
    "destructiveHint": false,
-   "idempotentHint": false,
    "openWorldHint": false
   },
   "_meta": {
@@ -5179,7 +5123,7 @@
      "type": "integer",
      "minimum": 1,
      "maximum": 3600,
-     "description": "Max seconds to wait for After Effects (default 60, long tools 300+)."
+     "description": "AE wait limit in s (default 60)."
     }
    },
    "required": [
@@ -5188,7 +5132,6 @@
   },
   "annotations": {
    "readOnlyHint": true,
-   "destructiveHint": false,
    "idempotentHint": true,
    "openWorldHint": false
   },
@@ -5259,7 +5202,7 @@
      "type": "integer",
      "minimum": 1,
      "maximum": 3600,
-     "description": "Max seconds to wait for After Effects (default 60, long tools 300+)."
+     "description": "AE wait limit in s (default 60)."
     }
    },
    "required": [
@@ -5270,7 +5213,6 @@
   "annotations": {
    "readOnlyHint": false,
    "destructiveHint": false,
-   "idempotentHint": false,
    "openWorldHint": false
   },
   "_meta": {
@@ -5357,7 +5299,7 @@
      "type": "integer",
      "minimum": 1,
      "maximum": 3600,
-     "description": "Max seconds to wait for After Effects (default 60, long tools 300+)."
+     "description": "AE wait limit in s (default 60)."
     }
    },
    "required": [
@@ -5367,7 +5309,6 @@
   "annotations": {
    "readOnlyHint": false,
    "destructiveHint": false,
-   "idempotentHint": false,
    "openWorldHint": false
   },
   "_meta": {
@@ -5417,7 +5358,7 @@
      "type": "integer",
      "minimum": 1,
      "maximum": 3600,
-     "description": "Max seconds to wait for After Effects (default 60, long tools 300+)."
+     "description": "AE wait limit in s (default 60)."
     }
    },
    "required": [
@@ -5428,7 +5369,6 @@
   "annotations": {
    "readOnlyHint": false,
    "destructiveHint": false,
-   "idempotentHint": false,
    "openWorldHint": false
   },
   "_meta": {
@@ -5490,7 +5430,7 @@
      "type": "integer",
      "minimum": 1,
      "maximum": 3600,
-     "description": "Max seconds to wait for After Effects (default 60, long tools 300+)."
+     "description": "AE wait limit in s (default 60)."
     }
    },
    "required": [
@@ -5501,7 +5441,298 @@
   "annotations": {
    "readOnlyHint": false,
    "destructiveHint": false,
-   "idempotentHint": false,
+   "openWorldHint": false
+  },
+  "_meta": {
+   "ui": {
+    "resourceUri": "ui://after-effects/activity.html"
+   },
+   "ui/resourceUri": "ui://after-effects/activity.html"
+  }
+ },
+ {
+  "name": "modify_mask",
+  "title": "Modify mask",
+  "description": "Change an existing mask (by name or index): mode, inverted, feather, expansion, opacity, a new shape (rect/ellipse/vertices), and keyframes for path/feather/expansion/opacity. Path keyframe values are {shape, rect} or {vertices, inTangents, outTangents, closed}.",
+  "inputSchema": {
+   "type": "object",
+   "properties": {
+    "comp": {
+     "anyOf": [
+      {
+       "type": "string"
+      },
+      {
+       "type": "integer"
+      }
+     ],
+     "description": "Composition name or numeric item id. Omit to use the active composition."
+    },
+    "layer": {
+     "anyOf": [
+      {
+       "type": "integer",
+       "exclusiveMinimum": 0
+      },
+      {
+       "type": "string"
+      }
+     ],
+     "description": "Layer: 1-based index, exact name, or 'id:<layerId>' (stable across reordering)."
+    },
+    "mask": {
+     "anyOf": [
+      {
+       "type": "string"
+      },
+      {
+       "type": "integer",
+       "minimum": 1
+      }
+     ]
+    },
+    "shape": {
+     "type": "string",
+     "enum": [
+      "rectangle",
+      "ellipse",
+      "path"
+     ]
+    },
+    "rect": {
+     "type": "array",
+     "items": {
+      "type": "number"
+     },
+     "minItems": 4,
+     "maxItems": 4
+    },
+    "vertices": {
+     "type": "array",
+     "items": {
+      "type": "array",
+      "items": {
+       "type": "number"
+      },
+      "minItems": 2,
+      "maxItems": 2
+     }
+    },
+    "inTangents": {
+     "type": "array",
+     "items": {
+      "type": "array",
+      "items": {
+       "type": "number"
+      },
+      "minItems": 2,
+      "maxItems": 2
+     }
+    },
+    "outTangents": {
+     "type": "array",
+     "items": {
+      "type": "array",
+      "items": {
+       "type": "number"
+      },
+      "minItems": 2,
+      "maxItems": 2
+     }
+    },
+    "closed": {
+     "type": "boolean"
+    },
+    "mode": {
+     "type": "string",
+     "enum": [
+      "add",
+      "subtract",
+      "intersect",
+      "lighten",
+      "darken",
+      "difference",
+      "none"
+     ]
+    },
+    "inverted": {
+     "type": "boolean"
+    },
+    "feather": {
+     "anyOf": [
+      {
+       "type": "number"
+      },
+      {
+       "type": "array",
+       "items": {
+        "type": "number"
+       },
+       "minItems": 2,
+       "maxItems": 2
+      }
+     ]
+    },
+    "opacity": {
+     "type": "number"
+    },
+    "expansion": {
+     "type": "number"
+    },
+    "name": {
+     "type": "string"
+    },
+    "easing": {
+     "type": "string",
+     "enum": [
+      "linear",
+      "hold",
+      "easy-ease",
+      "ease-in",
+      "ease-out",
+      "ease-in-out",
+      "smooth",
+      "strong-ease",
+      "expo",
+      "snap",
+      "anticipate"
+     ],
+     "description": "Keyframe easing preset."
+    },
+    "keyframes": {
+     "anyOf": [
+      {
+       "type": "object",
+       "properties": {
+        "property": {
+         "type": "string",
+         "enum": [
+          "path",
+          "feather",
+          "expansion",
+          "opacity"
+         ]
+        },
+        "keys": {
+         "type": "array",
+         "items": {
+          "type": "object",
+          "properties": {
+           "time": {
+            "type": "number"
+           },
+           "value": {}
+          },
+          "required": [
+           "time"
+          ],
+          "additionalProperties": true
+         },
+         "minItems": 1
+        },
+        "easing": {
+         "type": "string",
+         "enum": [
+          "linear",
+          "hold",
+          "easy-ease",
+          "ease-in",
+          "ease-out",
+          "ease-in-out",
+          "smooth",
+          "strong-ease",
+          "expo",
+          "snap",
+          "anticipate"
+         ],
+         "description": "Keyframe easing preset."
+        },
+        "replace": {
+         "type": "boolean"
+        }
+       },
+       "required": [
+        "property",
+        "keys"
+       ],
+       "additionalProperties": false
+      },
+      {
+       "type": "array",
+       "items": {
+        "type": "object",
+        "properties": {
+         "property": {
+          "type": "string",
+          "enum": [
+           "path",
+           "feather",
+           "expansion",
+           "opacity"
+          ]
+         },
+         "keys": {
+          "type": "array",
+          "items": {
+           "type": "object",
+           "properties": {
+            "time": {
+             "type": "number"
+            },
+            "value": {}
+           },
+           "required": [
+            "time"
+           ],
+           "additionalProperties": true
+          },
+          "minItems": 1
+         },
+         "easing": {
+          "type": "string",
+          "enum": [
+           "linear",
+           "hold",
+           "easy-ease",
+           "ease-in",
+           "ease-out",
+           "ease-in-out",
+           "smooth",
+           "strong-ease",
+           "expo",
+           "snap",
+           "anticipate"
+          ],
+          "description": "Keyframe easing preset."
+         },
+         "replace": {
+          "type": "boolean"
+         }
+        },
+        "required": [
+         "property",
+         "keys"
+        ],
+        "additionalProperties": false
+       }
+      }
+     ]
+    },
+    "timeoutSeconds": {
+     "type": "integer",
+     "minimum": 1,
+     "maximum": 3600,
+     "description": "AE wait limit in s (default 60)."
+    }
+   },
+   "required": [
+    "layer",
+    "mask"
+   ]
+  },
+  "annotations": {
+   "readOnlyHint": false,
+   "destructiveHint": false,
    "openWorldHint": false
   },
   "_meta": {
@@ -5636,7 +5867,7 @@
      "type": "integer",
      "minimum": 1,
      "maximum": 3600,
-     "description": "Max seconds to wait for After Effects (default 60, long tools 300+)."
+     "description": "AE wait limit in s (default 60)."
     }
    },
    "required": [
@@ -5646,7 +5877,6 @@
   "annotations": {
    "readOnlyHint": false,
    "destructiveHint": false,
-   "idempotentHint": false,
    "openWorldHint": false
   },
   "_meta": {
@@ -5696,7 +5926,7 @@
      "type": "integer",
      "minimum": 1,
      "maximum": 3600,
-     "description": "Max seconds to wait for After Effects (default 60, long tools 300+)."
+     "description": "AE wait limit in s (default 60)."
     }
    },
    "required": [
@@ -5705,8 +5935,6 @@
   },
   "annotations": {
    "readOnlyHint": false,
-   "destructiveHint": true,
-   "idempotentHint": false,
    "openWorldHint": false
   },
   "_meta": {
@@ -5750,7 +5978,7 @@
      "type": "integer",
      "minimum": 1,
      "maximum": 3600,
-     "description": "Max seconds to wait for After Effects (default 60, long tools 300+)."
+     "description": "AE wait limit in s (default 60)."
     }
    },
    "required": [
@@ -5760,7 +5988,6 @@
   "annotations": {
    "readOnlyHint": false,
    "destructiveHint": false,
-   "idempotentHint": false,
    "openWorldHint": false
   },
   "_meta": {
@@ -5816,14 +6043,13 @@
      "type": "integer",
      "minimum": 1,
      "maximum": 3600,
-     "description": "Max seconds to wait for After Effects (default 60, long tools 300+)."
+     "description": "AE wait limit in s (default 60)."
     }
    }
   },
   "annotations": {
    "readOnlyHint": false,
    "destructiveHint": false,
-   "idempotentHint": false,
    "openWorldHint": false
   },
   "_meta": {
@@ -5896,7 +6122,7 @@
      "type": "integer",
      "minimum": 1,
      "maximum": 3600,
-     "description": "Max seconds to wait for After Effects (default 60, long tools 300+)."
+     "description": "AE wait limit in s (default 60)."
     }
    },
    "required": [
@@ -5906,7 +6132,6 @@
   "annotations": {
    "readOnlyHint": false,
    "destructiveHint": false,
-   "idempotentHint": false,
    "openWorldHint": false
   },
   "_meta": {
@@ -5968,14 +6193,13 @@
      "type": "integer",
      "minimum": 1,
      "maximum": 3600,
-     "description": "Max seconds to wait for After Effects (default 60, long tools 300+)."
+     "description": "AE wait limit in s (default 60)."
     }
    }
   },
   "annotations": {
    "readOnlyHint": false,
    "destructiveHint": false,
-   "idempotentHint": false,
    "openWorldHint": false
   },
   "_meta": {
@@ -6010,13 +6234,12 @@
      "type": "integer",
      "minimum": 1,
      "maximum": 3600,
-     "description": "Max seconds to wait for After Effects (default 60, long tools 300+)."
+     "description": "AE wait limit in s (default 60)."
     }
    }
   },
   "annotations": {
    "readOnlyHint": true,
-   "destructiveHint": false,
    "idempotentHint": true,
    "openWorldHint": false
   },
@@ -6067,14 +6290,12 @@
      "type": "integer",
      "minimum": 1,
      "maximum": 3600,
-     "description": "Max seconds to wait for After Effects (default 60, long tools 300+)."
+     "description": "AE wait limit in s (default 60)."
     }
    }
   },
   "annotations": {
    "readOnlyHint": false,
-   "destructiveHint": true,
-   "idempotentHint": false,
    "openWorldHint": false
   },
   "_meta": {
@@ -6145,13 +6366,12 @@
      "type": "integer",
      "minimum": 1,
      "maximum": 3600,
-     "description": "Max seconds to wait for After Effects (default 60, long tools 300+)."
+     "description": "AE wait limit in s (default 60)."
     }
    }
   },
   "annotations": {
    "readOnlyHint": true,
-   "destructiveHint": false,
    "idempotentHint": true,
    "openWorldHint": false
   },
@@ -6236,13 +6456,12 @@
      "type": "integer",
      "minimum": 1,
      "maximum": 3600,
-     "description": "Max seconds to wait for After Effects (default 60, long tools 300+)."
+     "description": "AE wait limit in s (default 60)."
     }
    }
   },
   "annotations": {
    "readOnlyHint": true,
-   "destructiveHint": false,
    "idempotentHint": true,
    "openWorldHint": false
   },
@@ -6321,14 +6540,13 @@
      "type": "integer",
      "minimum": 1,
      "maximum": 3600,
-     "description": "Max seconds to wait for After Effects (default 60, long tools 300+)."
+     "description": "AE wait limit in s (default 60)."
     }
    }
   },
   "annotations": {
    "readOnlyHint": false,
    "destructiveHint": false,
-   "idempotentHint": false,
    "openWorldHint": false
   },
   "_meta": {
@@ -6385,7 +6603,6 @@
   "annotations": {
    "readOnlyHint": false,
    "destructiveHint": false,
-   "idempotentHint": false,
    "openWorldHint": false
   },
   "_meta": {
@@ -6406,7 +6623,7 @@
      "type": "integer",
      "minimum": 1,
      "maximum": 3600,
-     "description": "Max seconds to wait for After Effects (default 60, long tools 300+)."
+     "description": "AE wait limit in s (default 60)."
     }
    }
   },
@@ -6448,7 +6665,6 @@
   },
   "annotations": {
    "readOnlyHint": true,
-   "destructiveHint": false,
    "idempotentHint": true,
    "openWorldHint": false
   },
@@ -6473,14 +6689,12 @@
      "type": "integer",
      "minimum": 1,
      "maximum": 3600,
-     "description": "Max seconds to wait for After Effects (default 60, long tools 300+)."
+     "description": "AE wait limit in s (default 60)."
     }
    }
   },
   "annotations": {
    "readOnlyHint": false,
-   "destructiveHint": true,
-   "idempotentHint": false,
    "openWorldHint": false
   },
   "_meta": {
@@ -6558,14 +6772,13 @@
      "type": "integer",
      "minimum": 1,
      "maximum": 3600,
-     "description": "Max seconds to wait for After Effects (default 60, long tools 300+)."
+     "description": "AE wait limit in s (default 60)."
     }
    }
   },
   "annotations": {
    "readOnlyHint": false,
    "destructiveHint": false,
-   "idempotentHint": false,
    "openWorldHint": false
   },
   "_meta": {
@@ -6633,7 +6846,6 @@
   "annotations": {
    "readOnlyHint": false,
    "destructiveHint": false,
-   "idempotentHint": false,
    "openWorldHint": false
   },
   "_meta": {
@@ -6657,7 +6869,6 @@
   },
   "annotations": {
    "readOnlyHint": true,
-   "destructiveHint": false,
    "idempotentHint": true,
    "openWorldHint": false
   },
@@ -6699,7 +6910,7 @@
      "type": "integer",
      "minimum": 1,
      "maximum": 3600,
-     "description": "Max seconds to wait for After Effects (default 60, long tools 300+)."
+     "description": "AE wait limit in s (default 60)."
     }
    },
    "required": [
@@ -6710,7 +6921,6 @@
   "annotations": {
    "readOnlyHint": false,
    "destructiveHint": false,
-   "idempotentHint": false,
    "openWorldHint": false
   },
   "_meta": {
@@ -6746,13 +6956,12 @@
      "type": "integer",
      "minimum": 1,
      "maximum": 3600,
-     "description": "Max seconds to wait for After Effects (default 60, long tools 300+)."
+     "description": "AE wait limit in s (default 60)."
     }
    }
   },
   "annotations": {
    "readOnlyHint": true,
-   "destructiveHint": false,
    "idempotentHint": true,
    "openWorldHint": false
   },
@@ -6826,7 +7035,7 @@
      "type": "integer",
      "minimum": 1,
      "maximum": 3600,
-     "description": "Max seconds to wait for After Effects (default 60, long tools 300+)."
+     "description": "AE wait limit in s (default 60)."
     }
    },
    "required": [
@@ -6835,7 +7044,6 @@
   },
   "annotations": {
    "readOnlyHint": true,
-   "destructiveHint": false,
    "idempotentHint": true,
    "openWorldHint": false
   },
@@ -6880,13 +7088,12 @@
      "type": "integer",
      "minimum": 1,
      "maximum": 3600,
-     "description": "Max seconds to wait for After Effects (default 60, long tools 300+)."
+     "description": "AE wait limit in s (default 60)."
     }
    }
   },
   "annotations": {
    "readOnlyHint": true,
-   "destructiveHint": false,
    "idempotentHint": true,
    "openWorldHint": false
   },
@@ -6943,7 +7150,7 @@
      "type": "integer",
      "minimum": 1,
      "maximum": 3600,
-     "description": "Max seconds to wait for After Effects (default 60, long tools 300+)."
+     "description": "AE wait limit in s (default 60)."
     }
    },
    "required": [
@@ -6954,7 +7161,6 @@
   "annotations": {
    "readOnlyHint": false,
    "destructiveHint": false,
-   "idempotentHint": false,
    "openWorldHint": false
   },
   "_meta": {
@@ -7002,7 +7208,7 @@
      "type": "integer",
      "minimum": 1,
      "maximum": 3600,
-     "description": "Max seconds to wait for After Effects (default 60, long tools 300+)."
+     "description": "AE wait limit in s (default 60)."
     }
    },
    "required": [
@@ -7013,7 +7219,6 @@
   "annotations": {
    "readOnlyHint": false,
    "destructiveHint": false,
-   "idempotentHint": false,
    "openWorldHint": false
   },
   "_meta": {
@@ -7073,7 +7278,7 @@
      "type": "integer",
      "minimum": 1,
      "maximum": 3600,
-     "description": "Max seconds to wait for After Effects (default 60, long tools 300+)."
+     "description": "AE wait limit in s (default 60)."
     }
    },
    "required": [
@@ -7085,7 +7290,6 @@
   "annotations": {
    "readOnlyHint": false,
    "destructiveHint": false,
-   "idempotentHint": false,
    "openWorldHint": false
   },
   "_meta": {
@@ -7127,7 +7331,6 @@
   "annotations": {
    "readOnlyHint": false,
    "destructiveHint": false,
-   "idempotentHint": false,
    "openWorldHint": false
   },
   "_meta": {
@@ -7181,7 +7384,7 @@
      "type": "integer",
      "minimum": 1,
      "maximum": 3600,
-     "description": "Max seconds to wait for After Effects (default 60, long tools 300+)."
+     "description": "AE wait limit in s (default 60)."
     }
    },
    "required": [
@@ -7192,7 +7395,6 @@
   "annotations": {
    "readOnlyHint": false,
    "destructiveHint": false,
-   "idempotentHint": false,
    "openWorldHint": false
   },
   "_meta": {
@@ -7219,13 +7421,12 @@
      "type": "integer",
      "minimum": 1,
      "maximum": 3600,
-     "description": "Max seconds to wait for After Effects (default 60, long tools 300+)."
+     "description": "AE wait limit in s (default 60)."
     }
    }
   },
   "annotations": {
    "readOnlyHint": true,
-   "destructiveHint": false,
    "idempotentHint": true,
    "openWorldHint": false
   },
@@ -7247,13 +7448,12 @@
      "type": "integer",
      "minimum": 1,
      "maximum": 3600,
-     "description": "Max seconds to wait for After Effects (default 60, long tools 300+)."
+     "description": "AE wait limit in s (default 60)."
     }
    }
   },
   "annotations": {
    "readOnlyHint": true,
-   "destructiveHint": false,
    "idempotentHint": true,
    "openWorldHint": false
   },
@@ -7302,14 +7502,13 @@
      "type": "integer",
      "minimum": 1,
      "maximum": 3600,
-     "description": "Max seconds to wait for After Effects (default 60, long tools 300+)."
+     "description": "AE wait limit in s (default 60)."
     }
    }
   },
   "annotations": {
    "readOnlyHint": false,
    "destructiveHint": false,
-   "idempotentHint": false,
    "openWorldHint": false
   },
   "_meta": {
@@ -7334,7 +7533,6 @@
   "annotations": {
    "readOnlyHint": false,
    "destructiveHint": false,
-   "idempotentHint": false,
    "openWorldHint": false
   },
   "_meta": {
@@ -7355,7 +7553,6 @@
   "annotations": {
    "readOnlyHint": false,
    "destructiveHint": false,
-   "idempotentHint": false,
    "openWorldHint": false
   },
   "_meta": {
@@ -7388,14 +7585,13 @@
      "type": "integer",
      "minimum": 1,
      "maximum": 3600,
-     "description": "Max seconds to wait for After Effects (default 60, long tools 300+)."
+     "description": "AE wait limit in s (default 60)."
     }
    }
   },
   "annotations": {
    "readOnlyHint": false,
    "destructiveHint": false,
-   "idempotentHint": false,
    "openWorldHint": false
   },
   "_meta": {
@@ -7422,14 +7618,13 @@
      "type": "integer",
      "minimum": 1,
      "maximum": 3600,
-     "description": "Max seconds to wait for After Effects (default 60, long tools 300+)."
+     "description": "AE wait limit in s (default 60)."
     }
    }
   },
   "annotations": {
    "readOnlyHint": false,
    "destructiveHint": false,
-   "idempotentHint": false,
    "openWorldHint": false
   },
   "_meta": {
@@ -7464,7 +7659,7 @@
      "type": "integer",
      "minimum": 1,
      "maximum": 3600,
-     "description": "Max seconds to wait for After Effects (default 60, long tools 300+)."
+     "description": "AE wait limit in s (default 60)."
     }
    },
    "required": [
@@ -7474,7 +7669,6 @@
   "annotations": {
    "readOnlyHint": false,
    "destructiveHint": false,
-   "idempotentHint": false,
    "openWorldHint": false
   },
   "_meta": {
@@ -7531,7 +7725,7 @@
      "type": "integer",
      "minimum": 1,
      "maximum": 3600,
-     "description": "Max seconds to wait for After Effects (default 60, long tools 300+)."
+     "description": "AE wait limit in s (default 60)."
     }
    },
    "required": [
@@ -7541,7 +7735,6 @@
   "annotations": {
    "readOnlyHint": false,
    "destructiveHint": false,
-   "idempotentHint": false,
    "openWorldHint": false
   },
   "_meta": {
