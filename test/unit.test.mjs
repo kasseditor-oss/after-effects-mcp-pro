@@ -552,3 +552,20 @@ test("After Effects (Beta) is detected on Windows and macOS, releases preferred"
   const m = findInstallsIn(mac);
   assert.deepEqual(m.map((i) => [i.version, !!i.beta]), [["2026", false], ["Beta", true]]);
 });
+
+test("launch_after_effects waits for an After Effects that is running but not ready yet", async () => {
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), "aemcp-launch-"));
+  // AE "running" (test hook) but its listener only starts answering after 3 s, like a splash screen
+  let stop = () => {};
+  const late = setTimeout(() => { stop = fakeListener(dir, (p) => ({ ok: true, id: p.id, data: { ok: true, aeVersion: "26.5x89" } }), "2.0.4", "26.5x89"); }, 3000);
+  const client = await connect({ AE_MCP_BRIDGE_DIR: dir, AE_MCP_ASSUME_RUNNING: "1", AE_MCP_MODE: "listener" });
+  const t0 = Date.now();
+  const r = await client.callTool({ name: "launch_after_effects", arguments: { waitSeconds: 30 } }, undefined, { timeout: 60000 });
+  clearTimeout(late);
+  stop();
+  assert.ok(!r.isError, r.content[0].text);
+  const d = JSON.parse(r.content[0].text);
+  assert.equal(d.alreadyRunning, true);
+  assert.ok(Date.now() - t0 >= 2500, "it waited for the listener");
+  await client.close();
+});

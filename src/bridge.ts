@@ -472,17 +472,25 @@ export class Bridge {
   /** Launch After Effects (if needed) and wait until it accepts scripts. */
   async launch(waitSeconds = 180): Promise<{ alreadyRunning: boolean; seconds: number }> {
     const t0 = Date.now();
-    if (this.aeRunning()) return { alreadyRunning: true, seconds: 0 };
-    const installs = findInstalls();
-    if (!installs.length) throw new AEError("No After Effects installation found", "Set AE_MCP_AE_PATH.");
-    platform().launch(installs[0]);
+    // Already running is not the same as ready: AE may still be on its splash screen
+    // (it used to return at once and the next call failed with "still starting up").
+    const alreadyRunning = this.aeRunning();
+    if (!alreadyRunning) {
+      const installs = findInstalls();
+      if (!installs.length) throw new AEError("No After Effects installation found", "Set AE_MCP_AE_PATH.");
+      platform().launch(installs[0]);
+    }
+    let first = alreadyRunning;
     while (Date.now() - t0 < waitSeconds * 1000) {
-      await sleep(3000);
+      if (!first) await sleep(3000);
+      first = false;
       this.runningCache.at = 0;
-      if (!this.aeRunning() || !aeReady()) continue;
+      // a fresh listener heartbeat also means AE is up (its startup scripts ran)
+      const hb = this.heartbeat();
+      if (!this.aeRunning() || !((hb && hb.ageMs < 4000 && !hb.paused) || aeReady())) continue;
       try {
         await this.call("ping", {}, { timeoutMs: 8000, undo: false });
-        return { alreadyRunning: false, seconds: Math.round((Date.now() - t0) / 1000) };
+        return { alreadyRunning, seconds: Math.round((Date.now() - t0) / 1000) };
       } catch {
         /* still starting */
       }
