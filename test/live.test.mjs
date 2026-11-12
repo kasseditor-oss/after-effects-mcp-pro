@@ -55,6 +55,9 @@ async function call(name, args = {}, { expectError = false, check } = {}) {
 }
 
 const COMP = `MCP Test ${Date.now() % 100000}`;
+// solids that existed before the test: cleanup must never remove them
+const solidsBefore = CLEANUP ? JSON.parse((await client.callTool({ name: "list_project_items", arguments: { type: "solid", limit: 1000 } })).content[0].text).items.map((i) => i.id) : [];
+const foldersBefore = CLEANUP ? JSON.parse((await client.callTool({ name: "list_project_items", arguments: { type: "folder", limit: 1000 } })).content[0].text).items.map((i) => i.id) : [];
 const st = await call("bridge_status", {}, { check: (d) => (d.ae?.ok ? true : JSON.stringify(d)) });
 console.log("mode:", st.data?.mode, "AE", st.data?.ae?.aeVersion);
 
@@ -157,6 +160,8 @@ await call("batch", { atomic: true, operations: [
   { tool: "set_property", args: { comp: C, layer: "No Such Layer", property: "Opacity", value: 50 } },
 ] }, { expectError: true });
 await call("list_layers", { comp: C }, { check: (d) => (d.total === nBefore ? true : `atomic batch not reverted: ${nBefore} -> ${d.total}`) });
+await call("create_null_layer", { comp: C, name: "TmpNull" });
+await call("delete_layers", { comp: C, layers: ["TmpNull"], removeSources: true }, { check: (d) => (d.removedSources === 1 ? true : JSON.stringify(d)) });
 await call("delete_layers", { comp: C, layers: ["Grade"] });
 await call("remove_keyframes", { comp: C, layer: "Title", property: "Position", from: 1 });
 await call("remove_masks", { comp: C, layer: "BG" });
@@ -244,6 +249,11 @@ if (CLEANUP) {
     if (!id) continue;
     await client.callTool({ name: "modify_item", arguments: { item: id, delete: true } }).catch(() => undefined);
   }
+  // the test's nulls/solids left their sources in the Solids folder
+  await call("remove_unused_footage", { type: "solid", keep: [...solidsBefore, ...foldersBefore] }, { check: (d) => (d.removed > 0 ? true : "nothing removed") });
+  const solidsAfter = JSON.parse((await client.callTool({ name: "list_project_items", arguments: { type: "solid", limit: 1000 } })).content[0].text).items;
+  const leftover = solidsAfter.filter((i) => !solidsBefore.includes(i.id));
+  results.push({ tool: "cleanup_solids", pass: leftover.length === 0, ms: 0, note: leftover.length ? `${leftover.length} solids left` : "" });
   const left = await client.callTool({ name: "list_project_items", arguments: { query: "MCP Test" } });
   const items = JSON.parse(left.content[0].text).items.filter((i) => i.name === COMP || i.name === "MCP Test Assets");
   results.push({ tool: "cleanup", pass: items.length === 0, ms: 0, note: items.length ? JSON.stringify(items) : "" });

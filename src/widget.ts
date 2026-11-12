@@ -20,6 +20,7 @@ export const TOOL_LABELS: Record<string, string> = {
   new_project: "Criando projeto novo",
   import_files: "Importando arquivos",
   create_folder: "Criando pasta",
+  remove_unused_footage: "Removendo footage sem uso",
   organize_items: "Organizando o projeto",
   modify_item: "Editando item do projeto",
   list_compositions: "Listando composições",

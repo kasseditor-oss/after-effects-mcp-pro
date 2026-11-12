@@ -1231,9 +1231,52 @@
     H.delete_layers = function (a) {
         var c = getComp(a.comp);
         var layers = getLayers(c, a.layers);
-        var names = [];
-        for (var i = 0; i < layers.length; i++) { names.push(layers[i].name); var wasLocked = layers[i].locked; if (wasLocked) layers[i].locked = false; layers[i].remove(); }
-        return { deleted: names };
+        var names = [], sources = [], removedSources = 0;
+        for (var i = 0; i < layers.length; i++) {
+            var l = layers[i];
+            // nulls and solids each own a footage item in the Solids folder
+            if (a.removeSources && l instanceof AVLayer && l.source instanceof FootageItem && l.source.mainSource instanceof SolidSource) sources.push(l.source);
+            names.push(l.name);
+            if (l.locked) l.locked = false;
+            l.remove();
+        }
+        for (var j = 0; j < sources.length; j++) {
+            try { if (sources[j].usedIn.length === 0) { sources[j].remove(); removedSources++; } } catch (e) { /* already removed (shared source) */ }
+        }
+        var out = { deleted: names };
+        if (a.removeSources) out.removedSources = removedSources;
+        return out;
+    };
+
+    // Remove footage that no layer uses. type:"solid" limits it to solid/null sources;
+    // keep: ids that must never be removed (e.g. what existed before a test).
+    H.remove_unused_footage = function (a) {
+        var keep = {};
+        if (a.keep) for (var k = 0; k < a.keep.length; k++) keep[a.keep[k]] = true;
+        var type = def(a.type, "all");
+        var before = app.project.numItems;
+        if (type === "all" && !a.keep) {
+            var n = app.project.removeUnusedFootage();
+            return { removed: typeof n === "number" ? n : before - app.project.numItems, type: type };
+        }
+        var removed = 0, folders = [];
+        for (var i = app.project.numItems; i >= 1; i--) {
+            var it = app.project.item(i);
+            if (!(it instanceof FootageItem) || keep[it.id]) continue;
+            if (type === "solid" && !(it.mainSource instanceof SolidSource)) continue;
+            if (it.usedIn.length) continue;
+            var parent = it.parentFolder;
+            it.remove();
+            removed++;
+            if (parent && parent !== app.project.rootFolder) folders.push(parent);
+        }
+        var removedFolders = 0;
+        if (a.removeEmptyFolders !== false) {
+            for (var f = 0; f < folders.length; f++) {
+                try { if (folders[f].numItems === 0 && !keep[folders[f].id]) { folders[f].remove(); removedFolders++; } } catch (e) { /* removed already */ }
+            }
+        }
+        return { removed: removed, removedFolders: removedFolders, type: type };
     };
 
     H.reorder_layer = function (a) {
