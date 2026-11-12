@@ -243,6 +243,18 @@ if (job.data?.jobId) {
   }
 }
 
+// structuredContent of the read tools must validate against their own output schemas
+{
+  const { OUTPUTS } = await import(new URL("../build/tools.js", import.meta.url).href);
+  const cases = [["list_layers", { comp: C }], ["list_compositions", {}], ["get_composition", { comp: C }], ["get_layer_details", { comp: C, layer: 1 }], ["get_project_info", {}], ["bridge_status", {}], ["get_render_queue", {}], ["list_project_items", {}]];
+  for (const [tool, args] of cases) {
+    const r = await client.callTool({ name: tool, arguments: args });
+    const v = OUTPUTS[tool].safeParse(r.structuredContent);
+    results.push({ tool: "structured:" + tool, pass: !r.isError && v.success, ms: 0, note: v.success ? "" : JSON.stringify(v.error.issues).slice(0, 200) });
+    console.log(`${v.success ? "PASS" : "FAIL"} structuredContent ${tool}`);
+  }
+}
+
 if (CLEANUP) {
   // comp first (it uses the precomp and footage), then the rest; folder last
   for (const id of [C, ...created]) {

@@ -18,7 +18,7 @@ import { z } from "zod";
 import { zodToJsonSchema } from "zod-to-json-schema";
 import { AEError, Bridge, SERVER_VERSION } from "./bridge.js";
 import { findInstalls } from "./env.js";
-import { TOOLS, NODE_ONLY, type ToolDef } from "./tools.js";
+import { TOOLS, NODE_ONLY, OUTPUTS, type ToolDef } from "./tools.js";
 import { compose, type ImageFormat } from "./imaging.js";
 import { WIDGET_MIME, WIDGET_URI, widgetHtml } from "./widget.js";
 
@@ -66,6 +66,12 @@ const bridge = new Bridge();
 const schemas = new Map<string, z.ZodObject<any>>();
 for (const d of TOOLS) schemas.set(d.name, z.object(d.shape).strict());
 
+function outSchema(s: z.ZodTypeAny) {
+  const js = zodToJsonSchema(s, { target: "jsonSchema7", $refStrategy: "none" }) as any;
+  delete js.$schema;
+  return js;
+}
+
 function jsonSchema(d: ToolDef) {
   const js = zodToJsonSchema(schemas.get(d.name)!, { target: "jsonSchema7", $refStrategy: "none" }) as any;
   delete js.$schema;
@@ -78,6 +84,7 @@ const LISTED = TOOLS.filter((d) => !(d.name === "run_extendscript" && process.en
   title: d.title,
   description: d.description,
   inputSchema: jsonSchema(d),
+  ...(OUTPUTS[d.name] ? { outputSchema: outSchema(OUTPUTS[d.name]) } : {}),
   annotations: {
     title: d.title,
     readOnlyHint: !!d.readOnly,
@@ -303,6 +310,14 @@ function largeTextIssue(tool: string, a: any): string | null {
 let versionChecked = false;
 server.setRequestHandler(CallToolRequestSchema, async (req, extra): Promise<CallToolResult> => {
   const result = await dispatch(req, extra.signal);
+  // Read tools also return the JSON as structuredContent (their outputSchema documents it).
+  if (OUTPUTS[req.params.name] && !result.isError && result.content?.[0]?.type === "text") {
+    try {
+      result.structuredContent = JSON.parse((result.content[0] as any).text);
+    } catch {
+      /* text was not JSON */
+    }
+  }
   if (!versionChecked && req.params.name !== "bridge_status") {
     versionChecked = true;
     const warn = bridge.listenerVersionWarning();

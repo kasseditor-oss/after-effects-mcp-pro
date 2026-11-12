@@ -246,3 +246,19 @@ test("texts over 20,000 characters are refused before reaching After Effects", a
   assert.equal(reached, 1);
   await client.close();
 });
+
+test("read tools declare outputSchema and return matching structuredContent", async () => {
+  const client = await connect();
+  const { tools } = await client.listTools();
+  const want = ["list_layers", "list_compositions", "get_composition", "get_layer_details", "get_project_info", "bridge_status", "get_render_queue", "list_project_items"];
+  for (const n of want) {
+    const t = tools.find((x) => x.name === n);
+    assert.equal(t.outputSchema?.type, "object", `${n} outputSchema`);
+  }
+  // bridge_status runs without AE: its structuredContent must match the schema
+  const r = await client.callTool({ name: "bridge_status", arguments: {} });
+  assert.equal(typeof r.structuredContent?.server, "string");
+  const { OUTPUTS } = await import(path.join(root, "build", "tools.js").replace(/\\/g, "/").replace(/^([A-Za-z]):/, "file:///$1:"));
+  assert.ok(OUTPUTS.bridge_status.safeParse(r.structuredContent).success);
+  await client.close();
+});

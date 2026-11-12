@@ -72,6 +72,24 @@ const ShapeSpec = z.object({
   rotation: z.number().optional(),
 });
 
+// ------------------------------------------------------------------ output schemas
+// Permissive on purpose (passthrough + optional): they document the main fields and
+// let clients validate structuredContent without breaking when a field is added.
+const O = <T extends z.ZodRawShape>(shape: T) => z.object(shape).passthrough();
+const LayerOut = O({ index: z.number(), id: z.number(), name: z.string(), type: z.string() });
+const CompOut = O({ id: z.number(), name: z.string(), width: z.number(), height: z.number(), duration: z.number(), frameRate: z.number() });
+const Page = { count: z.number(), total: z.number(), offset: z.number(), truncated: z.boolean() };
+export const OUTPUTS: Record<string, z.ZodTypeAny> = {
+  list_layers: O({ comp: z.string(), ...Page, layers: z.array(LayerOut) }),
+  list_compositions: O({ count: z.number(), compositions: z.array(CompOut) }),
+  get_composition: CompOut.extend({ numLayers: z.number(), layers: z.array(LayerOut) }),
+  get_layer_details: LayerOut.extend({ properties: z.array(z.any()) }),
+  get_project_info: O({ numItems: z.number(), counts: z.record(z.number()), compositionCount: z.number(), compositions: z.array(O({ id: z.number(), name: z.string() })) }),
+  bridge_status: O({ server: z.string(), afterEffectsRunning: z.boolean(), bridgeDir: z.string() }),
+  get_render_queue: O({ rendering: z.boolean(), items: z.array(O({ index: z.number(), comp: z.string(), status: z.string() })) }),
+  list_project_items: O({ ...Page, items: z.array(O({ id: z.number(), name: z.string(), type: z.string() })) }),
+};
+
 export interface ToolDef {
   name: string;
   title: string;
