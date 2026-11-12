@@ -4,12 +4,14 @@
  * Installed into After Effects' user "Scripts/Startup" folder, so it starts with
  * After Effects. No panel has to be opened. It polls a queue folder and runs the
  * command scripts written by the MCP server, one at a time, on AE's main thread.
+ * Window > AE MCP Pro.jsx shows what it does and can pause it or stop it from
+ * starting with After Effects.
  *
  * Queue folder: <Folder.userData>/ae-mcp-pro/queue  (Windows: %APPDATA%\ae-mcp-pro)
  */
 (function () {
     var G = $.global;
-    var VERSION = "2.0.2";
+    var VERSION = "2.0.3";
     if (G.AEMCP_LISTENER && G.AEMCP_LISTENER.version === VERSION && G.AEMCP_LISTENER.taskId) return;
     if (G.AEMCP_LISTENER && G.AEMCP_LISTENER.taskId) { try { app.cancelTask(G.AEMCP_LISTENER.taskId); } catch (e) { } }
 
@@ -52,6 +54,30 @@
         if (L.onLog) { try { L.onLog(); } catch (e) { } }
     };
 
+    L.setPaused = function (p) {
+        L.paused = !!p;
+        L.lastBeat = 0;
+        L.beat();
+        L.push(L.paused ? "paused" : "resumed");
+    };
+
+    // The Startup script that launches this listener with After Effects (per AE version).
+    L.startupFile = function (enabled) {
+        var ver = String(parseFloat(app.version));
+        if (ver.indexOf(".") < 0) ver = ver + ".0";
+        var dir = Folder.userData.fsName + "/Adobe/After Effects/" + ver + "/Scripts/Startup/";
+        return new File(dir + "ae-mcp-pro-startup.jsx" + (enabled ? "" : ".disabled"));
+    };
+    L.startsWithAE = function () { return L.startupFile(true).exists; };
+    // Turn auto-start on/off without reinstalling: the startup script is renamed.
+    L.setStartsWithAE = function (on) {
+        var en = L.startupFile(true), dis = L.startupFile(false);
+        if (on && !en.exists && dis.exists) dis.rename(en.name);
+        if (!on && en.exists) { if (dis.exists) dis.remove(); en.rename(dis.name); }
+        L.push(on ? "will start with After Effects" : "will not start with After Effects");
+        return L.startsWithAE();
+    };
+
     L.tick = function () {
         if (L.busy) return;
         L.busy = true;
@@ -85,9 +111,7 @@
                         running.remove();
                         L.executed++;
                         L.current = null;
-                        var label = "";
-                        try { label = G.AEMCP_LAST_TOOL || ""; } catch (e2) { }
-                        L.push((label || id) + "  (" + (now() - t0) + " ms)");
+                        if (L.onLog) { try { L.onLog(); } catch (e3) { } }
                     }
                 }
             }
@@ -100,6 +124,14 @@
     G.AEMCP_LISTENER = L;
     L.taskId = app.scheduleTask("$.global.AEMCP_LISTENER.tick()", 120, true);
     L.push("listener " + VERSION + " started");
+    // First start after an install/update: one discreet line in the Info panel, no dialog.
+    try {
+        var seen = new File(base + "/.announced-" + VERSION);
+        if (!seen.exists) {
+            writeLn("AE MCP Pro " + VERSION + ": listening for commands (Window > AE MCP Pro.jsx)");
+            writeText(seen.fsName, String(now()));
+        }
+    } catch (e4) { }
     L.lastBeat = 0;
     L.beat();
 })();

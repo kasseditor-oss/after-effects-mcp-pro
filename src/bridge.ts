@@ -9,7 +9,7 @@ const here = path.dirname(fileURLToPath(import.meta.url));
 
 export const SERVER_VERSION = "2.1.0";
 /** Version of bridge/ae-mcp-pro-listener.jsx this server expects (bump both together). */
-export const LISTENER_VERSION = "2.0.2";
+export const LISTENER_VERSION = "2.0.3";
 
 export class AEError extends Error {
   constructor(message: string, public hint?: string, public code: string = "AE_ERROR") {

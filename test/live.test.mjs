@@ -76,6 +76,8 @@ async function call(name, args = {}, { expectError = false, check } = {}) {
   }
 }
 
+// the status panel stays open during the whole test (it must not disturb anything)
+await client.callTool({ name: "run_extendscript", arguments: { code: "$.evalFile(new File(args.f)); return !!$.global.AEMCP_PANEL;", args: { f: path.join(root, "bridge", "AE MCP Pro.jsx").split(path.sep).join("/") } } });
 const COMP = `MCP Test ${Date.now() % 100000}`;
 // solids that existed before the test: cleanup must never remove them
 const solidsBefore = CLEANUP ? JSON.parse((await client.callTool({ name: "list_project_items", arguments: { type: "solid", limit: 1000 } })).content[0].text).items.map((i) => i.id) : [];
@@ -518,6 +520,23 @@ if (process.platform === "win32") {
   console.log(`${pass ? "PASS" : "FAIL"} modal dialog detected in ${ms} ms (${closed})`);
   await call("get_project_info", {}, { check: () => true }); // AE answers again once the dialog is closed
 }
+// panel features: pause -> calls get the "paused" error; call log; start-with-AE toggle
+if ((JSON.parse((await client.callTool({ name: "bridge_status", arguments: {} })).content[0].text)).mode === "listener") {
+  const calls = await call("run_extendscript", { code: "var c = $.global.AEMCP_CALLS || []; return { n: c.length, first: c[0] ? c[0].tool : null };" });
+  results.push({ tool: "panel call log", pass: calls.data?.result?.n >= 1, ms: 0, note: JSON.stringify(calls.data?.result) });
+  await call("run_extendscript", { code: "var L = $.global.AEMCP_LISTENER; var was = L.startsWithAE(); var off = L.setStartsWithAE(false); var on = L.setStartsWithAE(true); return { was: was, off: off, on: on };" }, { check: (d) => (d.result.off === false && d.result.on === true ? true : JSON.stringify(d.result)) });
+  await call("run_extendscript", { code: "$.global.AEMCP_LISTENER.setPaused(true); return 1;" });
+  await new Promise((r) => setTimeout(r, 1500));
+  const paused = await client.callTool({ name: "list_compositions", arguments: {} });
+  results.push({ tool: "paused bridge refuses calls", pass: paused.isError && /paused/i.test(paused.content[0].text), ms: 0, note: paused.content[0].text.slice(0, 120) });
+  // resume through direct mode (the paused listener does not run commands)
+  const dc = new Client({ name: "live-direct", version: "1.0.0" });
+  await dc.connect(new StdioClientTransport({ command: process.execPath, args: [path.join(root, "build", "index.js")], env: { ...process.env, AE_MCP_MODE: "direct" }, stderr: "pipe" }));
+  await dc.callTool({ name: "run_extendscript", arguments: { code: "$.global.AEMCP_LISTENER.setPaused(false); return 1;" } });
+  await dc.close();
+  await new Promise((r) => setTimeout(r, 1500));
+  await call("list_compositions", {}, { check: () => true });
+}
 // structuredContent of the read tools must validate against their own output schemas
 {
   const { OUTPUTS } = await import(new URL("../build/tools.js", import.meta.url).href);
@@ -547,6 +566,7 @@ if (CLEANUP) {
   console.log(`${items.length ? "FAIL" : "PASS"} cleanup removed ${created.length + 1} items`);
 }
 
+await client.callTool({ name: "run_extendscript", arguments: { code: "if ($.global.AEMCP_PANEL) { $.global.AEMCP_PANEL.close(); $.global.AEMCP_PANEL = null; } return 1;" } });
 const passed = results.filter((r) => r.pass).length;
 const tools = new Set(results.map((r) => r.tool));
 console.log(`\n${passed}/${results.length} checks passed, ${tools.size} distinct tools exercised. Output: ${out}`);

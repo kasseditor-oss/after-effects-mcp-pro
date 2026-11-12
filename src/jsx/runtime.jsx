@@ -2595,6 +2595,12 @@
         try { app.endSuppressDialogs(false); } catch (e3) { }
         res.id = payload ? payload.id : null;
         res.ms = new Date().getTime() - t0;
+        // last 20 calls, shown by the status panel (Window > AE MCP Pro.jsx)
+        try {
+            if (!G.AEMCP_CALLS) G.AEMCP_CALLS = [];
+            G.AEMCP_CALLS.unshift({ time: new Date().toTimeString().substr(0, 8), tool: payload ? payload.tool : "?", ms: res.ms, ok: res.ok });
+            if (G.AEMCP_CALLS.length > 20) G.AEMCP_CALLS.length = 20;
+        } catch (eC) { }
         writeFile(resultPath, JSONX.stringify(res));
         return res.ok;
     };
