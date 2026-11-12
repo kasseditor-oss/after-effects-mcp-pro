@@ -1361,7 +1361,8 @@
      "description": "Paragraph text box [w,h]."
     },
     "centerAnchor": {
-     "type": "boolean"
+     "type": "boolean",
+     "description": "Deprecated: anchor 'center' (true) or 'origin' (false)."
     },
     "name": {
      "type": "string",
@@ -1383,6 +1384,25 @@
      },
      "minItems": 1,
      "maxItems": 3
+    },
+    "anchor": {
+     "type": "string",
+     "enum": [
+      "center",
+      "left",
+      "right",
+      "top",
+      "bottom",
+      "top-left",
+      "top-right",
+      "bottom-left",
+      "bottom-right",
+      "baseline-left",
+      "baseline-center",
+      "baseline-right",
+      "origin"
+     ],
+     "description": "Put the anchor point on this spot of the layer's visible content (baseline-* for text; origin = [0,0]); position then places that spot. Text default follows justification (left -> baseline-left, right -> baseline-right, else center)."
     },
     "scale": {
      "anyOf": [
@@ -1932,6 +1952,25 @@
      "minItems": 1,
      "maxItems": 3
     },
+    "anchor": {
+     "type": "string",
+     "enum": [
+      "center",
+      "left",
+      "right",
+      "top",
+      "bottom",
+      "top-left",
+      "top-right",
+      "bottom-left",
+      "bottom-right",
+      "baseline-left",
+      "baseline-center",
+      "baseline-right",
+      "origin"
+     ],
+     "description": "Put the anchor point on this spot of the layer's visible content (baseline-* for text; origin = [0,0]); position then places that spot. Text default follows justification (left -> baseline-left, right -> baseline-right, else center)."
+    },
     "scale": {
      "anyOf": [
       {
@@ -2076,6 +2115,25 @@
      "minItems": 1,
      "maxItems": 3
     },
+    "anchor": {
+     "type": "string",
+     "enum": [
+      "center",
+      "left",
+      "right",
+      "top",
+      "bottom",
+      "top-left",
+      "top-right",
+      "bottom-left",
+      "bottom-right",
+      "baseline-left",
+      "baseline-center",
+      "baseline-right",
+      "origin"
+     ],
+     "description": "Put the anchor point on this spot of the layer's visible content (baseline-* for text; origin = [0,0]); position then places that spot. Text default follows justification (left -> baseline-left, right -> baseline-right, else center)."
+    },
     "scale": {
      "anyOf": [
       {
@@ -2214,6 +2272,25 @@
      },
      "minItems": 1,
      "maxItems": 3
+    },
+    "anchor": {
+     "type": "string",
+     "enum": [
+      "center",
+      "left",
+      "right",
+      "top",
+      "bottom",
+      "top-left",
+      "top-right",
+      "bottom-left",
+      "bottom-right",
+      "baseline-left",
+      "baseline-center",
+      "baseline-right",
+      "origin"
+     ],
+     "description": "Put the anchor point on this spot of the layer's visible content (baseline-* for text; origin = [0,0]); position then places that spot. Text default follows justification (left -> baseline-left, right -> baseline-right, else center)."
     },
     "scale": {
      "anyOf": [
@@ -2532,6 +2609,25 @@
      },
      "minItems": 1,
      "maxItems": 3
+    },
+    "anchor": {
+     "type": "string",
+     "enum": [
+      "center",
+      "left",
+      "right",
+      "top",
+      "bottom",
+      "top-left",
+      "top-right",
+      "bottom-left",
+      "bottom-right",
+      "baseline-left",
+      "baseline-center",
+      "baseline-right",
+      "origin"
+     ],
+     "description": "Put the anchor point on this spot of the layer's visible content (baseline-* for text; origin = [0,0]); position then places that spot. Text default follows justification (left -> baseline-left, right -> baseline-right, else center)."
     },
     "scale": {
      "anyOf": [
@@ -2938,7 +3034,8 @@
      "type": "boolean"
     },
     "centerAnchor": {
-     "type": "boolean"
+     "type": "boolean",
+     "description": "Deprecated: anchor 'center' (true) or 'origin' (false)."
     },
     "name": {
      "type": "string",
@@ -2960,6 +3057,25 @@
      },
      "minItems": 1,
      "maxItems": 3
+    },
+    "anchor": {
+     "type": "string",
+     "enum": [
+      "center",
+      "left",
+      "right",
+      "top",
+      "bottom",
+      "top-left",
+      "top-right",
+      "bottom-left",
+      "bottom-right",
+      "baseline-left",
+      "baseline-center",
+      "baseline-right",
+      "origin"
+     ],
+     "description": "Put the anchor point on this spot of the layer's visible content (baseline-* for text; origin = [0,0]); position then places that spot. Text default follows justification (left -> baseline-left, right -> baseline-right, else center)."
     },
     "scale": {
      "anyOf": [

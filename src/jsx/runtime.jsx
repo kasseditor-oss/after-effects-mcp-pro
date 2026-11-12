@@ -951,6 +951,7 @@
         if (has(a, "outPoint")) l.outPoint = a.outPoint;
         var tg = l.property("ADBE Transform Group");
         if (has(a, "threeD") && l instanceof AVLayer) l.threeDLayer = !!a.threeD;
+        if (has(a, "anchor")) setAnchor(l, a.anchor);
         if (has(a, "position")) { var pp = tg.property("ADBE Position"); pp.setValue(coerce(pp, a.position)); }
         if (has(a, "anchorPoint")) { var ap = tg.property("ADBE Anchor Point"); ap.setValue(coerce(ap, a.anchorPoint)); }
         if (has(a, "scale")) { var sp = tg.property("ADBE Scale"); sp.setValue(coerce(sp, typeof a.scale === "number" ? [a.scale, a.scale, a.scale] : a.scale)); }
@@ -961,22 +962,46 @@
         if (has(a, "parent")) l.parent = a.parent === "" || a.parent === null ? null : getLayer(comp, a.parent);
     }
 
-    function centerAnchor(l) {
-        try {
-            var r = l.sourceRectAtTime(l.containingComp.time, false);
-            var tg = l.property("ADBE Transform Group");
-            var ap = tg.property("ADBE Anchor Point");
-            var cur = ap.value;
-            var nx = r.left + r.width / 2, ny = r.top + r.height / 2;
-            var pos = tg.property("ADBE Position");
-            if (pos.numKeys === 0 && !pos.dimensionsSeparated) {
-                var pv = pos.value, s = tg.property("ADBE Scale").value;
-                pv[0] += (nx - cur[0]) * s[0] / 100; pv[1] += (ny - cur[1]) * s[1] / 100;
-                ap.setValue(cur.length === 3 ? [nx, ny, cur[2]] : [nx, ny]);
-                pos.setValue(pv);
-            }
-        } catch (e) { }
+    // Anchor point on the layer's visible content (sourceRectAtTime). "origin" = [0,0];
+    // "baseline-*" = on the text baseline (y = 0 in a text layer). The Position is
+    // compensated (scale and Z rotation) so the layer does not move on screen.
+    var ANCHORS = { "center": [0.5, 0.5], "left": [0, 0.5], "right": [1, 0.5], "top": [0.5, 0], "bottom": [0.5, 1],
+        "top-left": [0, 0], "top-right": [1, 0], "bottom-left": [0, 1], "bottom-right": [1, 1] };
+    function anchorTarget(l, where) {
+        if (where === "origin") return [0, 0];
+        var r = l.sourceRectAtTime(l.containingComp.time, false);
+        // string ops, not a regex: ExtendScript mis-captures alternations like (left|center|right)
+        if (where.indexOf("baseline-") === 0) {
+            if (!(l instanceof TextLayer)) fail("Anchor '" + where + "' only applies to text layers");
+            var side = where.substr(9);
+            var k = -1;
+            if (side === "left") k = 0; else if (side === "right") k = 1; else if (side === "center") k = 0.5;
+            if (k < 0) fail("Unknown anchor '" + where + "'");
+            return [r.left + r.width * k, 0];
+        }
+        var f = ANCHORS[where];
+        if (!f) fail("Unknown anchor '" + where + "'", "Use center, left, right, top, bottom, top-left, top-right, bottom-left, bottom-right, baseline-left, baseline-center, baseline-right or origin.");
+        return [r.left + r.width * f[0], r.top + r.height * f[1]];
     }
+    function setAnchor(l, where) {
+        var tg = l.property("ADBE Transform Group");
+        var ap = tg.property("ADBE Anchor Point");
+        if (ap.numKeys > 0) fail("Anchor Point of '" + l.name + "' is animated; remove its keyframes first");
+        var cur = ap.value, nxt = anchorTarget(l, where);
+        var dx = nxt[0] - cur[0], dy = nxt[1] - cur[1];
+        if (Math.abs(dx) < 1e-6 && Math.abs(dy) < 1e-6) return;
+        ap.setValue(cur.length === 3 ? [nxt[0], nxt[1], cur[2]] : [nxt[0], nxt[1]]);
+        var pos = tg.property("ADBE Position");
+        if (pos.numKeys > 0 || pos.dimensionsSeparated) return; // animated position: keep keys, the layer shifts
+        var sc = tg.property("ADBE Scale").value, rot = tg.property("ADBE Rotate Z").value * Math.PI / 180;
+        var sx = dx * sc[0] / 100, sy = dy * sc[1] / 100;
+        var pv = pos.value;
+        pv[0] += sx * Math.cos(rot) - sy * Math.sin(rot);
+        pv[1] += sx * Math.sin(rot) + sy * Math.cos(rot);
+        pos.setValue(pv);
+    }
+    function centerAnchor(l) { try { setAnchor(l, "center"); } catch (e) { } }
+    A.anchorTarget = anchorTarget;
 
     H.create_text_layer = function (a) {
         var c = getComp(a.comp);
@@ -999,10 +1024,17 @@
             if (style.font) { delete style.font; applyTextStyle(td, style); } else throw e;
         }
         p.setValue(td);
-        if (def(a.centerAnchor, true)) centerAnchor(l);
+        if (!has(a, "anchor")) {
+            var j = lower(def(a.justification, "center"));
+            if (a.centerAnchor === false) a.anchor = "origin";
+            else if (j === "left") a.anchor = "baseline-left";
+            else if (j === "right") a.anchor = "baseline-right";
+            else a.anchor = "center";
+        }
         if (!has(a, "position")) a.position = [c.width / 2, c.height / 2];
         placeLayer(c, l, a);
         var res = layerSummary(l);
+        res.anchor = a.anchor;
         res.appliedFont = p.value.font;
         res.caps = capsName(p.value);
         if (has(a, "font") && !fontExists(a.font)) res.warning = "Font '" + a.font + "' is not installed (AE shows it as missing). Use list_fonts to find an installed PostScript name.";
@@ -1234,7 +1266,7 @@
                 if (has(a, "stretch")) l.stretch = a.stretch;
             }
             if (has(a, "autoOrient")) l.autoOrient = a.autoOrient ? AutoOrientType.ALONG_PATH : AutoOrientType.NO_AUTO_ORIENT;
-            if (a.centerAnchor) centerAnchor(l);
+            if (has(a, "centerAnchor") && !has(a, "anchor")) setAnchor(l, a.centerAnchor ? "center" : "origin");
             if (has(a, "newName") ) l.name = a.newName;
             out.push(layerSummary(l));
         }

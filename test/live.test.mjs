@@ -277,6 +277,25 @@ await call("preview_contact_sheet", { comp: C, frames: 4, maxSize: 400 }, {
   results.push({ tool: "caps preview", pass, ms: 0, note: `abc ${lower}, ABC ${upper}, back ${back}` });
   console.log(`${pass ? "PASS" : "FAIL"} caps preview: abc ${lower}, ABC ${upper}, back ${back}`);
 }
+// anchors: left-justified text placed at x=100 starts at x=100; anchor changes never move the layer
+{
+  const ac = await call("create_composition", { name: COMP + " anchor", width: 1280, height: 720, duration: 1, backgroundColor: "#000000", open: false });
+  created.push(ac.data?.id);
+  await call("create_text_layer", { comp: ac.data?.id, text: "ANA SOUZA", font: "Arial-BoldMT", fontSize: 90, justification: "left", position: [100, 500], name: "L" });
+  const box = async (layer) => (await call("run_extendscript", { code: "var c=AEMCP.getComp(args.c); var l=AEMCP.getLayer(c,args.l); var r=l.sourceRectAtTime(0,false); var p=l.property('ADBE Transform Group').property('ADBE Position').value; var ap=l.property('ADBE Transform Group').property('ADBE Anchor Point').value; return { left: p[0]-ap[0]+r.left, top: p[1]-ap[1]+r.top, width: r.width };", args: { c: ac.data?.id, l: layer } })).data?.result;
+  const b1 = await box("L");
+  results.push({ tool: "anchor baseline-left", pass: Math.abs(b1.left - 100) <= 2, ms: 0, note: `left edge at ${b1.left}` });
+  await call("set_layer_properties", { comp: ac.data?.id, layer: "L", anchor: "top-right" });
+  const b2 = await box("L");
+  await call("set_layer_properties", { comp: ac.data?.id, layer: "L", centerAnchor: false });
+  const b3 = await box("L");
+  const still = Math.abs(b2.left - b1.left) < 0.5 && Math.abs(b3.left - b1.left) < 0.5 && Math.abs(b2.top - b1.top) < 0.5;
+  results.push({ tool: "anchor change keeps position", pass: still, ms: 0, note: JSON.stringify([b1, b2, b3]) });
+  await call("get_property", { comp: ac.data?.id, layer: "L", property: "Anchor Point" }, { check: (d) => (d.value[0] === 0 && d.value[1] === 0 ? true : "centerAnchor:false did not reset to origin: " + JSON.stringify(d.value)) });
+  // whole text inside the frame (left edge visible)
+  const px = await lumaAt(ac.data?.id, 0, "anchor-left");
+  results.push({ tool: "anchor preview", pass: px > 1, ms: 0, note: `luma ${px}` });
+}
 // text-fade-up must REVEAL the text: invisible before, fully visible after (pixel check)
 {
   const fc = await call("create_composition", { name: COMP + " fade", width: 640, height: 360, duration: 3, backgroundColor: "#000000", open: false });
