@@ -343,6 +343,8 @@ await call("preview_contact_sheet", { comp: C, frames: 4, maxSize: 400 }, {
   console.log(`${twPass ? "PASS" : "FAIL"} typewriter reveal: before ${twBefore}, after ${twAfter}`);
   for (const id of [fc.data?.id, ref.data?.id, tw.data?.id]) created.push(id);
 }
+await call("preview_contact_sheet", { comp: C, frames: 8 }, { check: (d) => (Math.max(d.sheetWidth, d.sheetHeight) <= 2048 ? true : `sheet ${d.sheetWidth}x${d.sheetHeight}`) });
+await call("preview_contact_sheet", { comp: C, frames: 6, maxSize: 1600 }, { check: (d) => (Math.max(d.sheetWidth, d.sheetHeight) <= 2048 ? true : `sheet ${d.sheetWidth}x${d.sheetHeight}`) });
 const folder = await call("create_folder", { name: "MCP Test Assets" });
 const imp = await call("import_files", { paths: [path.join(out, "frame.png")], folder: "MCP Test Assets", addToComp: C }, { check: (d) => (d.imported.length === 1 && d.imported[0].layer ? true : JSON.stringify(d)) });
 for (const it of imp.data?.imported ?? []) created.push(it.id);

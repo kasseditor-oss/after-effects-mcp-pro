@@ -5601,6 +5601,12 @@
      "maximum": 2048,
      "description": "Longest side of each cell, default 480 (360 above 6 frames)."
     },
+    "sheetMaxSize": {
+     "type": "integer",
+     "minimum": 256,
+     "maximum": 8192,
+     "description": "Longest side of the whole grid image, default 2048; cells shrink to fit."
+    },
     "background": {
      "type": "string",
      "enum": [

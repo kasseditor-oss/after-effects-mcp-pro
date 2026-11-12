@@ -261,13 +261,22 @@ async function nodeTool(name: string, a: any, report?: Progress): Promise<CallTo
         times = Array.from({ length: n }, (_, i) => +(start + (dur * i) / (n - 1) - (i === n - 1 ? 1 / comp.frameRate : 0)).toFixed(3));
       }
       const columns = (a.layout ?? "grid") === "grid" ? Math.min(4, times.length) : 0;
-      // smaller cells for big sheets keep the image under ~200 KB
-      const cell = a.maxSize ?? (times.length > 6 ? 360 : 480);
+      // smaller cells for big sheets keep the image under ~200 KB; then the whole sheet is
+      // capped at sheetMaxSize (maxSize alone is per frame: 6 x 1600 px made a 6412 px sheet)
+      let cell = a.maxSize ?? (times.length > 6 ? 360 : 480);
+      const sheetMax = a.sheetMaxSize ?? 2048;
+      if (columns > 0) {
+        const rows = Math.ceil(times.length / columns);
+        const k = cell / Math.max(comp.width, comp.height);
+        const sheetW = columns * comp.width * k + (columns - 1) * 4, sheetH = rows * comp.height * k + (rows - 1) * 4;
+        const over = Math.max(sheetW, sheetH) / sheetMax;
+        if (over > 1) cell = Math.max(32, Math.floor(cell / over) - 4);
+      }
       const r = await renderFrames({ comp: comp.id, times, maxSize: cell, format: a.background === "transparent" ? "png" : a.format ?? "jpeg", quality: a.quality ?? (times.length > 6 ? 70 : 80), columns, labels: true, background: a.background, report });
       const content: CallToolResult["content"] = [];
       if (r.images.length === 1) content.push({ type: "image", ...r.images[0] });
       else r.images.forEach((im, i) => content.push({ type: "text", text: `t = ${times[i]}s` }, { type: "image", ...im }));
-      return { ...ok({ comp: comp.name, times, layout: r.images.length === 1 ? "grid" : "separate", columns: r.images.length === 1 ? columns : null }, content), _meta: { "after-effects/summary": `${times.length} frames de ${comp.name}` } };
+      return { ...ok({ comp: comp.name, times, layout: r.images.length === 1 ? "grid" : "separate", columns: r.images.length === 1 ? columns : null, sheetWidth: r.size?.width ?? null, sheetHeight: r.size?.height ?? null, cellMaxSize: cell }, content), _meta: { "after-effects/summary": `${times.length} frames de ${comp.name}` } };
     }
     case "render_in_background": {
       const install = findInstalls().find((i) => i.aerender);
