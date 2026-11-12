@@ -127,3 +127,34 @@ test("prompts and resources are exposed", async () => {
   assert.ok(resources.find((r) => r.uri === "aftereffects://project"));
   await client.close();
 });
+
+// Fake listener: consumes queue files like AE would and writes results itself.
+function fakeListener(dir, respond) {
+  const q = path.join(dir, "queue");
+  let n = 0;
+  const timer = setInterval(() => {
+    fs.writeFileSync(path.join(dir, "heartbeat.json"), JSON.stringify({ time: Date.now(), version: "2.0.1", ae: "fake", paused: false, executed: n, project: "" }));
+    for (const f of fs.existsSync(q) ? fs.readdirSync(q) : []) {
+      if (!f.endsWith(".jsx")) continue;
+      const src = fs.readFileSync(path.join(q, f), "utf8");
+      fs.rmSync(path.join(q, f));
+      const m = src.match(/\.run\((".*"), ("[^"]+\.json")\);/);
+      const payload = JSON.parse(JSON.parse(m[1]));
+      const resultPath = JSON.parse(m[2]);
+      fs.writeFileSync(resultPath, JSON.stringify(respond(payload, n++)));
+    }
+  }, 20);
+  return () => clearInterval(timer);
+}
+
+test("listener I/O errors are retried once automatically", async () => {
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), "aemcp-io-"));
+  const stop = fakeListener(dir, (p, n) => (n === 0 ? { ok: false, id: p.id, error: "Script error: IOError: I/O error" } : { ok: true, id: p.id, data: { comps: 0, attempt: n } }));
+  await new Promise((r) => setTimeout(r, 60));
+  const client = await connect({ AE_MCP_BRIDGE_DIR: dir });
+  const r = await client.callTool({ name: "list_compositions", arguments: {} });
+  stop();
+  assert.ok(!r.isError, r.content[0].text);
+  assert.equal(JSON.parse(r.content[0].text).attempt, 1);
+  await client.close();
+});

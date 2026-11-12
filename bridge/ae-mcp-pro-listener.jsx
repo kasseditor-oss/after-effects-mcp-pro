@@ -9,7 +9,7 @@
  */
 (function () {
     var G = $.global;
-    var VERSION = "2.0.0";
+    var VERSION = "2.0.1";
     if (G.AEMCP_LISTENER && G.AEMCP_LISTENER.version === VERSION && G.AEMCP_LISTENER.taskId) return;
     if (G.AEMCP_LISTENER && G.AEMCP_LISTENER.taskId) { try { app.cancelTask(G.AEMCP_LISTENER.taskId); } catch (e) { } }
 
@@ -68,9 +68,17 @@
                     if (f.rename(f.name + ".run")) {
                         L.current = id;
                         var t0 = now();
-                        try {
-                            $.evalFile(running);
-                        } catch (err) {
+                        // Antivirus/indexers can hold a just-renamed file for a few ms: retry I/O errors.
+                        var attempt = 0, err = null;
+                        while (true) {
+                            try { $.evalFile(running); err = null; break; }
+                            catch (e) {
+                                err = e;
+                                if (attempt < 2 && /IOError|I\/O error/i.test(String(e))) { attempt++; L.ioRetries = (L.ioRetries || 0) + 1; $.sleep(50); continue; }
+                                break;
+                            }
+                        }
+                        if (err) {
                             writeText(base + "/results/" + id + ".json", "{\"ok\":false,\"id\":\"" + id + "\",\"error\":\"Script error: " + String(err).replace(/\\/g, "/").replace(/"/g, "'").replace(/[\r\n]+/g, " ") + "\"}");
                         }
                         running.remove();

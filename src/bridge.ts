@@ -7,7 +7,7 @@ import { aeReady, bridgeDir, findInstalls, isAERunning, isMac, isWin } from "./e
 
 const here = path.dirname(fileURLToPath(import.meta.url));
 
-export const SERVER_VERSION = "2.0.0";
+export const SERVER_VERSION = "2.0.1";
 
 export class AEError extends Error {
   constructor(message: string, public hint?: string, public code: string = "AE_ERROR") {
@@ -21,6 +21,8 @@ export interface CallOptions {
   timeoutMs?: number;
   /** Wrap the call in one After Effects undo group (default true). */
   undo?: boolean;
+  /** Internal: this call is the automatic resend after an I/O error. */
+  isRetry?: boolean;
 }
 
 interface Heartbeat {
@@ -67,6 +69,7 @@ export class Bridge {
   private chain: Promise<unknown> = Promise.resolve();
   lastMode: Mode | null = null;
   private readyAt = 0;
+  readonly stats = { calls: 0, timeouts: 0, ioErrors: 0, latencies: [] as number[] };
 
   constructor() {
     for (const sub of ["queue", "results", "direct", "frames", "runtime"]) fs.mkdirSync(path.join(this.dir, sub), { recursive: true });
@@ -202,6 +205,11 @@ export class Bridge {
     } finally {
       fs.rmSync(resultPath, { force: true });
       fs.rmSync(path.join(this.dir, "direct", `${id}.jsx`), { force: true });
+    }
+    // The listener reports I/O errors from loading the command file, before the command ran: safe to resend once.
+    if (!res.ok && /^Script error: IOError|^Script error: .*I\/O error/i.test(res.error || "") && !opts.isRetry) {
+      this.stats.ioErrors++;
+      return this.callNow<T>(tool, args, { ...opts, isRetry: true });
     }
     if (!res.ok) throw new AEError(res.error || "Unknown After Effects error", res.hint, "SCRIPT_ERROR");
     return res.data as T;
