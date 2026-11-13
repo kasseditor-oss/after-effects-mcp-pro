@@ -1,0 +1,209 @@
+{
+  "date": "2026-11-12T23:51:52.342Z",
+  "server": "2.2.0",
+  "listener": "2.0.4",
+  "ae": "26.5x89",
+  "tasks": [
+    {
+      "id": "A1",
+      "title": "Lower third 1080p",
+      "calls": 4,
+      "ms": 5286,
+      "log": [
+        "create_composition 325 ms",
+        "batch 2298 ms",
+        "preview_contact_sheet 2266 ms",
+        "get_properties_at_time 397 ms"
+      ],
+      "notes": [],
+      "sheet": {
+        "kb": 24,
+        "meta": "{\"comp\":\"QA A1 Lower Third\",\"times\":[0,0.714,1.429,2.143,2.857,3.571,4.286,4.967],\"layout\":\"grid\",\"columns\":4,\"sheetWidth\":1452,\"sheetHeight\":408,\"cellMaxSize\":360}"
+      },
+      "check": [
+        {
+          "layer": "Name",
+          "values": {
+            "Source Text": {
+              "text": "Mariana Costa",
+              "font": "Arial-BoldMT",
+              "fontSize": 64,
+              "applyFill": true,
+              "fillColor": "#111827",
+              "applyStroke": false,
+              "tracking": 0,
+              "leading": 76.8000030517578,
+              "autoLeading": true,
+              "justification": "center",
+              "boxText": false,
+              "caps": "normal",
+              "allCaps": false,
+              "fauxBold": false,
+              "fauxItalic": false
+            },
+            "Opacity": 100
+          }
+        },
+        {
+          "layer": "Role",
+          "values": {
+            "Opacity": 100
+          }
+        }
+      ]
+    },
+    {
+      "id": "A2",
+      "title": "Kinetic type 9:16, 6 words",
+      "calls": 4,
+      "ms": 3249,
+      "log": [
+        "create_composition 203 ms",
+        "batch 1365 ms",
+        "preview_contact_sheet 1545 ms",
+        "get_properties_at_time 136 ms"
+      ],
+      "notes": [],
+      "sheet": {
+        "kb": 37,
+        "meta": "{\"comp\":\"QA A2 Kinetic\",\"times\":[0,0.571,1.143,1.714,2.286,2.857,3.429,3.967],\"layout\":\"grid\",\"columns\":4,\"sheetWidth\":820,\"sheetHeight\":724,\"cellMaxSize\":360}"
+      },
+      "check": [
+        {
+          "layer": "agora.",
+          "values": {
+            "Source Text": {
+              "text": "agora.",
+              "font": "Arial-BoldMT",
+              "fontSize": 130,
+              "applyFill": true,
+              "fillColor": "#ff3b5c",
+              "applyStroke": false,
+              "tracking": 0,
+              "leading": 156,
+              "autoLeading": true,
+              "justification": "center",
+              "boxText": false,
+              "caps": "normal",
+              "allCaps": false,
+              "fauxBold": false,
+              "fauxItalic": false
+            }
+          }
+        }
+      ]
+    },
+    {
+      "id": "A3",
+      "title": "3D logo reveal",
+      "calls": 4,
+      "ms": 4168,
+      "log": [
+        "create_composition 229 ms",
+        "batch 2081 ms",
+        "preview_contact_sheet 1725 ms",
+        "get_properties_at_time 133 ms"
+      ],
+      "notes": [],
+      "sheet": {
+        "kb": 29,
+        "meta": "{\"comp\":\"QA A3 Logo Reveal\",\"times\":[0,0.714,1.429,2.143,2.857,3.571,4.286,4.967],\"layout\":\"grid\",\"columns\":4,\"sheetWidth\":1452,\"sheetHeight\":408,\"cellMaxSize\":360}"
+      },
+      "check": [
+        {
+          "layer": "Cam",
+          "values": {
+            "Point of Interest": [
+              960,
+              540,
+              0
+            ],
+            "Position": [
+              960,
+              540,
+              -2200
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "A4",
+      "title": "Essential Graphics template used 3 times",
+      "calls": 5,
+      "ms": 2008,
+      "log": [
+        "create_composition 92 ms",
+        "batch 249 ms",
+        "create_composition 93 ms",
+        "instantiate_template 323 ms",
+        "preview_contact_sheet 1251 ms"
+      ],
+      "notes": [],
+      "sheet": {
+        "kb": 38,
+        "meta": "{\"comp\":\"QA A4 Main\",\"times\":[0,1.333,2.667,3.967],\"layout\":\"grid\",\"columns\":4,\"sheetWidth\":1932,\"sheetHeight\":270,\"cellMaxSize\":480}"
+      },
+      "check": {
+        "template": "QA A4 Badge",
+        "into": "QA A4 Main",
+        "instances": [
+          {
+            "index": 1,
+            "id": 4466,
+            "name": "Badge 1",
+            "set": [
+              "Texto",
+              "Cor"
+            ],
+            "errors": []
+          },
+          {
+            "index": 1,
+            "id": 4467,
+            "name": "Badge 2",
+            "set": [
+              "Texto",
+              "Cor"
+            ],
+            "errors": []
+          },
+          {
+            "index": 1,
+            "id": 4468,
+            "name": "Badge 3",
+            "set": [
+              "Texto",
+              "Cor"
+            ],
+            "errors": []
+          }
+        ]
+      }
+    },
+    {
+      "id": "A5",
+      "title": "Import, look, render",
+      "calls": 5,
+      "ms": 101707,
+      "log": [
+        "create_composition 816 ms",
+        "import_files 438 ms",
+        "batch 250 ms",
+        "preview_contact_sheet 4317 ms",
+        "render_in_background 95886 ms"
+      ],
+      "notes": [],
+      "sheet": {
+        "kb": 59,
+        "meta": "{\"comp\":\"QA A5 Look\",\"times\":[0,0.6,1.2,1.8,2.4,2.967],\"layout\":\"grid\",\"columns\":4,\"sheetWidth\":1932,\"sheetHeight\":544,\"cellMaxSize\":480}"
+      },
+      "check": {
+        "imported": 1,
+        "render": "done",
+        "seconds": 95,
+        "ffprobe": "h264,1920,1080,90"
+      }
+    }
+  ]
+}

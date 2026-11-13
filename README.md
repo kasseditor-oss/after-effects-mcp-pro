@@ -2,7 +2,7 @@
 
 An MCP server that lets Claude (or any MCP client) drive a live Adobe After Effects session: build compositions, layers, shapes and text, animate with keyframes, easing and presets, apply effects and layer styles, render, and **look at the result** through frame previews.
 
-![Demo: Claude builds a kinetic title in After Effects and checks it with a contact sheet](docs/demo.gif)
+![Demo: a 3D logo reveal built by Claude through this server (QA task A3)](docs/demo.gif)
 
 > Português: veja a [seção em português](#português) no fim.
 
@@ -40,7 +40,7 @@ More client examples are in [`examples/`](examples/). `npx after-effects-mcp-pro
 | **Safe by design** | One undo step per call (`undo` tool, undo groups), dialogs suppressed, output files never overwritten silently, optional read-only mode, path sandbox and eval switch. |
 | **Works in any AE language** | Properties are addressed by match name internally; layers by index, name or stable `id:<n>`. |
 | **Visible in Claude** | Each call shows an After Effects activity card (MCP Apps) with the action, status and preview frames. |
-| **Tested** | Unit tests in CI on Windows and macOS (Node 18/20/22), ~365 end-to-end checks against a running After Effects, including pixel checks of the rendered frames. |
+| **Tested** | Unit tests in CI on Windows and macOS (Node 18/20/22), ~390 end-to-end checks against a running After Effects, including pixel checks of the rendered frames. |
 
 ## Tool profiles
 
@@ -146,7 +146,7 @@ npm test               # unit tests incl. the tools/list snapshots, no After Eff
 npm run typecheck      # tsc --noEmit
 npm run check:es3      # every .jsx parses as ECMAScript 3, no chained conditionals
 npm run docs           # regenerate docs/tools.md (CI fails when it is out of date)
-npm run test:live      # ~365 end-to-end checks against a running After Effects; removes what it created
+npm run test:live      # ~390 end-to-end checks against a running After Effects; removes what it created
 npm run test:live:keep # same, but keeps the "MCP Test" comp for inspection
 npm run test:stress    # latency, parallel calls, unicode, huge text, big batches, timeouts
 ```
